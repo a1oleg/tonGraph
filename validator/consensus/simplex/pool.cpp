@@ -104,23 +104,26 @@ struct CertificateBundle {
 
 class Tsentrizbirkom {
  public:
-  struct AddVoteResult {
-    AddVoteResult(MisbehaviorRef misbehavior) : is_applied(false), misbehavior(misbehavior) {
+  struct HandleVoteResult {
+    HandleVoteResult(MisbehaviorRef misbehavior) : is_new(false), misbehavior(misbehavior) {
     }
 
-    AddVoteResult(bool is_applied) : is_applied(is_applied) {
+    HandleVoteResult(bool is_new) : is_new(is_new) {
     }
 
-    bool is_applied;
+    bool is_new;
     std::optional<MisbehaviorRef> misbehavior;
   };
 
-  AddVoteResult add_vote(Proven<NotarizeVote> vote) {
+  HandleVoteResult handle_vote(Proven<NotarizeVote> vote, bool preliminary) {
     if (notarize_.has_value()) {
       if (notarize_->vote != vote.vote) {
         return ConflictingVotes::create(vote.serialize_as_proof(), notarize_->serialize_as_proof());
       }
       return false;
+    }
+    if (preliminary) {
+      return true;
     }
 
     notarize_ = std::move(vote);
@@ -132,9 +135,12 @@ class Tsentrizbirkom {
     return true;
   }
 
-  AddVoteResult add_vote(Proven<SkipVote> vote) {
+  HandleVoteResult handle_vote(Proven<SkipVote> vote, bool preliminary) {
     if (skip_.has_value()) {
       return false;
+    }
+    if (preliminary) {
+      return true;
     }
 
     skip_ = std::move(vote);
@@ -146,12 +152,15 @@ class Tsentrizbirkom {
     return true;
   }
 
-  AddVoteResult add_vote(Proven<FinalizeVote> vote) {
+  HandleVoteResult handle_vote(Proven<FinalizeVote> vote, bool preliminary) {
     if (finalize_.has_value()) {
       if (finalize_->vote != vote.vote) {
         return ConflictingVotes::create(vote.serialize_as_proof(), finalize_->serialize_as_proof());
       }
       return false;
+    }
+    if (preliminary) {
+      return true;
     }
 
     finalize_ = std::move(vote);
@@ -340,9 +349,10 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
         return;
       }
 
-      if (handle_vote(message->source.get_using(bus), std::move(vote))) {
-        store_vote_to_db(message->message.data.clone(), message->source).detach();
+      if (!handle_vote(message->source.get_using(bus), vote.clone(), /* preliminary = */ true)) {
+        return;
       }
+      store_and_handle_vote(message->source.get_using(bus), std::move(vote)).start().detach();
     }
 
     auto maybe_tl_certificate = fetch_tl_object<tl::certificate>(message->message.data, true);
@@ -379,7 +389,9 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
         }
       }
 
-      handle_foreign_certificate(*slot, std::move(maybe_certificate.move_as_ok().unique_write()));
+      std::move(maybe_certificate.move_as_ok().write()).consume_and_downcast([&](auto cert) {
+        store_and_handle_foreign_certificate(*slot, std::move(cert)).start().detach();
+      });
     }
   }
 
@@ -470,7 +482,7 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
     owning_bus().publish<MisbehaviorReport>(idx, misbehavior);
   }
 
-  bool handle_vote(const PeerValidator &validator, Signed<Vote> vote) {
+  bool handle_vote(const PeerValidator &validator, Signed<Vote> vote, bool preliminary = false) {
     auto vote_fn = [&]<typename VoteT>(Signed<VoteT> vote) -> bool {
       auto slot = state_->slot_at(vote.vote.referenced_slot());
       if (!slot) {
@@ -484,9 +496,9 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
         return false;
       }
 
-      auto add_result = slot->state->votes[validator.idx.value()].add_vote(std::move(vote));
+      auto result = slot->state->votes[validator.idx.value()].handle_vote(vote.clone(), preliminary);
 
-      if (auto misbehavior = add_result.misbehavior) {
+      if (auto misbehavior = result.misbehavior) {
         LOG_CHECK(validator != owning_bus()->local_id)
             << "We produced conflicting votes! Conflict occured for " << vote.vote;
         // The following line cannot be simply
@@ -498,13 +510,18 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
         return false;
       }
 
-      if (add_result.is_applied) {
+      if (result.is_new && !preliminary) {
         handle_vote(validator, std::move(vote), *slot);
-        return true;
       }
-      return false;
+      return result.is_new;
     };
     return std::move(vote).consume_and_downcast(vote_fn);
+  }
+
+  td::actor::Task<> store_and_handle_vote(const PeerValidator validator, Signed<Vote> vote) {
+    co_await store_vote_to_db(vote.serialize(), validator.idx);
+    handle_vote(validator, std::move(vote));
+    co_return {};
   }
 
   void handle_vote(const PeerValidator &validator, Signed<NotarizeVote> vote, State::SlotRef &slot) {
@@ -541,8 +558,8 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
     Signed<Vote> signed_vote{bus.local_id.idx, vote, std::move(signature)};
     td::BufferSlice serialized = signed_vote.serialize();
 
+    co_await store_vote_to_db(serialized.clone(), bus.local_id.idx);
     if (handle_vote(bus.local_id, std::move(signed_vote))) {
-      co_await store_vote_to_db(serialized.clone(), bus.local_id.idx);
       owning_bus().publish(std::make_shared<OutgoingProtocolMessage>(std::nullopt, std::move(serialized)));
     }
 
@@ -684,16 +701,35 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
     }
   }
 
-  void handle_foreign_certificate(State::SlotRef &slot, Certificate<Vote> &&cert) {
-    std::move(cert).consume_and_downcast([&](auto cert) {
-      for (const auto &[idx, _] : cert->signatures) {
-        auto add_result = slot.state->votes[idx.value()].add_vote(cert);
-        if (auto misbehavior = add_result.misbehavior) {
-          owning_bus().publish<MisbehaviorReport>(idx, *misbehavior);
-        }
+  template <typename VoteT>
+  td::actor::Task<> store_and_handle_foreign_certificate(State::SlotRef slot, CertificateRef<VoteT> cert) {
+    std::vector<td::actor::StartedTask<>> tasks;
+    for (const auto &[idx, signature] : cert->signatures) {
+      if (slot.state->votes[idx.value()].handle_vote(cert, true).is_new) {
+        tasks.push_back(store_vote_to_db(Signed<VoteT>{idx, cert->vote, signature.clone()}.serialize(), idx).start());
       }
-      handle_our_certificate(slot, cert);
-    });
+    }
+    co_await td::actor::all(std::move(tasks));
+
+    if (!state_->slot_at(cert->vote.referenced_slot()).has_value()) {
+      co_return {};
+    }
+    if (!slot.state->certs.needs(cert->vote)) {
+      co_return {};
+    }
+    handle_foreign_certificate(slot, cert);
+    co_return {};
+  }
+
+  template <typename VoteT>
+  void handle_foreign_certificate(State::SlotRef &slot, CertificateRef<VoteT> cert) {
+    for (const auto &[idx, _] : cert->signatures) {
+      auto add_result = slot.state->votes[idx.value()].handle_vote(cert, false);
+      if (auto misbehavior = add_result.misbehavior) {
+        owning_bus().publish<MisbehaviorReport>(idx, *misbehavior);
+      }
+    }
+    handle_our_certificate(slot, cert);
   }
 
   template <typename T>
