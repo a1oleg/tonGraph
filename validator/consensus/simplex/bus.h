@@ -100,6 +100,7 @@ class Bus : public consensus::Bus {
   NewConsensusConfig::Simplex simplex_config;
 
   std::vector<Signed<Vote>> bootstrap_votes;
+  size_t next_vote_idx = 1;
   td::uint32 first_nonannounced_window = 0;
 
   // FIXME: These should come from validator options

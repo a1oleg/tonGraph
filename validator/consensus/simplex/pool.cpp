@@ -306,6 +306,7 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
               << " out of " << bus.total_weight;
 
     first_nonannounced_window_ = bus.first_nonannounced_window;
+    next_vote_idx_ = bus.next_vote_idx;
     for (const auto &vote : bus.bootstrap_votes) {
       handle_vote(vote.validator.get_using(bus), vote.clone());
     }
@@ -803,10 +804,10 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
   }
 
   td::actor::Task<> store_vote_to_db(td::BufferSlice serialized, PeerValidatorId validator_id) {
-    td::Bits256 hash = td::sha256_bits256(serialized);
-    co_return co_await owning_bus()->db->set(create_serialize_tl_object<ton_api::consensus_simplex_db_key_vote>(hash),
-                                             create_serialize_tl_object<ton_api::consensus_simplex_db_vote>(
-                                                 std::move(serialized), (int)validator_id.value()));
+    co_return co_await owning_bus()->db->set(
+        create_serialize_tl_object<ton_api::consensus_simplex_db_key_vote>((td::int64)(next_vote_idx_++)),
+        create_serialize_tl_object<ton_api::consensus_simplex_db_vote>(std::move(serialized),
+                                                                       (int)validator_id.value()));
   }
 
   td::uint32 slots_per_leader_window_;
@@ -821,6 +822,7 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
 
   td::uint32 first_nonannounced_window_ = 0;
   bool publishing_new_leader_window_ = false;
+  size_t next_vote_idx_ = 1;
 
   ParentId last_finalized_block_;
   std::optional<FinalCertRef> last_final_cert_;
