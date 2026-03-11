@@ -170,6 +170,8 @@ class BlockProducerImpl : public td::actor::SpawnsWith<Bus>, public td::actor::C
       std::variant<BlockIdExt, BlockCandidate> block;
       std::optional<adnl::AdnlNodeIdShort> collator;
       if (generated_candidate.has_value()) {
+        td::actor::send_closure(bus.manager, &ManagerFacade::cache_block_candidate,
+                                generated_candidate->candidate.clone());
         state = state->apply(generated_candidate->candidate);
         block = std::move(generated_candidate->candidate);
         if (!generated_candidate->collator_node_id.is_zero()) {

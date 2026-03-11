@@ -1213,6 +1213,7 @@ consensus.simplex.db.key.candidateResolver.candidateInfo candidateId:consensus.c
 consensus.simplex.db.candidateResolver.candidateInfo leader_id:int candidate_hash_data:consensus.CandidateHashData signature:bytes = consensus.simplex.db.candidateResolver.CandidateInfo;
 consensus.simplex.db.key.candidateResolver.notarCert candidateId:consensus.candidateId = consensus.simplex.db.key.candidateResolver.NotarCert;
 consensus.simplex.db.candidateResolver.notarCert notar:consensus.simplex.voteSignatureSet = consensus.simplex.db.candidateResolver.NotarCert;
+consensus.simplex.db.key.candidateResolver.candidateData candidateId:consensus.candidateId = consensus.simplex.db.key.candidateResolver.CandidateData;
 
 consensus.stats.block id:tonNode.blockIdExt = consensus.stats.CandidateBlock;
 consensus.stats.empty = consensus.stats.CandidateBlock;
