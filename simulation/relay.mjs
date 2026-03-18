@@ -305,6 +305,16 @@ async function handleMsgReceived(session, ev) {
     { srcNid, locNid, slot: neo4j.int(slot), msgType, tsMs: neo4j.int(tsMs), sessionId });
 }
 
+async function handleBlockAccepted(session, ev) {
+  const { sessionId, slot, candidateId, tsMs } = ev;
+  const nodeId = `blockaccepted:${sessionId}:${slot}:${candidateId}`;
+  await runQuery(session,
+    `MERGE (ba:BlockAccepted {nodeId: $nodeId})
+     SET ba.slot = $slot, ba.candidateId = $candidateId,
+         ba.sessionId = $sessionId, ba.tsMs = $tsMs`,
+    { nodeId, slot: neo4j.int(slot), candidateId, sessionId, tsMs: neo4j.int(tsMs) });
+}
+
 async function handleResourceLoad(session, ev) {
   const { sessionId, slot, notarizeWeightEntries, pendingRequests, tsMs } = ev;
   const nodeId = `rload:${sessionId}:${slot}:${tsMs}`;
@@ -367,6 +377,8 @@ async function dispatch(session, ev) {
     // Vuln 6 — Message reordering
     case 'BootstrapVoteReplayed': return handleBootstrapVoteReplayed(session, ev);
     case 'ConflictTolerated':     return handleConflictTolerated(session, ev);
+    // Block acceptance (latency tracking)
+    case 'BlockAccepted':         return handleBlockAccepted(session, ev);
     // Rows 7-8 — Resource exhaustion
     case 'MsgReceived':           return handleMsgReceived(session, ev);
     case 'ResourceLoad':          return handleResourceLoad(session, ev);
