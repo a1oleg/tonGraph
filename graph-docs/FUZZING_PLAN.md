@@ -4,7 +4,7 @@
 
 | Компонент | Статус |
 |---|---|
-| `simulation/fuzz_harness.cpp` | ✅ [5aa6dab6](https://github.com/a1oleg/tonGraph/commit/5aa6dab6) — 6 действий, SplitPropose, 240K iter/sec |
+| `simulation/fuzz_harness.cpp` | ✅ [54933808](https://github.com/a1oleg/tonGraph/commit/54933808) — FuzzedDataProvider (fuzzer) + FuzzReader (standalone) |
 | `simulation/corpus_fuzz/` | ✅ 272 targeted seed (4 уязвимости, полное покрытие Pre(k)) |
 | `simulation/scripts/gen_targeted_corpus.py` | ✅ [5aa6dab6](https://github.com/a1oleg/tonGraph/commit/5aa6dab6) — backwards reachability generator |
 | `build-fuzz/simulation/fuzz_harness` | ✅ libFuzzer бинарь |
@@ -236,11 +236,6 @@ snapshot C++ состояния (notarize_weight map, requests_ queue, voted_not
 Мутатор делает шаг в сторону **уменьшения расстояния до нарушения**,
 не в сторону случайного покрытия новых базовых блоков.
 
-| Уровень | Размер пространства | Подход |
-|---|---|---|
-| Phase 1 — protocol model | ~10^6 (конечен) | Комбинаторная генерация / wp-вычисление |
-| Phase 2 — real pool.cpp | ~2^64 (программное состояние) | Векторные эмбеддинги + hnswlib |
-
 ---
 
 ## Комбинированная стратегия: оптимальный порядок
@@ -350,6 +345,6 @@ mkdir -p simulation/corpus_fuzz_run simulation/crashes
 
 ## Следующие шаги (приоритет)
 
-1. **`FuzzedDataProvider`** — заменить `FuzzReader` в `fuzz_harness.cpp`
+1. ~~**`FuzzedDataProvider`**~~ — ✅ [54933808](https://github.com/a1oleg/tonGraph/commit/54933808) реализовано
 2. **Properties as assertions** — уже частично: equivocation и notarize+skip детектируются; добавить остальные Cypher-проверки
 3. **Phase 2** — real `pool.cpp` fuzzer (MockBus + MockKeyring + MockDb)
