@@ -5,6 +5,7 @@ from pathlib import Path
 
 from tontester.install import Install
 from tontester.network import FullNode, Network
+from tontester.zerostate import NetworkConfig, SimplexConsensusConfig
 
 
 async def main():
@@ -23,6 +24,9 @@ async def main():
     )
 
     async with Network(install, working_dir) as network:
+        network.config.mc_consensus = SimplexConsensusConfig()
+        network.config.shard_consensus = SimplexConsensusConfig()
+
         dht = network.create_dht_node()
 
         nodes: list[FullNode] = []

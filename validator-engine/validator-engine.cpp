@@ -28,6 +28,7 @@
 #include <memory>
 #include <vector>
 
+#include "simulation/GraphLogger.h"
 #include "adnl/adnl-node-id.hpp"
 #include "auto/tl/lite_api.h"
 #include "auto/tl/ton_api.h"
@@ -5194,6 +5195,8 @@ void dump_stats() {
 
 int main(int argc, char *argv[]) {
   SET_VERBOSITY_LEVEL(verbosity_INFO);
+
+  simulation::GraphLogger::instance().init();
 
   td::set_default_failure_signal_handler().ensure();
 
