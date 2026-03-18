@@ -204,3 +204,97 @@ ConsensusHarness уже решил 80% проблем с мокингом actor 
 2. Написать `fuzz_helpers.h` с MockKeyring (Ed25519 через `crypto/elliptic-curve.h`)
 3. Написать `fuzz_pool.cpp` — сначала только `IncomingProtocolMessage` точка входа
 4. Построить corpus из `simulation/trace.ndjson`
+
+---
+
+## Умный фаззинг: варианты стратегий
+
+Случайный перебор байт — наихудшая стратегия. Варианты от простого к сложному:
+
+### 1. Dictionary (15 мин, низкий выхлоп)
+
+libFuzzer автоматически накапливает словарь (мы видели после 30 сек: `"skip:"`, `"certTy"`, `"\x01\x00"`).
+Добавить явный словарь значимых значений:
+
+```
+# simulation/fuzz.dict
+"\x00"   # slot=0 (corner case)
+"\xff"   # slot=255 (overflow)
+"\x03"   # N=3 (минимум валидаторов)
+"\x06"   # N=6 (максимум)
+"\x02"   # DoubleNotarize
+"\x03"   # NotarizeAndSkip
+```
+
+```bash
+./build-fuzz/simulation/fuzz_harness ... -dict=simulation/fuzz.dict
+```
+
+### 2. FuzzedDataProvider — рекомендуется первым (1–2 часа, высокий выхлоп)
+
+Вместо ручной интерпретации байт использовать `FuzzedDataProvider` из clang.
+Он **осмысленно распределяет энтропию** — мутирует `n_validators` не ломая остальные поля:
+
+```cpp
+#include <fuzzer/FuzzedDataProvider.h>
+
+FuzzedDataProvider fdp(data, size);
+int n_validators = fdp.ConsumeIntegralInRange(3, 6);
+int n_slots      = fdp.ConsumeIntegralInRange(1, 15);
+for (int v = 0; v < n_validators; v++) {
+    auto action = fdp.ConsumeEnum<ValidatorAction>();
+}
+```
+
+Принципиально меняет качество мутаций — libFuzzer видит структуру входа.
+Требует замены `FuzzReader` в `fuzz_harness.cpp` на `FuzzedDataProvider`.
+
+### 3. Corpus из реального testnet трафика (2–3 часа, средний выхлоп)
+
+`simulation/trace.ndjson` содержит реальные последовательности событий от живых валидаторов.
+Конвертировать в corpus-файлы — фаззер будет мутировать **реальные паттерны**:
+
+```
+CandidateReceived → Honest
+VoteCast notarize → Honest
+VoteCast skip     → DropReceive
+```
+
+Скрипт: `simulation/scripts/trace_to_corpus.py`
+
+### 4. AFL++ с grammar mutation (день, высокий выхлоп)
+
+AFL++ умеет мутировать по грамматике протокола:
+
+```
+session := n_validators n_slots slot*
+slot    := validator_action{n_validators}
+validator_action := HONEST | DROP | DOUBLE | NOTARIZE_SKIP | ABSTAIN
+```
+
+Мутирует на уровне грамматики, а не байт — находит corner cases
+которые coverage-guided мутации байт пропускают.
+
+### Регламент повторных прогонов
+
+Corpus **накапливается** между прогонами — не чистить без причины:
+
+```bash
+# Первый прогон:
+mkdir -p simulation/corpus_fuzz_run simulation/crashes
+./build-fuzz/simulation/fuzz_harness \
+  simulation/corpus_fuzz_run/ \
+  simulation/corpus_fuzz/ \
+  -max_total_time=3600 \
+  -artifact_prefix=simulation/crashes/
+
+# Все последующие — то же самое, corpus_fuzz_run/ растёт:
+./build-fuzz/simulation/fuzz_harness \
+  simulation/corpus_fuzz_run/ \
+  simulation/corpus_fuzz/ \
+  -max_total_time=3600 \
+  -artifact_prefix=simulation/crashes/
+```
+
+Чистить corpus только если изменился код harness (новые ветки делают старый corpus нерелевантным)
+или для минимизации: `./fuzz_harness -merge=1 corpus_min/ corpus_fuzz_run/`.
