@@ -8,6 +8,7 @@
 
 #include "bus.h"
 #include "stats.h"
+#include "simulation/GraphLogger.h"
 
 namespace ton::validator::consensus {
 
@@ -40,6 +41,11 @@ class BlockAccepterImpl : public td::actor::SpawnsWith<Bus>, public td::actor::C
     co_await td::actor::ask(owning_bus()->manager, &ManagerFacade::accept_block, block.id, block_data,
                             event->candidate->leader.value(), event->signatures, broadcast_mode, true);
     owning_bus().publish<TraceEvent>(stats::BlockAccepted::create(event->candidate->id));
+    simulation::GraphLogger::instance().emit("BlockAccepted", {
+        {"candidateId", event->candidate->id.hash.to_hex()},
+        {"slot",        static_cast<int64_t>(event->candidate->id.slot)},
+        {"sessionId",   owning_bus()->session_id.to_hex()},
+    });
     co_return {};
   }
 
