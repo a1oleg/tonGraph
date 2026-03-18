@@ -70,7 +70,8 @@ enum class ValidatorAction : uint8_t {
   DoubleNotarize = 2,  // send NotarizeVote for two different candidateIds
   NotarizeAndSkip = 3, // send both NotarizeVote AND SkipVote (known undetected bug)
   NoVote         = 4,  // simply abstain (liveness test)
-  COUNT          = 5,
+  SplitPropose   = 5,  // [leader only] send cand_0 to group A, cand_1 to group B
+  COUNT          = 6,
 };
 
 // ── Invariant tracking ──────────────────────────────────────────────────────
@@ -103,16 +104,25 @@ struct SessionInvariants {
       errors.push_back({"SAFETY VIOLATION: dual FinalizeCert on slot", slot});
     }
 
-    // [Safety] Validator has both NotarizeVote and SkipVote in same slot
     if (votes_by_slot.count(slot)) {
       for (auto& [vidx, vtypes] : votes_by_slot[slot]) {
         bool has_notarize = false, has_skip = false;
+        std::set<std::string> notarize_cands;
         for (auto& vt : vtypes) {
-          if (vt.rfind("notarize:", 0) == 0) has_notarize = true;
-          if (vt.rfind("skip:", 0)     == 0) has_skip     = true;
+          if (vt.rfind("notarize:", 0) == 0) {
+            has_notarize = true;
+            notarize_cands.insert(vt.substr(9));
+          }
+          if (vt.rfind("skip:", 0) == 0) has_skip = true;
         }
+        // [Safety] Validator cast notarize+skip in same slot (known undetected bug)
         if (has_notarize && has_skip) {
           errors.push_back({"INVARIANT VIOLATION: notarize+skip from validator "
+                            + std::to_string(vidx) + " on slot", slot});
+        }
+        // [Safety] Equivocation: notarize votes for two different candidates
+        if (notarize_cands.size() > 1) {
+          errors.push_back({"INVARIANT VIOLATION: equivocation from validator "
                             + std::to_string(vidx) + " on slot", slot});
         }
       }
@@ -144,9 +154,13 @@ static void run_fuzz_slot(FuzzReader& rdr, int N, uint32_t slot,
     log.emit(ev, props);
   };
 
-  // Leader proposes a candidate
-  std::string cand_main = candidate_hex(slot, 0);
-  emit("Propose", {{"leaderIdx", (int64_t)leader}, {"candidateId", cand_main}});
+  // Three candidate ids used in this slot:
+  //   cand_main  — honest proposal (variant 0)
+  //   cand_split — SplitPropose group-B candidate (variant 1)
+  //   cand_equiv — DoubleNotarize second vote (variant 2)
+  const std::string cand_main  = candidate_hex(slot, 0);
+  const std::string cand_split = candidate_hex(slot, 1);
+  const std::string cand_equiv = candidate_hex(slot, 2);
 
   // Per-validator action chosen by fuzzer
   std::vector<ValidatorAction> actions(N);
@@ -154,72 +168,100 @@ static void run_fuzz_slot(FuzzReader& rdr, int N, uint32_t slot,
     actions[v] = static_cast<ValidatorAction>(rdr.next((uint8_t)ValidatorAction::COUNT));
   }
 
-  // Decide delivery: did each validator receive the candidate?
-  std::vector<bool> received(N, true);
-  for (int v = 0; v < N; v++) {
-    if (actions[v] == ValidatorAction::DropReceive) received[v] = false;
-  }
+  // Determine which candidate each validator receives ("" = didn't receive).
+  // SplitPropose: Byzantine leader sends cand_main to group A and cand_split to group B.
+  // For each non-leader validator a partition bool is consumed from the fuzz input.
+  std::vector<std::string> my_cand(N, "");
+  const bool is_split = (actions[leader] == ValidatorAction::SplitPropose);
 
-  for (int v = 0; v < N; v++) {
-    if (received[v] && v != leader) {
+  if (is_split) {
+    // Byzantine leader: proposes cand_main to group A, cand_split to group B.
+    // Leader itself does not vote (SplitPropose case in voting switch does nothing).
+    emit("Propose", {{"candidateId", cand_main},  {"leaderIdx", (int64_t)leader}});
+    emit("Propose", {{"candidateId", cand_split}, {"leaderIdx", (int64_t)leader}});
+    for (int v = 0; v < N; v++) {
+      if (v == leader) continue;
+      if (actions[v] == ValidatorAction::DropReceive) continue;
+      const std::string& cid = rdr.next_bool() ? cand_split : cand_main;
+      my_cand[v] = cid;
       emit("CandidateReceived", {
-          {"receiverIdx",  (int64_t)v},
-          {"leaderIdx",    (int64_t)leader},
-          {"candidateId",  cand_main},
-          {"parentSlot",   (int64_t)(slot > 0 ? slot - 1 : 0)},
+          {"candidateId", cid},
+          {"leaderIdx",   (int64_t)leader},
+          {"parentSlot",  (int64_t)(slot > 0 ? slot - 1 : 0)},
+          {"receiverIdx", (int64_t)v},
       });
+    }
+  } else {
+    // Honest propose: all validators (including leader) receive cand_main.
+    // CandidateReceived is only emitted for non-leaders (they are the receivers).
+    emit("Propose", {{"candidateId", cand_main}, {"leaderIdx", (int64_t)leader}});
+    for (int v = 0; v < N; v++) {
+      if (actions[v] == ValidatorAction::DropReceive) continue;
+      my_cand[v] = cand_main;
+      if (v != leader) {
+        emit("CandidateReceived", {
+            {"candidateId", cand_main},
+            {"leaderIdx",   (int64_t)leader},
+            {"parentSlot",  (int64_t)(slot > 0 ? slot - 1 : 0)},
+            {"receiverIdx", (int64_t)v},
+        });
+      }
     }
   }
 
   // Collect notarize votes
-  std::map<std::string, int> notarize_weight;  // candidateId → weight
+  std::map<std::string, int> notarize_weight;
   std::vector<bool> did_notarize(N, false);
   std::vector<bool> did_skip(N, false);
+  std::vector<std::string> notarized_cand(N, "");  // which candidate v notarized
 
   for (int v = 0; v < N; v++) {
-    if (!received[v]) continue;
+    if (my_cand[v].empty()) continue;
 
     switch (actions[v]) {
       case ValidatorAction::Honest: {
-        emit("VoteCast", {{"validatorIdx", (int64_t)v},
-                          {"candidateId",  cand_main},
+        emit("VoteCast", {{"candidateId",  my_cand[v]},
+                          {"validatorIdx", (int64_t)v},
                           {"voteType",     std::string("notarize")}});
-        inv.record_vote(slot, v, "notarize", cand_main);
-        notarize_weight[cand_main]++;
+        inv.record_vote(slot, v, "notarize", my_cand[v]);
+        notarize_weight[my_cand[v]]++;
         did_notarize[v] = true;
+        notarized_cand[v] = my_cand[v];
         break;
       }
       case ValidatorAction::DoubleNotarize: {
-        // Equivocation: vote for two different candidates
-        std::string cand_b = candidate_hex(slot, 1);
-        emit("VoteCast", {{"validatorIdx", (int64_t)v},
-                          {"candidateId",  cand_main},
+        // Equivocation: vote for received candidate AND cand_equiv
+        emit("VoteCast", {{"candidateId",  my_cand[v]},
+                          {"validatorIdx", (int64_t)v},
                           {"voteType",     std::string("notarize")}});
-        emit("VoteCast", {{"validatorIdx", (int64_t)v},
-                          {"candidateId",  cand_b},
+        emit("VoteCast", {{"candidateId",  cand_equiv},
+                          {"validatorIdx", (int64_t)v},
                           {"voteType",     std::string("notarize")}});
-        inv.record_vote(slot, v, "notarize", cand_main);
-        inv.record_vote(slot, v, "notarize", cand_b);
-        notarize_weight[cand_main]++;
-        notarize_weight[cand_b]++;
+        inv.record_vote(slot, v, "notarize", my_cand[v]);
+        inv.record_vote(slot, v, "notarize", cand_equiv);
+        notarize_weight[my_cand[v]]++;
+        notarize_weight[cand_equiv]++;
         did_notarize[v] = true;
+        notarized_cand[v] = my_cand[v];
         break;
       }
       case ValidatorAction::NotarizeAndSkip: {
         // Known protocol gap: notarize + skip in same slot (pool.cpp doesn't detect this)
-        emit("VoteCast", {{"validatorIdx", (int64_t)v},
-                          {"candidateId",  cand_main},
+        emit("VoteCast", {{"candidateId",  my_cand[v]},
+                          {"validatorIdx", (int64_t)v},
                           {"voteType",     std::string("notarize")}});
-        emit("VoteCast", {{"validatorIdx", (int64_t)v},
-                          {"candidateId",  std::string("")},
+        emit("VoteCast", {{"candidateId",  std::string("")},
+                          {"validatorIdx", (int64_t)v},
                           {"voteType",     std::string("skip")}});
-        inv.record_vote(slot, v, "notarize", cand_main);
+        inv.record_vote(slot, v, "notarize", my_cand[v]);
         inv.record_vote(slot, v, "skip", "");
-        notarize_weight[cand_main]++;
+        notarize_weight[my_cand[v]]++;
         did_notarize[v] = true;
         did_skip[v]     = true;
+        notarized_cand[v] = my_cand[v];
         break;
       }
+      case ValidatorAction::SplitPropose:  // leader action only — no vote
       case ValidatorAction::NoVote:
       case ValidatorAction::DropReceive:
       case ValidatorAction::COUNT:
@@ -227,53 +269,53 @@ static void run_fuzz_slot(FuzzReader& rdr, int N, uint32_t slot,
     }
   }
 
-  // Find the candidateId with the most notarize votes
-  std::string winning_cand;
-  int max_weight = 0;
+  // Cert phase: process every candidate that reached notarize quorum.
+  // With SplitPropose both cand_main and cand_split may appear here.
+  bool any_quorum = false;
   for (auto& [cid, w] : notarize_weight) {
-    if (w > max_weight) { max_weight = w; winning_cand = cid; }
-  }
+    if (w < threshold) continue;
+    any_quorum = true;
 
-  if (max_weight >= threshold) {
-    // NotarizeCert formed
-    emit("CertIssued", {{"certType",    std::string("notarize")},
-                        {"candidateId", winning_cand},
-                        {"weight",      (int64_t)max_weight}});
+    emit("CertIssued", {{"candidateId", cid},
+                        {"certType",    std::string("notarize")},
+                        {"weight",      (int64_t)w}});
 
-    // FinalizeVotes from validators who notarized this candidate
+    // FinalizeVotes from validators who notarized this specific candidate
     int finalize_w = 0;
     for (int v = 0; v < N; v++) {
-      if (did_notarize[v] && !did_skip[v]) {
-        emit("VoteCast", {{"validatorIdx", (int64_t)v},
-                          {"candidateId",  winning_cand},
+      if (did_notarize[v] && !did_skip[v] && notarized_cand[v] == cid) {
+        emit("VoteCast", {{"candidateId",  cid},
+                          {"validatorIdx", (int64_t)v},
                           {"voteType",     std::string("finalize")}});
         finalize_w++;
       }
     }
 
     if (finalize_w >= threshold) {
-      emit("CertIssued", {{"certType",    std::string("finalize")},
-                          {"candidateId", winning_cand},
+      emit("CertIssued", {{"candidateId", cid},
+                          {"certType",    std::string("finalize")},
                           {"weight",      (int64_t)finalize_w}});
-      emit("BlockAccepted", {{"candidateId", winning_cand}});
-      inv.record_finalize_cert(slot, winning_cand);
+      emit("BlockAccepted", {{"candidateId", cid}});
+      inv.record_finalize_cert(slot, cid);
       finalized++;
     }
-  } else {
-    // No quorum → SkipVotes from non-notarizing validators
+  }
+
+  if (!any_quorum) {
+    // No candidate reached notarize quorum → SkipVotes
     int skip_w = 0;
     for (int v = 0; v < N; v++) {
       if (!did_notarize[v]) {
-        emit("VoteCast", {{"validatorIdx", (int64_t)v},
-                          {"candidateId",  std::string("")},
+        emit("VoteCast", {{"candidateId",  std::string("")},
+                          {"validatorIdx", (int64_t)v},
                           {"voteType",     std::string("skip")}});
         inv.record_vote(slot, v, "skip", "");
         skip_w++;
       }
     }
     if (skip_w >= threshold) {
-      emit("CertIssued", {{"certType",    std::string("skip")},
-                          {"candidateId", std::string("")},
+      emit("CertIssued", {{"candidateId", std::string("")},
+                          {"certType",    std::string("skip")},
                           {"weight",      (int64_t)skip_w}});
       skipped++;
     }
@@ -398,6 +440,18 @@ int main(int argc, char* argv[]) {
   run_from_bytes({4, 2,
     1,4,4,4,  // slot 0: leader drops; others no-vote
     0,0,0,0
+  });
+
+  // split_propose: Byzantine leader (v0) sends two candidates to different groups.
+  // N=3 (byte=0 → 3+0=3), 3 slots (byte=2 → 1+2=3).
+  // Slot 0: leader=v0=SplitPropose(5), v1=Honest(0), v2=Honest(0)
+  //   then partition bools: v1→0 (group A, cand_main), v2→1 (group B, cand_split).
+  // With N=3, threshold=2: each group has 1 vote → neither reaches threshold → no dual cert.
+  // Verifies SplitPropose generates CandidateDuplicate pattern without safety violation.
+  run_from_bytes({0, 2,
+    5,0,0, 0,1,  // slot 0: SplitPropose, v1→A, v2→B
+    0,0,0,       // slot 1: leader=v1, all honest
+    0,0,0        // slot 2: leader=v2, all honest
   });
 
   fprintf(stderr, "[fuzz] smoke test done\n");
