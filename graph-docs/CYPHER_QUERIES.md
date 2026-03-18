@@ -267,6 +267,44 @@ ORDER BY n.slot, n.tsMs
 
 ---
 
+## #msg-flood — Resource exhaustion: входящие сообщения per source (linear flood)
+
+Считает число принятых сообщений от каждого источника к локальному валидатору в сессии.
+Признак атаки: один источник генерирует O(slots) сообщений вместо O(1) per slot.
+
+```cypher
+MATCH (src:Validator)-[r:recv]->(loc:Validator)
+WHERE r.sessionId = $sid
+RETURN src.validatorIdx AS source, loc.validatorIdx AS local,
+       count(r)         AS msgCount,
+       min(r.slot)      AS firstSlot,
+       max(r.slot)      AS lastSlot
+ORDER BY msgCount DESC
+```
+
+> `$sid` — sessionId из `SessionStart` события. Ожидаемый нормальный результат: ≤ 1–2 сообщения per (source, slot).
+
+---
+
+## #notarize-weight-growth — Resource exhaustion: рост notarize_weight per slot (superlinear)
+
+Показывает максимальное число distinct candidateId в `notarize_weight[slot]` — признак того,
+что Byzantine актор отправлял голоса за разные candidateId, раздувая map.
+При K distinct кандидатах стоимость сертификации растёт как O(|Validators| × K) вместо O(|Validators|).
+
+```cypher
+MATCH (r:ResourceLoad)
+WHERE r.sessionId = $sid
+RETURN r.slot AS slot,
+       max(r.notarizeWeightEntries) AS maxCandidates,
+       max(r.pendingRequests)       AS maxPending
+ORDER BY maxCandidates DESC, slot
+```
+
+> Нормальный результат: `maxCandidates = 1` для всех слотов. Значение > 1 указывает на Byzantine флуд.
+
+---
+
 ## #clean — Очистка графа
 
 ```cypher

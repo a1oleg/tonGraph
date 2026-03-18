@@ -385,6 +385,16 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
         return;
       }
 
+      // [Row 7] Linear message flood: log every accepted incoming vote per source.
+      // Allows detecting O(|slots|) message rate from a single Byzantine validator via
+      // MATCH (src)-[:recv]->(loc) WHERE rec.sessionId=$sid RETURN src.validatorIdx, count(*).
+      simulation::GraphLogger::instance().emit("MsgReceived", {
+          {"sourceIdx", static_cast<int64_t>(message->source.value())},
+          {"localIdx",  static_cast<int64_t>(bus.local_id.idx.value())},
+          {"slot",      static_cast<int64_t>(vote.vote.referenced_slot())},
+          {"msgType",   std::string("vote")},
+          {"sessionId", bus.session_id.to_hex()},
+      });
       handle_vote(message->source.get_using(bus), std::move(vote));
     }
 
@@ -422,6 +432,14 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
         }
       }
 
+      // [Row 7] Linear message flood: log every accepted incoming certificate per source.
+      simulation::GraphLogger::instance().emit("MsgReceived", {
+          {"sourceIdx", static_cast<int64_t>(message->source.value())},
+          {"localIdx",  static_cast<int64_t>(bus.local_id.idx.value())},
+          {"slot",      static_cast<int64_t>(raw_vote.referenced_slot())},
+          {"msgType",   std::string("cert")},
+          {"sessionId", bus.session_id.to_hex()},
+      });
       handle_certificate(maybe_certificate.move_as_ok()).start().detach();
     }
   }
@@ -529,8 +547,10 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
       }
 
       // Capture fields before the vote is moved into add_vote.
-      // Equivocation baseline: каждый (validatorIdx, slot, voteType) — ровно 1 ребро [:notarize/:finalize/:skip]
+      // [Row 1] Equivocation baseline: каждый (validatorIdx, slot, voteType) — ровно 1 ребро [:notarize/:finalize/:skip]
       // Аномалия: два VoteCast от одного validatorIdx с одним slot и разными candidateId или разными voteType.
+      // [Row 8] Superlinear: ResourceLoad эмитируется после NotarizeVote — отслеживает рост notarize_weight[slot]
+      // и requests_. При Byzantine флуде разными candidateId map растёт до O(K), cert_cost становится O(N·K).
       const auto g_slot = static_cast<int64_t>(vote.vote.referenced_slot());
       const auto g_vidx = static_cast<int64_t>(validator.idx.value());
       std::string g_cid;
@@ -564,6 +584,17 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
             {"sessionId", owning_bus()->session_id.to_hex()},
         });
         handle_typed_vote(validator, std::move(vote), *slot);
+        // [Row 8] Superlinear processing: track notarize_weight map size after each NotarizeVote.
+        // notarize_weight is a std::map<CandidateId, ValidatorWeight>; a Byzantine actor flooding
+        // distinct candidateIds inflates it, making cert_creation_cost O(N * |fake candidates|).
+        if constexpr (std::same_as<VoteT, NotarizeVote>) {
+          simulation::GraphLogger::instance().emit("ResourceLoad", {
+              {"slot",                  g_slot},
+              {"notarizeWeightEntries", static_cast<int64_t>(slot->state->notarize_weight.size())},
+              {"pendingRequests",       static_cast<int64_t>(requests_.size())},
+              {"sessionId",             owning_bus()->session_id.to_hex()},
+          });
+        }
         return true;
       }
       return false;

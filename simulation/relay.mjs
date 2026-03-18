@@ -164,6 +164,30 @@ async function handleFinalizeCert(session, ev) {
     { certNid, bNid, slot: neo4j.int(slot), weight: neo4j.int(weight), tsMs: neo4j.int(tsMs) });
 }
 
+async function handleMsgReceived(session, ev) {
+  const { sessionId, sourceIdx, localIdx, slot, msgType, tsMs } = ev;
+  const srcNid = validatorNodeId(sessionId, sourceIdx);
+  const locNid = validatorNodeId(sessionId, localIdx);
+  await ensureValidator(session, sessionId, sourceIdx);
+  await ensureValidator(session, sessionId, localIdx);
+  // CREATE (not MERGE) so every individual message is a distinct edge — enables count(*) flood queries.
+  await runQuery(session,
+    `MATCH (src:Validator {nodeId: $srcNid}), (loc:Validator {nodeId: $locNid})
+     CREATE (src)-[:recv {slot: $slot, msgType: $msgType, tsMs: $tsMs, sessionId: $sessionId}]->(loc)`,
+    { srcNid, locNid, slot: neo4j.int(slot), msgType, tsMs: neo4j.int(tsMs), sessionId });
+}
+
+async function handleResourceLoad(session, ev) {
+  const { sessionId, slot, notarizeWeightEntries, pendingRequests, tsMs } = ev;
+  const nodeId = `rload:${sessionId}:${slot}:${tsMs}`;
+  await runQuery(session,
+    `MERGE (r:ResourceLoad {nodeId: $nodeId})
+     SET r.slot = $slot, r.sessionId = $sessionId,
+         r.notarizeWeightEntries = $nwe, r.pendingRequests = $pr, r.tsMs = $tsMs`,
+    { nodeId, slot: neo4j.int(slot), sessionId,
+      nwe: neo4j.int(notarizeWeightEntries), pr: neo4j.int(pendingRequests), tsMs: neo4j.int(tsMs) });
+}
+
 async function handleSkipVote(session, ev) {
   const { sessionId, slot, validatorIdx, tsMs } = ev;
   const vNid  = await ensureValidator(session, sessionId, validatorIdx);
@@ -199,6 +223,8 @@ async function dispatch(session, ev) {
       if (ev.voteType === 'skip')     return handleSkipVote(session, ev);
       console.warn('[relay] VoteCast with unknown voteType:', ev.voteType);
       break;
+    case 'MsgReceived':    return handleMsgReceived(session, ev);
+    case 'ResourceLoad':   return handleResourceLoad(session, ev);
     case 'SessionStart':   console.log(`[relay] session=${ev.sessionId} scenario=${ev.scenario}`); break;
     case 'SessionEnd':     console.log(`[relay] done: finalized=${ev.finalizedBlocks} skipped=${ev.skippedSlots}`); break;
     case 'Receive':        /* informational only */ break;
