@@ -1,34 +1,8 @@
 # Первый чат: графовое логирование для поиска уязвимостей TON Consensus
 
-### Что уже есть и что применимо
-
-Инфраструктура (GRAPH_LOGGING_PLAN.md, WORKER_LOGGING.md, CYPHER_QUERIES.md) даёт:
-
-| Возможность | Применимость к consensus |
-|---|---|
-| **Дерево вызовов** с `depth`, `parentNodeId` | Отслеживание цепочки `validate_block → check_signatures → apply_state` |
-| **Edge types** (`async`, `postMessage`, `event`) | Моделирование message passing между валидаторами (`[:vote]`, `[:propose]`, `[:commit]`) |
-| **Store-узлы** (`[:init]`, `[:set]`, `[:get]`) | Отслеживание мутаций состояния консенсуса (кто и когда менял `validator_set`, `block_candidate`) |
-| **sessionId изоляция** | Изоляция отдельных раундов консенсуса |
-| **Cypher-запросы** (`#frontier`, `#store-history`) | Поиск аномалий в графе: необычные пути, отсутствующие рёбра, циклы |
-| **Lane/thread разметка** | Визуализация параллельных validator threads |
-
-
-### Практический план адаптации
-
-Код TON consensus написан на C++ (`ton/validator/consensus/`). Три подхода:
-
-**A. Инструментация через обёртки (рекомендуется для контеста)**
-- Написать тонкий C++ logger по аналогии с `WorkerGraphReporter` — буферизует события, сериализует в JSON
-- Отправлять буфер в Neo4j через HTTP API (или через существующий `AuraGraphReporter` как relay)
-- Cypher-запросы из CYPHER_QUERIES.md работают as-is после адаптации лейблов
 
 
 
-**C. Статический анализ кода через граф**
-- Парсить C++ AST → граф вызовов в Neo4j
-- Искать паттерны уязвимостей: unchecked return values, missing validations, race conditions
-- Это ближе к CodeQL, но с Neo4j инфраструктурой
 
 ### Ограничения
 
