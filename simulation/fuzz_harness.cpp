@@ -452,11 +452,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
       __builtin_trap();  // crash → libFuzzer saves the input
     }
 
-    // Protocol invariant violations: log but don't abort (known bugs tracked via Neo4j)
-    if (err.description.rfind("INVARIANT VIOLATION", 0) == 0) {
-      fprintf(stderr, "[fuzz] %s (slot=%u)\n",
-              err.description.c_str(), err.slot);
-    }
+    // Protocol invariant violations: tracked via Neo4j, not logged during fuzzing
   }
 
   return 0;

@@ -23,7 +23,6 @@ simulation/trace_fuzz.ndjson
 simulation/corpus_fuzz_run/
 simulation/crashes/
 simulation/fuzz.log
-fuzz-*.log
 .DS_Store
 dev/
 
