@@ -337,6 +337,14 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
         continue;
       }
 
+      // [Row 6] Message reordering / bootstrap replay: log every vote replayed from DB on restart.
+      // Baseline: conflictDetected=false for all. ConflictTolerated events (below) reveal slots
+      // where conflicting votes were stored — prior crash before DB write, tolerate_conflicts masks it.
+      simulation::GraphLogger::instance().emit("BootstrapVoteReplayed", {
+          {"validatorIdx", static_cast<int64_t>(bus.local_id.idx.value())},
+          {"slot",         static_cast<int64_t>(vote.referenced_slot())},
+          {"sessionId",    bus.session_id.to_hex()},
+      });
       handle_our_vote(vote, /*tolerate_conflicts=*/true, /*suppress_vote_broadcast=*/true).start().detach();
     }
   }
@@ -564,6 +572,24 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
       auto add_result = slot->state->votes[validator.idx.value()].add_vote(std::move(vote));
 
       if (auto misbehavior = add_result.misbehavior) {
+        // [Row 4] State divergence: log all invariant violations detected by check_invariants().
+        // Note: detects Notarize+Finalize(diffId) and Finalize+Skip; does NOT detect Notarize+Skip.
+        simulation::GraphLogger::instance().emit("InvariantViolation", {
+            {"validatorIdx", g_vidx},
+            {"slot",         g_slot},
+            {"voteType",     std::string(g_vtype)},
+            {"sessionId",    owning_bus()->session_id.to_hex()},
+        });
+        // [Row 6] Message reordering: during bootstrap replay conflicting votes from DB are tolerated.
+        // misbehavior IS published, but tolerate_conflicts prevents the local CHECK from crashing.
+        if (tolerate_conflicts) {
+          simulation::GraphLogger::instance().emit("ConflictTolerated", {
+              {"validatorIdx", g_vidx},
+              {"slot",         g_slot},
+              {"voteType",     std::string(g_vtype)},
+              {"sessionId",    owning_bus()->session_id.to_hex()},
+          });
+        }
         LOG_CHECK(validator != owning_bus()->local_id || tolerate_conflicts)
             << "We produced conflicting votes! Conflict occured for " << vote.vote;
         // The following line cannot be simply
@@ -815,7 +841,15 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
 
   void handle_typed_saved_certificate(State::SlotRef &slot, NotarCertRef cert) {
     auto id = cert->vote.id;
-
+    // [Row 4] State divergence: log each NotarizeCert issued.
+    // Baseline: at most one CertIssued{certType=notarize} per slot with the same candidateId.
+    simulation::GraphLogger::instance().emit("CertIssued", {
+        {"certType",    std::string("notarize")},
+        {"slot",        static_cast<int64_t>(id.slot)},
+        {"candidateId", id.hash.to_hex()},
+        {"weight",      static_cast<int64_t>(cert->signatures.size())},
+        {"sessionId",   owning_bus()->session_id.to_hex()},
+    });
     owning_bus().publish<NotarizationObserved>(id, cert);
 
     next_nonskipped_slot_after(id.slot).state->add_available_base(id);
@@ -825,7 +859,14 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
 
   void handle_typed_saved_certificate(State::SlotRef &slot, SkipCertRef cert) {
     auto i = slot.i;
-
+    // [Row 4] State divergence: log each SkipCert issued.
+    simulation::GraphLogger::instance().emit("CertIssued", {
+        {"certType",    std::string("skip")},
+        {"slot",        static_cast<int64_t>(i)},
+        {"candidateId", std::string("")},
+        {"weight",      static_cast<int64_t>(cert->signatures.size())},
+        {"sessionId",   owning_bus()->session_id.to_hex()},
+    });
     auto next_slot = next_nonskipped_slot_after(i);
 
     skip_intervals_.erase(i);
@@ -842,7 +883,16 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
 
   void handle_typed_saved_certificate(State::SlotRef &slot, FinalCertRef cert) {
     auto id = cert->vote.id;
-
+    // [Row 4] State divergence: log each FinalizeCert issued.
+    // Critical anomaly: two CertIssued{certType=finalize} on same slot with different candidateId
+    // = safety violation — detectable via #dual-cert-issued Cypher query.
+    simulation::GraphLogger::instance().emit("CertIssued", {
+        {"certType",    std::string("finalize")},
+        {"slot",        static_cast<int64_t>(id.slot)},
+        {"candidateId", id.hash.to_hex()},
+        {"weight",      static_cast<int64_t>(cert->signatures.size())},
+        {"sessionId",   owning_bus()->session_id.to_hex()},
+    });
     CHECK(!slot.state->is_skipped());
     CHECK(slot.state->notarized_block().value_or(id) == id);
     if (!slot.state->is_notarized()) {

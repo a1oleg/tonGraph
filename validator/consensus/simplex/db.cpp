@@ -5,6 +5,7 @@
  */
 
 #include "bus.h"
+#include "GraphLogger.h"
 
 namespace ton::validator::consensus::simplex {
 
@@ -54,6 +55,9 @@ class DbImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo<B
 
   template <>
   td::actor::Task<> process(BusHandle, std::shared_ptr<BroadcastVote> event) {
+    // [Row 5] Amnesia: capture slot before serialization for VoteIntentPersisted / DBWriteFailure.
+    const auto g_slot = static_cast<int64_t>(event->vote.referenced_slot());
+
     auto vote = event->vote.to_tl();
     auto hash = sha256_bits256(serialize_tl_object(vote, true));
 
@@ -71,6 +75,21 @@ class DbImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo<B
     // means that the whole consensus bus is shutting down because the group was rotated and thus
     // write persistence doesn't matter.
     CHECK(result.is_ok() || result.error().code() == cancelled);
+    // [Row 5] Amnesia: log DB write outcome. VoteIntentPersisted confirms durable write.
+    // DBWriteFailure (errorCode=cancelled) means bus is shutting down — not a persistence bug.
+    // Gap: no VoteIntentPersisted for a slot = crash between broadcast and DB write.
+    if (result.is_ok()) {
+      simulation::GraphLogger::instance().emit("VoteIntentPersisted", {
+          {"slot",      g_slot},
+          {"persisted", true},
+          {"sessionId", owning_bus()->session_id.to_hex()},
+      });
+    } else {
+      simulation::GraphLogger::instance().emit("DBWriteFailure", {
+          {"slot",      g_slot},
+          {"sessionId", owning_bus()->session_id.to_hex()},
+      });
+    }
     co_return result;
   }
 
