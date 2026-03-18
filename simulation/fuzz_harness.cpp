@@ -112,8 +112,13 @@ struct InvariantError {
 struct SessionInvariants {
   // slot → set of certified candidateIds (certType = finalize)
   std::map<uint32_t, std::set<std::string>> finalize_certs;
-  // slot → set of (validatorIdx, voteType) pairs
+  // slot → set of (validatorIdx, voteType:candidateId) pairs
   std::map<uint32_t, std::map<int, std::set<std::string>>> votes_by_slot;
+  // slot → set of candidateIds proposed by each leader (for duplicate detect)
+  std::map<uint32_t, std::set<std::string>> proposals_by_slot;
+  // slot → true if NotarizeCert formed, false if SkipCert formed
+  std::map<uint32_t, bool> notarize_cert_slots;
+  std::map<uint32_t, bool> skip_cert_slots;
 
   std::vector<InvariantError> errors;
 
@@ -126,10 +131,27 @@ struct SessionInvariants {
     finalize_certs[slot].insert(candidateId);
   }
 
+  void record_propose(uint32_t slot, const std::string& candidateId) {
+    proposals_by_slot[slot].insert(candidateId);
+  }
+
+  void record_notarize_cert(uint32_t slot) { notarize_cert_slots[slot] = true; }
+  void record_skip_cert(uint32_t slot)     { skip_cert_slots[slot]     = true; }
+
   void check(uint32_t slot) {
-    // [Safety] Two different FinalizeCerts on same slot = state divergence
+    // [Safety] Two different FinalizeCerts on same slot = state divergence (#dual-cert)
     if (finalize_certs.count(slot) && finalize_certs[slot].size() > 1) {
       errors.push_back({"SAFETY VIOLATION: dual FinalizeCert on slot", slot});
+    }
+
+    // [Safety] NotarizeCert AND SkipCert both formed on same slot (#notarize-skip-cert-conflict)
+    if (notarize_cert_slots.count(slot) && skip_cert_slots.count(slot)) {
+      errors.push_back({"INVARIANT VIOLATION: NotarizeCert+SkipCert on slot", slot});
+    }
+
+    // [Safety] Leader proposed two different candidates on same slot (#candidate-duplicate)
+    if (proposals_by_slot.count(slot) && proposals_by_slot[slot].size() > 1) {
+      errors.push_back({"INVARIANT VIOLATION: duplicate proposal on slot", slot});
     }
 
     if (votes_by_slot.count(slot)) {
@@ -143,18 +165,28 @@ struct SessionInvariants {
           }
           if (vt.rfind("skip:", 0) == 0) has_skip = true;
         }
-        // [Safety] Validator cast notarize+skip in same slot (known undetected bug)
+        // [Safety] Validator cast notarize+skip in same slot (#notarize-skip)
         if (has_notarize && has_skip) {
           errors.push_back({"INVARIANT VIOLATION: notarize+skip from validator "
                             + std::to_string(vidx) + " on slot", slot});
         }
-        // [Safety] Equivocation: notarize votes for two different candidates
+        // [Safety] Equivocation: notarize votes for two different candidates (#equivocation)
         if (notarize_cands.size() > 1) {
           errors.push_back({"INVARIANT VIOLATION: equivocation from validator "
                             + std::to_string(vidx) + " on slot", slot});
         }
       }
     }
+  }
+
+  // Called after all slots are done.
+  void check_liveness(int n_slots, int n_validators, int finalized, int skipped) {
+    // [Liveness] Zero blocks finalized with honest-majority configuration (#liveness)
+    // Threshold = n_validators - 1 (f=1). If majority participated, progress expected.
+    if (finalized == 0 && skipped < n_slots) {
+      errors.push_back({"INVARIANT VIOLATION: no finalized blocks in session (slot=0)", 0});
+    }
+    (void)n_slots; (void)n_validators; (void)skipped;
   }
 };
 
@@ -208,6 +240,8 @@ static void run_fuzz_slot(Rdr& rdr, int N, uint32_t slot,
     // Leader itself does not vote (SplitPropose case in voting switch does nothing).
     emit("Propose", {{"candidateId", cand_main},  {"leaderIdx", (int64_t)leader}});
     emit("Propose", {{"candidateId", cand_split}, {"leaderIdx", (int64_t)leader}});
+    inv.record_propose(slot, cand_main);
+    inv.record_propose(slot, cand_split);
     for (int v = 0; v < N; v++) {
       if (v == leader) continue;
       if (actions[v] == ValidatorAction::DropReceive) continue;
@@ -224,6 +258,7 @@ static void run_fuzz_slot(Rdr& rdr, int N, uint32_t slot,
     // Honest propose: all validators (including leader) receive cand_main.
     // CandidateReceived is only emitted for non-leaders (they are the receivers).
     emit("Propose", {{"candidateId", cand_main}, {"leaderIdx", (int64_t)leader}});
+    inv.record_propose(slot, cand_main);
     for (int v = 0; v < N; v++) {
       if (actions[v] == ValidatorAction::DropReceive) continue;
       my_cand[v] = cand_main;
@@ -308,6 +343,7 @@ static void run_fuzz_slot(Rdr& rdr, int N, uint32_t slot,
     emit("CertIssued", {{"candidateId", cid},
                         {"certType",    std::string("notarize")},
                         {"weight",      (int64_t)w}});
+    inv.record_notarize_cert(slot);
 
     // FinalizeVotes from validators who notarized this specific candidate
     int finalize_w = 0;
@@ -346,6 +382,7 @@ static void run_fuzz_slot(Rdr& rdr, int N, uint32_t slot,
       emit("CertIssued", {{"candidateId", std::string("")},
                           {"certType",    std::string("skip")},
                           {"weight",      (int64_t)skip_w}});
+      inv.record_skip_cert(slot);
       skipped++;
     }
   }
@@ -403,6 +440,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
       {"finalizedBlocks",(int64_t)finalized},
       {"skippedSlots",   (int64_t)skipped},
   });
+
+  inv.check_liveness(n_slots, n_validators, finalized, skipped);
 
   // ── Invariant assertions → libFuzzer treats abort() as a crash ─────────
   for (auto& err : inv.errors) {
