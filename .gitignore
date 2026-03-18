@@ -19,6 +19,10 @@ test/regression-tests.cache/
 .env
 simulation/node_modules
 simulation/trace.ndjson
+simulation/trace_fuzz.ndjson
+simulation/corpus_fuzz_run/
+simulation/crashes/
+simulation/fuzz.log
 .DS_Store
 dev/
 
