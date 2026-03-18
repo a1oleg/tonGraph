@@ -103,16 +103,29 @@ bandwidth (~1 Gbps на типичном железе).
 
 **Инвариант:** [INVARIANTS.md#linear-flood](INVARIANTS.md#linear-flood)
 
+**Логирование:** `MsgReceived` эмитируется в `pool.cpp handle(IncomingProtocolMessage)`
+для каждого принятого vote/cert — commit [`f7be06af`](../../../commits/f7be06af).
+
+**Детектирование (Cypher):** [CYPHER_QUERIES.md#msg-flood](CYPHER_QUERIES.md#msg-flood)
+
 **Классификация контеста:** Resource-exhaustion bug — явно в скоупе (`linear-in-time messages`).
 
 ---
 
 ### 8. Resource exhaustion — superlinear processing
 
-**Описание:** Обработка одного входящего сообщения занимает O(N²) по числу валидаторов.
-При N=100 (лимит репро) это 10 000 операций на сообщение — реалистичный DoS.
+**Описание:** Byzantine актор шлёт голоса за K разных `candidateId` в одном слоте.
+`notarize_weight` — `std::map<CandidateId, ValidatorWeight>` — вырастает до K записей.
+Стоимость сертификации становится O(|Validators| × K) вместо O(|Validators|).
+При K=100 и N=100 — 10 000 операций на сообщение, реалистичный DoS.
 
 **Инвариант:** [INVARIANTS.md#superlinear](INVARIANTS.md#superlinear)
+
+**Логирование:** `ResourceLoad` эмитируется в `pool.cpp handle_vote` после каждого
+`handle_typed_vote<NotarizeVote>` — фиксирует `notarize_weight.size()` и `requests_.size()`
+per slot — commit [`f7be06af`](../../../commits/f7be06af).
+
+**Детектирование (Cypher):** [CYPHER_QUERIES.md#notarize-weight-growth](CYPHER_QUERIES.md#notarize-weight-growth)
 
 **Классификация контеста:** Resource-exhaustion bug (superlinear resource growth).
 
