@@ -164,6 +164,134 @@ async function handleFinalizeCert(session, ev) {
     { certNid, bNid, slot: neo4j.int(slot), weight: neo4j.int(weight), tsMs: neo4j.int(tsMs) });
 }
 
+// ── Vuln 2: Liveness ────────────────────────────────────────────────────────
+
+async function handleLeaderWindow(session, ev) {
+  const { sessionId, localIdx, startSlot, endSlot, tsMs } = ev;
+  const nodeId = `lw:${sessionId}:${startSlot}`;
+  await runQuery(session,
+    `MERGE (lw:LeaderWindow {nodeId: $nodeId})
+     SET lw.localIdx = $localIdx, lw.startSlot = $startSlot, lw.endSlot = $endSlot,
+         lw.sessionId = $sessionId, lw.tsMs = $tsMs`,
+    { nodeId, localIdx: neo4j.int(localIdx), startSlot: neo4j.int(startSlot),
+      endSlot: neo4j.int(endSlot), sessionId, tsMs: neo4j.int(tsMs) });
+}
+
+async function handleAlarmSkip(session, ev) {
+  const { sessionId, slot, votedFinal, votedNotar, tsMs } = ev;
+  const nodeId = `alarm:${sessionId}:${slot}:${tsMs}`;
+  await runQuery(session,
+    `MERGE (a:AlarmSkip {nodeId: $nodeId})
+     SET a.slot = $slot, a.votedFinal = $votedFinal, a.votedNotar = $votedNotar,
+         a.sessionId = $sessionId, a.tsMs = $tsMs`,
+    { nodeId, slot: neo4j.int(slot), votedFinal, votedNotar, sessionId, tsMs: neo4j.int(tsMs) });
+}
+
+// ── Vuln 3: Byzantine leader ─────────────────────────────────────────────────
+
+async function handleCandidateReceivedEv(session, ev) {
+  const { sessionId, receiverIdx, slot, candidateId, leaderIdx, parentSlot, tsMs } = ev;
+  const nodeId = `candrecv:${sessionId}:${slot}:${receiverIdx}`;
+  await runQuery(session,
+    `MERGE (cr:CandidateRecv {nodeId: $nodeId})
+     SET cr.receiverIdx = $receiverIdx, cr.slot = $slot, cr.candidateId = $candidateId,
+         cr.leaderIdx = $leaderIdx, cr.parentSlot = $parentSlot,
+         cr.sessionId = $sessionId, cr.tsMs = $tsMs`,
+    { nodeId, receiverIdx: neo4j.int(receiverIdx), slot: neo4j.int(slot), candidateId,
+      leaderIdx: neo4j.int(leaderIdx), parentSlot: neo4j.int(parentSlot),
+      sessionId, tsMs: neo4j.int(tsMs) });
+}
+
+async function handleCandidateDuplicate(session, ev) {
+  const { sessionId, receiverIdx, slot, existingCandId, newCandId, leaderIdx, tsMs } = ev;
+  const nodeId = `canddupe:${sessionId}:${slot}:${receiverIdx}:${tsMs}`;
+  await runQuery(session,
+    `MERGE (cd:CandidateDuplicate {nodeId: $nodeId})
+     SET cd.receiverIdx = $receiverIdx, cd.slot = $slot, cd.existingCandId = $existingCandId,
+         cd.newCandId = $newCandId, cd.leaderIdx = $leaderIdx,
+         cd.sessionId = $sessionId, cd.tsMs = $tsMs`,
+    { nodeId, receiverIdx: neo4j.int(receiverIdx), slot: neo4j.int(slot), existingCandId,
+      newCandId, leaderIdx: neo4j.int(leaderIdx), sessionId, tsMs: neo4j.int(tsMs) });
+}
+
+// ── Vuln 4: State divergence ─────────────────────────────────────────────────
+
+async function handleCertIssued(session, ev) {
+  const { sessionId, certType, slot, candidateId, weight, tsMs } = ev;
+  const nodeId = `cert:${sessionId}:${certType}:${slot}:${candidateId}`;
+  await runQuery(session,
+    `MERGE (ci:CertIssued {nodeId: $nodeId})
+     SET ci.certType = $certType, ci.slot = $slot, ci.candidateId = $candidateId,
+         ci.weight = $weight, ci.sessionId = $sessionId, ci.tsMs = $tsMs`,
+    { nodeId, certType, slot: neo4j.int(slot), candidateId,
+      weight: neo4j.int(weight), sessionId, tsMs: neo4j.int(tsMs) });
+}
+
+async function handleInvariantViolation(session, ev) {
+  const { sessionId, validatorIdx, slot, voteType, tsMs } = ev;
+  const nodeId = `invviol:${sessionId}:${slot}:${validatorIdx}:${tsMs}`;
+  await runQuery(session,
+    `MERGE (iv:InvariantViolation {nodeId: $nodeId})
+     SET iv.validatorIdx = $validatorIdx, iv.slot = $slot, iv.voteType = $voteType,
+         iv.sessionId = $sessionId, iv.tsMs = $tsMs`,
+    { nodeId, validatorIdx: neo4j.int(validatorIdx), slot: neo4j.int(slot),
+      voteType, sessionId, tsMs: neo4j.int(tsMs) });
+}
+
+// ── Vuln 5: Amnesia ──────────────────────────────────────────────────────────
+
+async function handleVoteIntentSet(session, ev) {
+  const { sessionId, slot, candidateId, tsMs } = ev;
+  const nodeId = `vintset:${sessionId}:${slot}`;
+  await runQuery(session,
+    `MERGE (vi:VoteIntent {nodeId: $nodeId})
+     SET vi.slot = $slot, vi.candidateId = $candidateId,
+         vi.persisted = false, vi.sessionId = $sessionId, vi.tsMs = $tsMs`,
+    { nodeId, slot: neo4j.int(slot), candidateId, sessionId, tsMs: neo4j.int(tsMs) });
+}
+
+async function handleVoteIntentPersisted(session, ev) {
+  const { sessionId, slot, tsMs } = ev;
+  const nodeId = `vintset:${sessionId}:${slot}`;
+  await runQuery(session,
+    `MERGE (vi:VoteIntent {nodeId: $nodeId})
+     SET vi.persisted = true, vi.persistedTsMs = $tsMs`,
+    { nodeId, tsMs: neo4j.int(tsMs) });
+}
+
+async function handleDBWriteFailure(session, ev) {
+  const { sessionId, slot, tsMs } = ev;
+  const nodeId = `dbfail:${sessionId}:${slot}:${tsMs}`;
+  await runQuery(session,
+    `MERGE (df:DBWriteFailure {nodeId: $nodeId})
+     SET df.slot = $slot, df.sessionId = $sessionId, df.tsMs = $tsMs`,
+    { nodeId, slot: neo4j.int(slot), sessionId, tsMs: neo4j.int(tsMs) });
+}
+
+// ── Vuln 6: Message reordering ───────────────────────────────────────────────
+
+async function handleBootstrapVoteReplayed(session, ev) {
+  const { sessionId, validatorIdx, slot, tsMs } = ev;
+  const nodeId = `bootstrap:${sessionId}:${slot}:${validatorIdx}`;
+  await runQuery(session,
+    `MERGE (br:BootstrapReplay {nodeId: $nodeId})
+     SET br.validatorIdx = $validatorIdx, br.slot = $slot,
+         br.sessionId = $sessionId, br.tsMs = $tsMs`,
+    { nodeId, validatorIdx: neo4j.int(validatorIdx), slot: neo4j.int(slot),
+      sessionId, tsMs: neo4j.int(tsMs) });
+}
+
+async function handleConflictTolerated(session, ev) {
+  const { sessionId, validatorIdx, slot, voteType, tsMs } = ev;
+  const nodeId = `conflict:${sessionId}:${slot}:${validatorIdx}:${tsMs}`;
+  await runQuery(session,
+    `MERGE (ct:ConflictTolerated {nodeId: $nodeId})
+     SET ct.validatorIdx = $validatorIdx, ct.slot = $slot, ct.voteType = $voteType,
+         ct.sessionId = $sessionId, ct.tsMs = $tsMs`,
+    { nodeId, validatorIdx: neo4j.int(validatorIdx), slot: neo4j.int(slot),
+      voteType, sessionId, tsMs: neo4j.int(tsMs) });
+}
+
 async function handleMsgReceived(session, ev) {
   const { sessionId, sourceIdx, localIdx, slot, msgType, tsMs } = ev;
   const srcNid = validatorNodeId(sessionId, sourceIdx);
@@ -223,8 +351,25 @@ async function dispatch(session, ev) {
       if (ev.voteType === 'skip')     return handleSkipVote(session, ev);
       console.warn('[relay] VoteCast with unknown voteType:', ev.voteType);
       break;
-    case 'MsgReceived':    return handleMsgReceived(session, ev);
-    case 'ResourceLoad':   return handleResourceLoad(session, ev);
+    // Vuln 2 — Liveness
+    case 'LeaderWindow':          return handleLeaderWindow(session, ev);
+    case 'AlarmSkip':             return handleAlarmSkip(session, ev);
+    // Vuln 3 — Byzantine leader
+    case 'CandidateReceived':     return handleCandidateReceivedEv(session, ev);
+    case 'CandidateDuplicate':    return handleCandidateDuplicate(session, ev);
+    // Vuln 4 — State divergence
+    case 'CertIssued':            return handleCertIssued(session, ev);
+    case 'InvariantViolation':    return handleInvariantViolation(session, ev);
+    // Vuln 5 — Amnesia
+    case 'VoteIntentSet':         return handleVoteIntentSet(session, ev);
+    case 'VoteIntentPersisted':   return handleVoteIntentPersisted(session, ev);
+    case 'DBWriteFailure':        return handleDBWriteFailure(session, ev);
+    // Vuln 6 — Message reordering
+    case 'BootstrapVoteReplayed': return handleBootstrapVoteReplayed(session, ev);
+    case 'ConflictTolerated':     return handleConflictTolerated(session, ev);
+    // Rows 7-8 — Resource exhaustion
+    case 'MsgReceived':           return handleMsgReceived(session, ev);
+    case 'ResourceLoad':          return handleResourceLoad(session, ev);
     case 'SessionStart':   console.log(`[relay] session=${ev.sessionId} scenario=${ev.scenario}`); break;
     case 'SessionEnd':     console.log(`[relay] done: finalized=${ev.finalizedBlocks} skipped=${ev.skippedSlots}`); break;
     case 'Receive':        /* informational only */ break;

@@ -267,6 +267,78 @@ ORDER BY n.slot, n.tsMs
 
 ---
 
+## #alarm-skip-after-notarize — Liveness gap: AlarmSkip при уже выданном NotarizeVote
+
+Детектирует баг в `alarm()`: SkipVote отправляется даже если `voted_notar=true` — нарушение liveness,
+потому что `alarm()` проверяет только `!voted_final`, но не `!voted_notar`.
+
+```cypher
+MATCH (a:AlarmSkip)
+WHERE a.sessionId = $sid AND a.votedNotar = true
+RETURN a.slot AS slot, a.tsMs AS ts
+ORDER BY slot
+```
+
+> Нормальный результат: пусто. Любая запись = баг в alarm().
+
+---
+
+## #candidate-duplicate — Byzantine leader: два кандидата от одного лидера в одном слоте
+
+```cypher
+MATCH (cd:CandidateDuplicate)
+WHERE cd.sessionId = $sid
+RETURN cd.slot AS slot, cd.leaderIdx AS leader,
+       cd.existingCandId AS cand1, cd.newCandId AS cand2,
+       cd.receiverIdx AS detectedBy
+ORDER BY slot
+```
+
+---
+
+## #dual-cert-issued — State divergence: два FinalizeCert на одном слоте с разными candidateId
+
+```cypher
+MATCH (c1:CertIssued {certType: 'finalize'}), (c2:CertIssued {certType: 'finalize'})
+WHERE c1.sessionId = $sid AND c2.sessionId = $sid
+  AND c1.slot = c2.slot AND c1.candidateId <> c2.candidateId
+RETURN c1.slot AS slot, c1.candidateId AS cand1, c2.candidateId AS cand2,
+       c1.tsMs AS ts1, c2.tsMs AS ts2
+```
+
+> Любая запись = critical safety violation.
+
+---
+
+## #amnesia-gap — Amnesia: VoteIntentSet без VoteIntentPersisted (crash window)
+
+```cypher
+MATCH (vi:VoteIntent)
+WHERE vi.sessionId = $sid AND vi.persisted = false
+RETURN vi.slot AS slot, vi.candidateId AS candidateId, vi.tsMs AS intentTs
+ORDER BY slot
+```
+
+> Нормальный результат: пусто. Запись = голос был broadcast, но не записан в DB — при перезапуске
+> валидатор может проголосовать за другой кандидат.
+
+---
+
+## #conflict-tolerated — Message reordering: конфликты, замолчанные при bootstrap replay
+
+```cypher
+MATCH (ct:ConflictTolerated)
+WHERE ct.sessionId = $sid
+RETURN ct.slot AS slot, ct.validatorIdx AS validator,
+       ct.voteType AS voteType, ct.tsMs AS ts
+ORDER BY slot
+```
+
+> Нормальный результат: пусто. Запись = при перезапуске в DB обнаружены conflicting votes,
+> которые были приняты с `tolerate_conflicts=true` вместо отчёта о нарушении.
+
+---
+
 ## #msg-flood — Resource exhaustion: входящие сообщения per source (linear flood)
 
 Считает число принятых сообщений от каждого источника к локальному валидатору в сессии.

@@ -10,6 +10,7 @@
 #include "td/actor/coro_utils.h"
 
 #include "bus.h"
+#include "GraphLogger.h"
 
 namespace ton::validator::consensus::simplex {
 
@@ -112,6 +113,14 @@ class ConsensusImpl : public td::actor::SpawnsWith<Bus>, public td::actor::Conne
     auto& bus = *owning_bus();
     td::uint32 new_window = event->start_slot / slots_per_leader_window_;
     current_window_ = new_window;
+    // [Row 2] Liveness: log each leader-window announcement.
+    // Baseline: каждый slot должен иметь LeaderWindow до AlarmSkip.
+    simulation::GraphLogger::instance().emit("LeaderWindow", {
+        {"localIdx",  static_cast<int64_t>(bus.local_id.idx.value())},
+        {"startSlot", static_cast<int64_t>(event->start_slot)},
+        {"endSlot",   static_cast<int64_t>(event->start_slot + slots_per_leader_window_)},
+        {"sessionId", bus.session_id.to_hex()},
+    });
 
     if (previous_window_had_skip_) {
       first_block_timeout_s_ =
@@ -143,6 +152,15 @@ class ConsensusImpl : public td::actor::SpawnsWith<Bus>, public td::actor::Conne
     for (td::uint32 i = range_start; i < window_end; ++i) {
       auto slot = state_->slot_at(i);
       if (slot && !slot->state->voted_final) {
+        // [Row 2] Liveness: log alarm-triggered SkipVote per slot.
+        // voted_notar=true here reveals the gap: alarm fires even after NotarizeVote was cast,
+        // because alarm() only checks !voted_final, not !voted_notar.
+        simulation::GraphLogger::instance().emit("AlarmSkip", {
+            {"slot",       static_cast<int64_t>(i)},
+            {"votedFinal", false},
+            {"votedNotar", slot->state->voted_notar.has_value()},
+            {"sessionId",  owning_bus()->session_id.to_hex()},
+        });
         owning_bus().publish<BroadcastVote>(SkipVote{i}).start().detach();
         slot->state->voted_skip = true;
         previous_window_had_skip_ = true;
@@ -177,12 +195,31 @@ class ConsensusImpl : public td::actor::SpawnsWith<Bus>, public td::actor::Conne
 
     if (slot->state->pending_block.has_value()) {
       if (slot->state->pending_block.value()->id != candidate->id) {
-        // FIXME: Report misbehavior
+        // [Row 3] Byzantine leader: two different candidates for same slot from same leader.
+        // FIXME: Report misbehavior — graph allows detecting this without MisbehaviorReport.
+        simulation::GraphLogger::instance().emit("CandidateDuplicate", {
+            {"receiverIdx",       static_cast<int64_t>(owning_bus()->local_id.idx.value())},
+            {"slot",              static_cast<int64_t>(slot_idx)},
+            {"existingCandId",    slot->state->pending_block.value()->id.hash.to_hex()},
+            {"newCandId",         candidate->id.hash.to_hex()},
+            {"leaderIdx",         static_cast<int64_t>(candidate->leader.value())},
+            {"sessionId",         owning_bus()->session_id.to_hex()},
+        });
       }
       return;
     }
 
     slot->state->pending_block = candidate;
+    // [Row 3] Byzantine leader baseline: one CandidateReceived per slot from one leader.
+    simulation::GraphLogger::instance().emit("CandidateReceived", {
+        {"receiverIdx", static_cast<int64_t>(owning_bus()->local_id.idx.value())},
+        {"slot",        static_cast<int64_t>(slot_idx)},
+        {"candidateId", candidate->id.hash.to_hex()},
+        {"leaderIdx",   static_cast<int64_t>(candidate->leader.value())},
+        {"parentSlot",  candidate->parent_id.has_value()
+                            ? static_cast<int64_t>(candidate->parent_id->slot) : int64_t{-1}},
+        {"sessionId",   owning_bus()->session_id.to_hex()},
+    });
     if (candidate->leader != owning_bus()->local_id.idx) {
       owning_bus().publish<TraceEvent>(stats::CandidateReceived::create(candidate, false));
     }
@@ -229,6 +266,15 @@ class ConsensusImpl : public td::actor::SpawnsWith<Bus>, public td::actor::Conne
     }
     co_await std::move(store_candidate);
 
+    // [Row 5] Amnesia: VoteIntentSet is emitted BEFORE broadcast and BEFORE DB write.
+    // If the validator crashes between this point and VoteIntentPersisted (in db.cpp),
+    // the vote is lost from DB but has already been broadcast — equivocation on restart.
+    simulation::GraphLogger::instance().emit("VoteIntentSet", {
+        {"slot",        static_cast<int64_t>(candidate->id.slot)},
+        {"candidateId", candidate->id.hash.to_hex()},
+        {"persisted",   false},
+        {"sessionId",   owning_bus()->session_id.to_hex()},
+    });
     slot.state->voted_notar = candidate->id;
 
     owning_bus().publish<BroadcastVote>(NotarizeVote{candidate->id}).start().detach();
