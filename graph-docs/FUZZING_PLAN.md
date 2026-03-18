@@ -1,239 +1,65 @@
-# Фаззинг simplex pool — план
+# Фаззинг simplex consensus — план
 
-## Вывод: возможно, но нетривиально
+## Статус реализации
 
-`pool.cpp` — самостоятельная консенсусная логика, но глубоко вшита в `td::actor` runtime.
-Для изолированного harness нужно поднять мини-runtime с mock-компонентами.
-
----
-
-## Что такое pool.cpp
-
-`PoolImpl` — сердце simplex консенсуса. Он:
-- Принимает входящие голоса (`IncomingProtocolMessage`) от других валидаторов
-- Накапливает нотаризационные и финализационные веса по слотам
-- Выдаёт сертификаты (`NotarizeCert`, `FinalizeCert`) когда набирается кворум
-- Детектирует Byzantine поведение через `check_invariants()`
-
-Все взаимодействия — через `Bus` (pub/sub события в `td::actor::Runtime`).
+| Компонент | Статус |
+|---|---|
+| `simulation/fuzz_harness.cpp` | ✅ Реализован, собирается, 240K iter/sec |
+| `simulation/corpus_fuzz/` | ✅ 4 seed + corpus после прогона |
+| `build-fuzz/simulation/fuzz_harness` | ✅ libFuzzer бинарь |
+| `build-linux/simulation/fuzz_harness_standalone` | ✅ Replay с GraphLogger |
+| Phase 2: real pool.cpp fuzzer | 🔲 Будущая работа |
 
 ---
 
-## Граф зависимостей
+## Два уровня фаззинга
 
-```
-LLVMFuzzerTestOneInput(data, size)
-  │
-  └─ td::actor::Runtime          ← нужен (но легковесный, ~50 строк setup)
-       │
-       └─ Bus (mock)             ← создаём сами
-            ├─ validator_set     ← тестовые ключи (Ed25519, генерим один раз)
-            ├─ local_id          ← один из validator_set
-            ├─ Keyring (mock)    ← подписывает фиксированным ключом
-            ├─ Db (mock)         ← in-memory map, ~30 строк
-            └─ CollatorSchedule  ← тривиальный интерфейс
-```
+### Phase 1 (реализована): протокольный уровень
 
----
+`fuzz_harness.cpp` фаззит **модель протокола** (ConsensusHarness-логику).
+Находит баги в **дизайне протокола** — комбинации Byzantine поведений
+которые нарушают safety/liveness.
 
-## Компоненты: что мокать, что реально использовать
+### Phase 2 (будущее): уровень реализации
 
-| Компонент | Сложность мока | Комментарий |
-|---|---|---|
-| `td::actor::Runtime` | Низкая | Уже используется в ConsensusHarness |
-| `Bus` структура | Низкая | Просто struct, заполняем поля |
-| `Db` интерфейс | Низкая | `std::map<string, string>` в памяти |
-| `CollatorSchedule` | Минимальная | Возвращает фиксированного коллатора |
-| `Keyring` актор | Средняя | Нужен реальный Ed25519 mock-актор |
-| `validator_set` | Низкая | Генерим 3 тестовых keypair заранее |
-| Проверка подписей | Средняя | Можно отключить флагом в тестовых ключах |
-
-**Блокеров нет** — `ConsensusHarness.cpp` уже поднимает полный simplex runtime
-с 3–5 акторами. Фаззинг-harness — это тот же harness, но без сценария,
-с инжекцией произвольных байт вместо честных сообщений.
+Фаззинг реального `pool.cpp` через mock actor runtime.
+Находит баги в **реализации** — TL-десериализация, integer overflow, use-after-free.
+Требует ~500 строк scaffolding (MockBus, MockKeyring, MockDb).
 
 ---
 
-## Что фаззить: точки входа
+## Стратегии мутации: снаружи внутрь
 
-### 1. `IncomingProtocolMessage` — основная точка (рекомендуется первой)
-
-Pool принимает TL-сериализованные сообщения от пиров:
-
-```cpp
-// bus.h
-struct IncomingProtocolMessage {
-  td::BufferSlice data;     // ← сюда подаём data от фаззера
-  PeerValidatorId source;
-};
-```
-
-Фаззер подаёт произвольные байты как `data`. Мы также мутируем `source`
-(чтобы покрыть пути «сообщение от лидера» vs «от обычного валидатора»).
-
-**Что ищем:**
-- Краш в TL-десериализаторе (`td::TlParser`)
-- Integer overflow в `slot` или `weight`
-- Нарушение инварианта `voted_notar && voted_skip` → `InvariantViolation` событие
-- Бесконечный цикл при обработке
-
-### 2. `BroadcastVote` — голос от нашего валидатора
-
-```cpp
-struct BroadcastVote {
-  Vote vote;   // NotarizeVote | FinalizeVote | SkipVote
-};
-```
-
-Фаззер генерирует синтетические голоса с мутированными `slot`, `candidateId`, `weight`.
-
-**Что ищем:**
-- Двойная нотаризация в одном слоте (equivocation без детекции)
-- `voted_notar + voted_skip` в одном слоте (дыра в `check_invariants`)
-
-### 3. Bootstrap replay — краш при восстановлении
-
-При старте Pool читает из DB сохранённые голоса и воспроизводит их.
-Фаззер заполняет mock-DB мусорными данными до старта Pool.
-
-**Что ищем:**
-- Краш при malformed DB-данных
-- Конфликт при replay → `ConflictTolerated` без `InvariantViolation`
-
----
-
-## Corpus
-
-Не начинаем с нуля — берём реальные форматы из `simulation/trace.ndjson`:
-
-```bash
-# Извлечь candidateId и sessionId для построения реальных TL-структур
-grep '"event":"VoteCast"' simulation/trace.ndjson | head -20
-```
-
-Дополнительно — corpus из существующих unit-тестов TON:
-```bash
-find . -name "*test*consensus*" -o -name "*consensus*test*" | grep -v build
-```
-
-Стартовый corpus (~10 файлов) → libFuzzer мутирует автоматически.
-
----
-
-## Интеграция с GraphLogger
-
-Фаззер + Neo4j — **две независимые системы**, которые работают последовательно:
+Классический подход: случайные байты → структурная валидность → семантика.
+Каждый слой сужает пространство поиска для следующего.
 
 ```
-Фаза 1: libFuzzer (быстро, миллионы итераций)
-  └─ ищет crash / assertion / новые coverage-пути
-  └─ сохраняет интересные inputs в corpus/
-
-Фаза 2: Replay интересных inputs через ConsensusHarness (медленно)
-  └─ GRAPH_LOGGING_ENABLED=1
-  └─ relay.mjs → Neo4j
-  └─ Cypher-запросы из CYPHER_QUERIES.md
+Пространство: ~256^N (все байт-последовательности)
+      │
+      ▼  [FuzzedDataProvider]        ← СЛЕДУЮЩИЙ ШАГ
+      │  Структурная валидность: только осмысленные комбинации
+      │  n_validators ∈ [3,6], action ∈ {0..4}
+      │  Сужение: ~10^6×
+      │
+      ▼  [Dictionary]
+      │  Граничные значения: slot=0, slot=MAX, N=threshold-1
+      │  Приоритизирует corner cases
+      │
+      ▼  [Corpus из testnet]
+      │  Реальные паттерны из trace.ndjson вместо синтетики
+      │  ~50 файлов вместо 4 seed
+      │
+      ▼  [AFL++ grammar mutation]
+      │  Мутирует на уровне "слот/сессия", не байт
+      │  Не ломает структуру при мутации
+      │
+      ▼
+  Интересные inputs → Neo4j → Cypher → аномалии
 ```
 
-Фаззер — **генератор сценариев**, Neo4j — **анализатор что они означают**.
+### FuzzedDataProvider (рекомендуется первым)
 
----
-
-## Структура файлов
-
-```
-simulation/
-  fuzz_pool.cpp          ← LLVMFuzzerTestOneInput + harness
-  fuzz_helpers.h         ← MockBus, MockKeyring, MockDb (~150 строк)
-  corpus/
-    vote_notarize.bin    ← реальный NotarizeVote из трассы
-    vote_finalize.bin    ← реальный FinalizeVote
-    vote_skip.bin        ← реальный SkipVote
-    cert_notarize.bin    ← реальный NotarizeCert
-  CMakeLists.txt         ← добавить таргет fuzz_pool
-```
-
----
-
-## CMake-таргет
-
-```cmake
-# simulation/CMakeLists.txt — добавить:
-if (DEFINED ENV{FUZZING})
-  add_executable(fuzz_pool fuzz_pool.cpp fuzz_helpers.cpp)
-  target_compile_options(fuzz_pool PRIVATE -fsanitize=fuzzer,address -g)
-  target_link_options(fuzz_pool PRIVATE -fsanitize=fuzzer,address)
-  target_link_libraries(fuzz_pool
-    validator tdactor tdutils keyring
-    simulation  # GraphLogger
-  )
-endif()
-```
-
-Запуск:
-```bash
-FUZZING=1 cmake -B build-fuzz -DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=clang++-18 -G Ninja
-cmake --build build-fuzz --target fuzz_pool
-
-./build-fuzz/simulation/fuzz_pool simulation/corpus/ \
-  -max_total_time=3600 \
-  -jobs=4 \
-  -artifact_prefix=simulation/crashes/
-```
-
----
-
-## Оценка объёма работы
-
-| Шаг | Файл | Строк | Сложность |
-|---|---|---|---|
-| MockBus + MockDb + MockKeyring | `fuzz_helpers.h/.cpp` | ~200 | Средняя |
-| LLVMFuzzerTestOneInput | `fuzz_pool.cpp` | ~100 | Низкая |
-| Corpus из трассы | скрипт Python | ~50 | Низкая |
-| CMakeLists.txt | добавить секцию | ~15 | Низкая |
-| **Итого** | | **~365** | |
-
-ConsensusHarness уже решил 80% проблем с мокингом actor runtime —
-переиспользуем его scaffolding, заменяем сценарий на фаззер-инжекцию.
-
----
-
-## Следующий шаг
-
-1. Посмотреть как `ConsensusHarness.cpp` поднимает Bus — взять как основу для MockBus
-2. Написать `fuzz_helpers.h` с MockKeyring (Ed25519 через `crypto/elliptic-curve.h`)
-3. Написать `fuzz_pool.cpp` — сначала только `IncomingProtocolMessage` точка входа
-4. Построить corpus из `simulation/trace.ndjson`
-
----
-
-## Умный фаззинг: варианты стратегий
-
-Случайный перебор байт — наихудшая стратегия. Варианты от простого к сложному:
-
-### 1. Dictionary (15 мин, низкий выхлоп)
-
-libFuzzer автоматически накапливает словарь (мы видели после 30 сек: `"skip:"`, `"certTy"`, `"\x01\x00"`).
-Добавить явный словарь значимых значений:
-
-```
-# simulation/fuzz.dict
-"\x00"   # slot=0 (corner case)
-"\xff"   # slot=255 (overflow)
-"\x03"   # N=3 (минимум валидаторов)
-"\x06"   # N=6 (максимум)
-"\x02"   # DoubleNotarize
-"\x03"   # NotarizeAndSkip
-```
-
-```bash
-./build-fuzz/simulation/fuzz_harness ... -dict=simulation/fuzz.dict
-```
-
-### 2. FuzzedDataProvider — рекомендуется первым (1–2 часа, высокий выхлоп)
-
-Вместо ручной интерпретации байт использовать `FuzzedDataProvider` из clang.
-Он **осмысленно распределяет энтропию** — мутирует `n_validators` не ломая остальные поля:
+Заменяет самодельный `FuzzReader` — libFuzzer видит структуру и мутирует осмысленно:
 
 ```cpp
 #include <fuzzer/FuzzedDataProvider.h>
@@ -246,25 +72,26 @@ for (int v = 0; v < n_validators; v++) {
 }
 ```
 
-Принципиально меняет качество мутаций — libFuzzer видит структуру входа.
-Требует замены `FuzzReader` в `fuzz_harness.cpp` на `FuzzedDataProvider`.
-
-### 3. Corpus из реального testnet трафика (2–3 часа, средний выхлоп)
-
-`simulation/trace.ndjson` содержит реальные последовательности событий от живых валидаторов.
-Конвертировать в corpus-файлы — фаззер будет мутировать **реальные паттерны**:
+### Dictionary
 
 ```
-CandidateReceived → Honest
-VoteCast notarize → Honest
-VoteCast skip     → DropReceive
+# simulation/fuzz.dict
+"\x00"   # slot=0
+"\xff"   # slot=255 (overflow)
+"\x03"   # N=threshold (граница кворума)
+"\x02"   # DoubleNotarize
+"\x03"   # NotarizeAndSkip
+```
+```bash
+./fuzz_harness corpus/ -dict=simulation/fuzz.dict
 ```
 
-Скрипт: `simulation/scripts/trace_to_corpus.py`
+### Corpus из testnet
 
-### 4. AFL++ с grammar mutation (день, высокий выхлоп)
+`trace.ndjson` → `simulation/scripts/trace_to_corpus.py` → corpus-файлы.
+Фаззер мутирует реальные паттерны событий вместо синтетики.
 
-AFL++ умеет мутировать по грамматике протокола:
+### AFL++ с grammar mutation
 
 ```
 session := n_validators n_slots slot*
@@ -272,68 +99,151 @@ slot    := validator_action{n_validators}
 validator_action := HONEST | DROP | DOUBLE | NOTARIZE_SKIP | ABSTAIN
 ```
 
-Мутирует на уровне грамматики, а не байт — находит corner cases
-которые coverage-guided мутации байт пропускают.
+---
 
-### Как стратегии усиливают друг друга
+## Стратегии мутации: изнутри наружу (model-guided)
 
-Каждый слой сужает пространство поиска для следующего:
+**Ключевая идея:** у нас есть граф аномалий в Neo4j — это и есть спецификация
+того что должно быть нарушено. Вместо случайного поиска — генерируем входы
+которые **целенаправленно давят** на известные уязвимости.
+
+Три уровня реализации:
+
+### A. Targeted seed generation (Python, ~2 часа)
+
+Каждый Cypher-запрос из `CYPHER_QUERIES.md` → генератор corpus-файлов
+которые максимизируют шанс нарушить соответствующее свойство:
+
+| Аномалия | Стратегия генерации |
+|---|---|
+| `#dual-cert` | Byzantine лидер + split групп ≥ threshold каждая |
+| `#equivocation` | DoubleNotarize + разные delivery группы |
+| `#amnesia-gap` | VoteIntentSet без Persisted (краш в нужный момент) |
+| `#alarm-skip-after-notarize` | AlarmSkip когда votedNotar=true |
+| `#notarize-skip-split` | NotarizeAndSkip у нескольких валидаторов |
+
+```python
+# simulation/scripts/gen_targeted_corpus.py
+
+def gen_dual_cert_pressure(n=4, threshold=3):
+    """Byzantine лидер шлёт разным группам разные candidateId.
+    Каждая группа >= threshold → два кандидата набирают кворум."""
+    for leader in range(n):
+        for split in all_splits(n, threshold):
+            yield encode(leader=leader, group_a=split.a, group_b=split.b)
+```
+
+Corpus из этих файлов → libFuzzer оказывается **сразу в опасной зоне**
+и мутирует вокруг неё, а не ищет её с нуля.
+
+### B. Properties as in-process assertions (~полдня)
+
+Перенести все Cypher-проверки из Neo4j в C++ прямо в harness.
+Каждая аномалия становится **оракулом** — libFuzzer напрямую ищет входы
+которые её вызывают, без round-trip через relay.mjs и Neo4j:
+
+```cpp
+// Вместо: relay → Neo4j → Cypher → результат
+// Прямо в LLVMFuzzerTestOneInput:
+
+// #dual-cert (SAFETY — crash):
+if (finalize_certs[slot].size() > 1) __builtin_trap();
+
+// #equivocation (log):
+for (auto& [v, votes] : notarize_votes[slot])
+    if (votes.size() > 1) log_anomaly("equivocation", slot, v);
+
+// #amnesia-gap (log):
+if (vote_intent_set[slot] && !vote_intent_persisted[slot])
+    log_anomaly("amnesia-gap", slot, 0);
+
+// #notarize-skip-split (log — известный незадетектированный баг):
+if (did_notarize[v] && did_skip[v])
+    log_anomaly("notarize-skip-split", slot, v);
+```
+
+Скорость: **240K итераций/сек без Neo4j** vs ~100 итераций/сек с Neo4j round-trip.
+
+### C. Coverage-directed к аномалиям (directed fuzzing, ~неделя)
+
+Самый умный вариант: **обратная связь от графа к фаззеру**.
+
+Вместо покрытия кода — минимизировать «расстояние до нарушения инварианта».
+Реализуется через `LLVMFuzzerCustomMutator`:
 
 ```
-Пространство входов: ~256^N (все возможные байт-последовательности)
-         │
-         ▼  [FuzzedDataProvider]
-         │  Структурная валидность: только осмысленные комбинации
-         │  n_validators ∈ [3,6], action ∈ {0..4}, etc.
-         │  Пространство: сужается в 10^6× — нет мусорных байт
-         │
-         ▼  [Dictionary]
-         │  Семантические границы: slot=0, slot=MAX, N=threshold-1
-         │  Фаззер быстрее находит corner cases на краях диапазонов
-         │  Пространство: приоритизирует граничные значения
-         │
-         ▼  [Corpus из testnet]
-         │  Реалистичные паттерны: стартуем не с нуля, а с
-         │  последовательностей которые реально происходят в сети
-         │  Corpus: ~50 файлов из trace.ndjson вместо 4 seed
-         │
-         ▼  [AFL++ grammar]
-         │  Семантика протокола: мутирует на уровне "слот" и "сессия",
-         │  а не байт — не сломает структуру при мутации
-         │
-         ▼
-    Интересные inputs → Neo4j → Cypher-запросы → аномалии
+libFuzzer генерирует сценарий
+    → harness запускает симуляцию
+    → вычисляет "расстояние" до нарушения свойства
+      (например: max(notarize_weight) - threshold для #dual-cert)
+    → возвращает сигнал мутатору
+    → мутатор делает шаг в сторону уменьшения расстояния
 ```
 
-**Порядок применения:**
+Это **не случайный поиск** — это градиентный спуск в пространстве протокольных решений.
 
-| Шаг | Что делаем | Что получаем для следующего шага |
-|---|---|---|
-| 1 | `FuzzedDataProvider` | Структурно валидный corpus_fuzz_run/ (~1K файлов) |
-| 2 | `Dictionary` поверх него | Corpus обогащается граничными значениями |
-| 3 | Добавить corpus из testnet | Фаззер мутирует реальные паттерны + boundary values |
-| 4 | AFL++ grammar на итоговом corpus | Мутирует осмысленно, corpus уже «прогрет» |
+---
 
-Без шага 1 шаг 4 тратит время на восстановление структуры входа.
-Без шага 3 AFL++ мутирует синтетику вместо реальных последовательностей.
+## Комбинированная стратегия: оптимальный порядок
 
-**Практически:** шаги 1+2 дают 80% выхлопа за 20% усилий.
-Шаги 3+4 нужны если 1+2 за 24 часа не нашли `SAFETY VIOLATION`.
+```
+Шаг 1: FuzzedDataProvider           → структурная валидность
+        +
+        gen_targeted_corpus.py       → стартуем в опасной зоне
+        ↓
+        Corpus прогрет и структурирован
 
-### Регламент повторных прогонов
+Шаг 2: Properties as assertions      → убираем Neo4j из inner loop
+        +
+        Dictionary                   → граничные значения
+        ↓
+        240K iter/sec, прямые crashes
 
-Corpus **накапливается** между прогонами — не чистить без причины:
+Шаг 3: (если crashes не найдены за 24ч)
+        Corpus из testnet             → реальные паттерны
+        +
+        AFL++ grammar                 → мутации на уровне протокола
+
+Шаг 4: (для найденных crashes)
+        Replay с GraphLogger          → trace.ndjson
+        relay.mjs → Neo4j             → Cypher-запросы
+        → понять что именно нарушено и почему
+```
+
+**Шаги 1+2** дают 80% выхлопа за 20% усилий.
+**Шаги 3+4** нужны если 1+2 за 24 часа не нашли `SAFETY VIOLATION`.
+
+---
+
+## Workflow при находке краша
 
 ```bash
-# Первый прогон:
-mkdir -p simulation/corpus_fuzz_run simulation/crashes
-./build-fuzz/simulation/fuzz_harness \
-  simulation/corpus_fuzz_run/ \
-  simulation/corpus_fuzz/ \
-  -max_total_time=3600 \
-  -artifact_prefix=simulation/crashes/
+# 1. libFuzzer сохранил crash:
+#    simulation/crashes/crash-<hash>
 
-# Все последующие — то же самое, corpus_fuzz_run/ растёт:
+# 2. Replay с трассой:
+GRAPH_LOGGING_ENABLED=1 \
+GRAPH_LOG_FILE=$(pwd)/simulation/trace.ndjson \
+  ./build-linux/simulation/fuzz_harness_standalone \
+  simulation/crashes/crash-<hash>
+
+# 3. Отправить в Neo4j:
+cd simulation && node relay.mjs --clear trace.ndjson
+
+# 4. Запросить аномалии:
+node query.mjs <sessionId>
+```
+
+---
+
+## Регламент прогонов
+
+Corpus **накапливается** — не чистить без причины:
+
+```bash
+mkdir -p simulation/corpus_fuzz_run simulation/crashes
+
+# Каждый прогон (первый и все последующие):
 ./build-fuzz/simulation/fuzz_harness \
   simulation/corpus_fuzz_run/ \
   simulation/corpus_fuzz/ \
@@ -341,5 +251,14 @@ mkdir -p simulation/corpus_fuzz_run simulation/crashes
   -artifact_prefix=simulation/crashes/
 ```
 
-Чистить corpus только если изменился код harness (новые ветки делают старый corpus нерелевантным)
-или для минимизации: `./fuzz_harness -merge=1 corpus_min/ corpus_fuzz_run/`.
+Чистить corpus только если изменился код harness.
+Минимизация: `./fuzz_harness -merge=1 corpus_min/ corpus_fuzz_run/`
+
+---
+
+## Следующие шаги (приоритет)
+
+1. **`FuzzedDataProvider`** — заменить `FuzzReader` в `fuzz_harness.cpp`
+2. **`gen_targeted_corpus.py`** — генератор corpus для каждой аномалии
+3. **Properties as assertions** — перенести Cypher-проверки в C++ harness
+4. **Phase 2** — real `pool.cpp` fuzzer (MockBus + MockKeyring + MockDb)
