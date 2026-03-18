@@ -326,11 +326,16 @@ mkdir -p simulation/corpus_fuzz_run simulation/crashes
 
 ### Инварианты в harness (в-процессные оракулы)
 
-| Проверка | Тип | Триггер |
-|---|---|---|
-| Dual FinalizeCert | SAFETY — `__builtin_trap()` | `finalize_certs[slot].size() > 1` |
-| Equivocation | INVARIANT — stderr | Один валидатор → два разных notarize cand |
-| Notarize+Skip | INVARIANT — stderr | Один валидатор → notarize и skip в одном слоте |
+| Проверка | Cypher query | Тип | Триггер |
+|---|---|---|---|
+| Dual FinalizeCert | `#dual-cert` | SAFETY — crash | `finalize_certs[slot].size() > 1` |
+| Equivocation | `#equivocation` | INVARIANT — stderr | Один валидатор → два notarize cand |
+| Notarize+Skip | `#notarize-skip` | INVARIANT — stderr | Один валидатор → notarize + skip |
+| Duplicate proposal | `#candidate-duplicate` | INVARIANT — stderr | Лидер → 2 разных candidateId |
+| NotarizeCert+SkipCert | — | INVARIANT — stderr | Оба сертификата на одном слоте |
+| No finalized blocks | `#liveness` | INVARIANT — stderr | 0 финализировано и не всё skipped |
+| alarm-skip-after-notarize | `#alarm-skip-after-notarize` | — | Требует alarm() — Phase 2 |
+| Amnesia gap | `#amnesia-gap` | — | Требует WAL crash — Phase 2 |
 
 ### gen_targeted_corpus.py — 272 файла
 
@@ -346,5 +351,5 @@ mkdir -p simulation/corpus_fuzz_run simulation/crashes
 ## Следующие шаги (приоритет)
 
 1. ~~**`FuzzedDataProvider`**~~ — ✅ [54933808](https://github.com/a1oleg/tonGraph/commit/54933808) реализовано
-2. **Properties as assertions** — уже частично: equivocation и notarize+skip детектируются; добавить остальные Cypher-проверки
+2. ~~**Properties as assertions**~~ — ✅ [0f729a39](https://github.com/a1oleg/tonGraph/commit/0f729a39) 6 из 8 Cypher-проверок в C++; 2 оставшихся требуют Phase 2
 3. **Phase 2** — real `pool.cpp` fuzzer (MockBus + MockKeyring + MockDb)
