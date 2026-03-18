@@ -19,6 +19,14 @@
 
 #include "GraphLogger.h"
 
+// In fuzzer mode (-fsanitize=fuzzer), use FuzzedDataProvider so libFuzzer
+// understands the input structure and mutates fields independently rather than
+// treating the whole buffer as raw bytes.
+// In standalone/replay mode, keep FuzzReader which wraps around on short inputs.
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+#  include <fuzzer/FuzzedDataProvider.h>
+#endif
+
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
@@ -35,16 +43,21 @@
 
 using namespace simulation;
 
-// ── Fuzz input reader ───────────────────────────────────────────────────────
-// Reads bytes from the fuzz input one at a time. When exhausted, wraps around
-// (so even small inputs exercise the full simulation).
+// ── Input reader abstraction ─────────────────────────────────────────────────
+// Two implementations with identical byte layout (1 byte per decision, uint8_t):
+//
+//   FuzzReader (standalone)       — wraps around when exhausted; small inputs
+//                                   exercise the full simulation.
+//   FuzzedDataProvider (fuzzer)   — libFuzzer understands field boundaries and
+//                                   mutates each decision independently.
+//
+// Uniform API via rdr_next(rdr, modulo) and rdr_bool(rdr) used in run_fuzz_slot.
 
 struct FuzzReader {
   const uint8_t* data;
   size_t size;
   size_t pos{0};
 
-  // Read one byte in [0, modulo)
   uint8_t next(uint8_t modulo) {
     if (modulo <= 1) return 0;
     if (size == 0) return 0;
@@ -52,9 +65,24 @@ struct FuzzReader {
     pos++;
     return v % modulo;
   }
-
   bool next_bool() { return next(2) == 1; }
 };
+
+template<typename R> uint8_t rdr_next(R& r, uint8_t mod);
+template<typename R> bool    rdr_bool(R& r);
+
+template<> uint8_t rdr_next<FuzzReader>(FuzzReader& r, uint8_t mod) { return r.next(mod); }
+template<> bool    rdr_bool<FuzzReader>(FuzzReader& r)               { return r.next_bool(); }
+
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+template<> uint8_t rdr_next<FuzzedDataProvider>(FuzzedDataProvider& r, uint8_t mod) {
+  if (mod <= 1) return 0;
+  return r.ConsumeIntegralInRange<uint8_t>(0, mod - 1);
+}
+template<> bool rdr_bool<FuzzedDataProvider>(FuzzedDataProvider& r) {
+  return r.ConsumeBool();
+}
+#endif
 
 // ── Config (derived from fuzz input) ───────────────────────────────────────
 
@@ -142,7 +170,8 @@ static std::string candidate_hex(uint32_t slot, int variant = 0) {
   return ss.str();
 }
 
-static void run_fuzz_slot(FuzzReader& rdr, int N, uint32_t slot,
+template<typename Rdr>
+static void run_fuzz_slot(Rdr& rdr, int N, uint32_t slot,
                           SessionInvariants& inv, int& finalized, int& skipped) {
   auto& log = GraphLogger::instance();
   const int leader = (int)(slot % (uint32_t)N);
@@ -165,7 +194,7 @@ static void run_fuzz_slot(FuzzReader& rdr, int N, uint32_t slot,
   // Per-validator action chosen by fuzzer
   std::vector<ValidatorAction> actions(N);
   for (int v = 0; v < N; v++) {
-    actions[v] = static_cast<ValidatorAction>(rdr.next((uint8_t)ValidatorAction::COUNT));
+    actions[v] = static_cast<ValidatorAction>(rdr_next(rdr, (uint8_t)ValidatorAction::COUNT));
   }
 
   // Determine which candidate each validator receives ("" = didn't receive).
@@ -182,7 +211,7 @@ static void run_fuzz_slot(FuzzReader& rdr, int N, uint32_t slot,
     for (int v = 0; v < N; v++) {
       if (v == leader) continue;
       if (actions[v] == ValidatorAction::DropReceive) continue;
-      const std::string& cid = rdr.next_bool() ? cand_split : cand_main;
+      const std::string& cid = rdr_bool(rdr) ? cand_split : cand_main;
       my_cand[v] = cid;
       emit("CandidateReceived", {
           {"candidateId", cid},
@@ -329,12 +358,7 @@ static void run_fuzz_slot(FuzzReader& rdr, int N, uint32_t slot,
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   if (size < 3) return 0;  // need at least: n_validators, n_slots, 1 action byte
 
-  FuzzReader rdr{data, size};
-
-  const int n_validators = MIN_VALIDATORS + rdr.next((uint8_t)(MAX_VALIDATORS - MIN_VALIDATORS + 1));
-  const int n_slots      = 1 + rdr.next((uint8_t)MAX_SLOTS);
-
-  // Generate a deterministic session id from input hash
+  // Generate a deterministic session id from input hash (before any reader consumes bytes)
   {
     std::ostringstream ss;
     uint64_t h = 14695981039346656037ULL;
@@ -344,6 +368,21 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     session_id_global = ss.str() + std::string(32, '0');
     session_id_global.resize(64);
   }
+
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+  // FuzzedDataProvider: libFuzzer understands field boundaries and mutates
+  // each decision independently (n_validators, n_slots, per-slot actions).
+  // Same 1-byte-per-decision layout as FuzzReader → corpus is compatible.
+  FuzzedDataProvider fdp(data, size);
+  const int n_validators = MIN_VALIDATORS +
+      (int)rdr_next(fdp, (uint8_t)(MAX_VALIDATORS - MIN_VALIDATORS + 1));
+  const int n_slots = 1 + (int)rdr_next(fdp, (uint8_t)MAX_SLOTS);
+#else
+  FuzzReader fdp{data, size};
+  const int n_validators = MIN_VALIDATORS +
+      (int)rdr_next(fdp, (uint8_t)(MAX_VALIDATORS - MIN_VALIDATORS + 1));
+  const int n_slots = 1 + (int)rdr_next(fdp, (uint8_t)MAX_SLOTS);
+#endif
 
   GraphLogger::instance().emit("SessionStart", {
       {"sessionId",  session_id_global},
@@ -356,7 +395,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   int finalized = 0, skipped = 0;
 
   for (int s = 0; s < n_slots; s++) {
-    run_fuzz_slot(rdr, n_validators, (uint32_t)s, inv, finalized, skipped);
+    run_fuzz_slot(fdp, n_validators, (uint32_t)s, inv, finalized, skipped);
   }
 
   GraphLogger::instance().emit("SessionEnd", {
