@@ -4,8 +4,9 @@
 
 | Компонент | Статус |
 |---|---|
-| `simulation/fuzz_harness.cpp` | ✅ Реализован, собирается, 240K iter/sec |
-| `simulation/corpus_fuzz/` | ✅ 4 seed + corpus после прогона |
+| `simulation/fuzz_harness.cpp` | ✅ [5aa6dab6](https://github.com/a1oleg/tonGraph/commit/5aa6dab6) — 6 действий, SplitPropose, 240K iter/sec |
+| `simulation/corpus_fuzz/` | ✅ 272 targeted seed (4 уязвимости, полное покрытие Pre(k)) |
+| `simulation/scripts/gen_targeted_corpus.py` | ✅ [5aa6dab6](https://github.com/a1oleg/tonGraph/commit/5aa6dab6) — backwards reachability generator |
 | `build-fuzz/simulation/fuzz_harness` | ✅ libFuzzer бинарь |
 | `build-linux/simulation/fuzz_harness_standalone` | ✅ Replay с GraphLogger |
 | Phase 2: real pool.cpp fuzzer | 🔲 Будущая работа |
@@ -309,14 +310,46 @@ mkdir -p simulation/corpus_fuzz_run simulation/crashes
   -artifact_prefix=simulation/crashes/
 ```
 
-Чистить corpus только если изменился код harness.
+Чистить corpus только если изменился код harness (например, изменился enum `ValidatorAction`).
+После изменения harness — перегенерировать seed corpus: `python3 simulation/scripts/gen_targeted_corpus.py`
 Минимизация: `./fuzz_harness -merge=1 corpus_min/ corpus_fuzz_run/`
+
+---
+
+## Что реализовано в Phase 1 ([5aa6dab6](https://github.com/a1oleg/tonGraph/commit/5aa6dab6))
+
+### ValidatorAction (6 действий)
+
+| Action | Значение | Что делает |
+|---|---|---|
+| `Honest` | 0 | Голосует за полученный кандидат честно |
+| `DropReceive` | 1 | Не получает кандидат → SkipVote |
+| `DoubleNotarize` | 2 | Голосует за полученный + `cand_equiv` (equivocation) |
+| `NotarizeAndSkip` | 3 | Notarize + Skip в одном слоте (известный баг) |
+| `NoVote` | 4 | Воздерживается (тест liveness) |
+| `SplitPropose` | 5 | [лидер] шлёт `cand_main` группе A, `cand_split` группе B |
+
+### Инварианты в harness (в-процессные оракулы)
+
+| Проверка | Тип | Триггер |
+|---|---|---|
+| Dual FinalizeCert | SAFETY — `__builtin_trap()` | `finalize_certs[slot].size() > 1` |
+| Equivocation | INVARIANT — stderr | Один валидатор → два разных notarize cand |
+| Notarize+Skip | INVARIANT — stderr | Один валидатор → notarize и skip в одном слоте |
+
+### gen_targeted_corpus.py — 272 файла
+
+| Генератор | Файлов | Покрытие |
+|---|---|---|
+| `gen_dual_cert_pressure` | 130 | Все разбиения с хотя бы одной группой ≥ threshold−1 |
+| `gen_equivocation_pressure` | 88 | DoubleNotarize на каждой позиции + пары Byzantine |
+| `gen_notarize_skip_pressure` | 18 | NotarizeAndSkip на каждой позиции |
+| `gen_liveness_pressure` | 36 | Leader drop + threshold−1 no-vote |
 
 ---
 
 ## Следующие шаги (приоритет)
 
 1. **`FuzzedDataProvider`** — заменить `FuzzReader` в `fuzz_harness.cpp`
-2. **`gen_targeted_corpus.py`** — генератор corpus для каждой аномалии
-3. **Properties as assertions** — перенести Cypher-проверки в C++ harness
-4. **Phase 2** — real `pool.cpp` fuzzer (MockBus + MockKeyring + MockDb)
+2. **Properties as assertions** — уже частично: equivocation и notarize+skip детектируются; добавить остальные Cypher-проверки
+3. **Phase 2** — real `pool.cpp` fuzzer (MockBus + MockKeyring + MockDb)
