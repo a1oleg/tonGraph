@@ -1,22 +1,10 @@
 # Первый чат: графовое логирование для поиска уязвимостей TON Consensus
 
-
-
-
-
 ### Ограничения
 
 - **Текущий `AuraGraphReporter`** привязан к browser runtime (`self.constructor.name`, webpack `APP_REVISION`) — нужна адаптация под C++/standalone
 - **Масштаб**: consensus fuzzing генерирует миллионы событий — нужен batch-optimized pipeline (существующий `flushLoop` с batch size 500 — хороший старт, но может потребовать увеличения)
 - **Детерминизм**: для воспроизведения бага нужно логировать seed рандома и порядок сообщений
-
-### Вывод
-
-Архитектура графового логирования — готовый фреймворк для **динамического анализа протоколов**. Для TON Consensus Challenge наиболее практичный путь — **вариант B** (симуляция + fuzzing + Cypher-анализ аномалий), потому что:
-1. Вся Neo4j инфра уже работает
-2. Cypher-запросы для поиска аномалий пишутся за минуты
-3. Визуализация в Neo4j Browser даёт мгновенный insight в topology атаки
-
 ---
 
 
@@ -46,7 +34,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 ```
 
 **Что фаззить конкретно:**
-
+1
 | Точка входа | Класс уязвимостей |
 |---|---|
 | `ValidatorSessionImpl::process_message()` | Неверная обработка неизвестных типов сообщений |
@@ -76,14 +64,6 @@ WHERE NOT EXISTS {
 RETURN n
 ```
 
-### 5. Академические CVE-паттерны (конкретные баги в BFT)
-
-| CVE / Баг | Протокол | Применимость к TON |
-|---|---|---|
-| **Tendermint liveness bug** (2019) | Tendermint | Высокая — схожая round-change логика |
-| **HotStuff safety violation under network delay** | HotStuff | Прямая — TON основан на HotStuff |
-| **PBFT view-change amplification** | PBFT | Средняя — другой механизм смены лидера |
-| **Casper FFG surround vote** | Ethereum | Низкая — разная модель finality |
 
 ### 6. TLA+ / Alloy спецификации
 
@@ -120,81 +100,6 @@ ton/ (форк)
     CMakeLists.txt
 ```
 
-### GraphLogger.h
-
-```cpp
-#pragma once
-#include <string>
-#include <vector>
-
-struct GraphContext {
-  std::string nodeid;
-  std::string parentNodeid;  // "" если root
-  int depth;
-};
-
-class GraphLogger {
-public:
-  static GraphContext logCall(
-    const GraphContext& parent,
-    const std::string& fnName,
-    const std::string& argsJson = "{}"
-  );
-
-  static void logResponse(
-    const GraphContext& ctx,
-    const std::string& resultJson = "{}"
-  );
-
-  static void logError(
-    const GraphContext& ctx,
-    const std::string& error
-  );
-
-  static void flush(const std::string& outPath = "graph_trace.ndjson");
-
-private:
-  static std::string generateUuid();
-  static std::vector<std::string> events_;
-};
-```
-
-### GraphLogger.cpp (ключевой метод)
-
-```cpp
-GraphContext GraphLogger::logCall(
-  const GraphContext& parent,
-  const std::string& fnName,
-  const std::string& argsJson
-) {
-  GraphContext ctx;
-  ctx.nodeid = generateUuid();
-  ctx.parentNodeid = parent.nodeid;
-  ctx.depth = parent.depth + 1;
-
-  // NDJSON — тот же формат что AuraLogEvent
-  std::string event = R"({"type":"call","nodeid":")" + ctx.nodeid + R"(",)"
-    + R"("parentNodeid":")" + ctx.parentNodeid + R"(",)"
-    + R"("fnName":")" + fnName + R"(",)"
-    + R"("depth":)" + std::to_string(ctx.depth) + ","
-    + R"("args":)" + argsJson + ","
-    + R"("tsMs":)" + std::to_string(nowMs()) + "}";
-
-  events_.push_back(event);
-  return ctx;
-}
-```
-
-### relay.mjs: NDJSON → Neo4j Aura
-
-```js
-// simulation/relay.mjs — читает graph_trace.ndjson, пишет в Aura
-import { AuraGraphReporter } from '../src/util/graphLogger/AuraGraphReporter.js';
-
-const lines = fs.readFileSync('graph_trace.ndjson', 'utf8').split('\n');
-const entries = lines.filter(Boolean).map(JSON.parse);
-await AuraGraphReporter.writeEntries(entries);
-```
 
 ### Что инструментировать первым
 
