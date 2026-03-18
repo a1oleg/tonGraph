@@ -45,3 +45,4 @@ configure.ps1
 CMakeLists.txt
 *.txt
 CMakeLists.txt
+.claude/settings.local.json
