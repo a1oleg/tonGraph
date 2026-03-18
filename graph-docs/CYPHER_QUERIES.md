@@ -232,22 +232,22 @@ RETURN
 
 ---
 
-## #latency — Latency от collate до accept (по slot)
+## #latency — Latency от первого receive до accept (по slot)
+
+Измеряет время от момента, когда хотя бы один валидатор получил кандидата,
+до момента принятия блока менеджером (`accept_block`).
+Требует события `BlockAccepted` в трассе (эмитируется из `block-accepter.cpp`).
 
 ```cypher
-MATCH (root {depth: 0})
-WITH root ORDER BY root.tsMs DESC LIMIT 1
-
-MATCH (b:Block)<-[:accepted]-(cert:Cert)<-[:cert]-(c:Candidate)
-WHERE b.sessionId = root.sessionId
-
-MATCH (v:Validator)-[rp:propose]->(c)
-
+MATCH (cr:CandidateRecv)
+WHERE cr.sessionId = $sid
+MATCH (ba:BlockAccepted)
+WHERE ba.sessionId = $sid AND ba.slot = cr.slot AND ba.candidateId = cr.candidateId
 RETURN
-  c.slot                       AS slot,
-  rp.tsMs                      AS proposeTs,
-  b.tsMs                       AS acceptTs,
-  (b.tsMs - rp.tsMs)           AS latencyMs
+  cr.slot                       AS slot,
+  min(cr.tsMs)                  AS firstReceiveTs,
+  ba.tsMs                       AS acceptTs,
+  (ba.tsMs - min(cr.tsMs))      AS latencyMs
 ORDER BY slot
 ```
 

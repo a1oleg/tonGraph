@@ -56,22 +56,33 @@ else:
 wsl
 
 # 2. Из корня репо собрать нужные таргеты
-cd /mnt/c/GitHub/tonGraph
-cmake -B build-linux -DCMAKE_BUILD_TYPE=Release
-cmake --build build-linux --target validator-engine dht-server generate-random-id create-state -j$(nproc)
+cd ~/tonGraph   # рекомендуется WSL-FS, не /mnt/c/
+cmake -B build-linux \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_COMPILER=clang-18 \
+  -DCMAKE_CXX_COMPILER=clang++-18 \
+  -G Ninja
+cmake --build build-linux --target validator-engine dht-server generate-random-id create-state tonlibjson -j$(nproc)
 
-# 3. Сгенерировать tonapi (если ещё не сделано)
+# 3. Создать симлинк build -> build-linux (нужен для tontester)
+ln -sfn build-linux build
+
+# 4. Сгенерировать tonapi (если ещё не сделано)
 uv run python test/tontester/generate_tl.py
 
-# 4. Включить графовое логирование
-export GRAPH_LOGGING_ENABLED=1
-export GRAPH_LOG_FILE=simulation/trace.ndjson
+# 5. Установить зависимости Node.js для relay
+cd simulation && npm install && cd ..
 
-# 5. Запустить тест (5 мин таймаут)
+# 6. Включить графовое логирование (абсолютный путь!)
+export GRAPH_LOGGING_ENABLED=1
+export GRAPH_LOG_FILE=$(pwd)/simulation/trace.ndjson
+
+# 7. Запустить тест (5 мин таймаут)
 uv run python test/integration/test_basic.py
 
-# 6. Отправить трассу в Neo4j
-node simulation/relay.mjs --clear simulation/trace.ndjson
+# 8. Отправить трассу в Neo4j
+sed -i 's/\r//' .env   # исправить CRLF если .env с Windows
+cd simulation && node relay.mjs --clear trace.ndjson && cd ..
 ```
 
 ---
@@ -144,17 +155,23 @@ ls simulation/relay.mjs
 ```bash
 cd ~/tonGraph   # или /mnt/c/GitHub/tonGraph
 
+# Без дополнительных флагов — используется bundled OpenSSL (для QUIC),
+# secp256k1 и RocksDB собираются из source. USE_QUIC=ON по умолчанию.
 cmake -B build-linux \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_C_COMPILER=clang-18 \
   -DCMAKE_CXX_COMPILER=clang++-18 \
-  -DTON_USE_ROCKSDB=OFF \
   -G Ninja
 
 cmake --build build-linux \
-  --target validator-engine dht-server generate-random-id create-state \
+  --target validator-engine dht-server generate-random-id create-state tonlibjson \
   -j$(nproc)
+
+# После сборки создать симлинк (tontester ищет build/, а не build-linux/)
+ln -sfn build-linux build
 ```
+
+> **Важно:** не указывать `-DTON_USE_ROCKSDB=OFF`, `-DUSE_QUIC=OFF`, `-DOPENSSL_ROOT_DIR`, `-DSECP256K1_LIBRARY` — это вызовет ошибки сборки или линковки. Всё собирается из source по умолчанию.
 
 Ожидаемый результат:
 ```
