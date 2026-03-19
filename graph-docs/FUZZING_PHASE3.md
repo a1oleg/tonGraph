@@ -115,15 +115,34 @@ snapshot передаётся напрямую без сети.
 
 ### Reference vectors — откуда брать
 
-```
-1. Теоретический анализ:
-   - alarm-skip: voted_notar[X]=1 + skip_weight[X] приближается к threshold
-   - amnesia-gap: voted_notar[X]=1 (pre-crash) + voted_notar[X]=0 (post-crash)
-   - dual-cert: notarize_cert[X] + skip_cert[X] одновременно
+**1. Теоретический анализ** (вручную, без запуска):
 
-2. Из pool.cpp state, наблюдаемого через GraphLogger:
-   - Запустить simulation, найти "near-miss" моменты → snapshotить состояние
+| Инвариант | Опасное состояние (reference vector) |
+|---|---|
+| alarm-skip | `voted_notar[X]=1` + `skip_weight[X]` ≥ quorum−1 |
+| amnesia-gap | `voted_notar[X]=1` (pre-crash) + `voted_notar[X]=0` (post-crash) |
+| dual-cert | `notarize_cert[X]` + `skip_cert[X]` одновременно |
+
+**2. Из GraphLogger + Neo4j** (near-miss из реальных прогонов):
+
+```bash
+# 1. Запустить simulation с GraphLogger включённым:
+./build/test/consensus/test-consensus --graph-log simulation/graph.json
+
+# 2. Загрузить в Neo4j (см. GRAPH_LOGGING.md)
+
+# 3. Найти near-miss моменты — слоты где skip_weight почти достиг порога
+#    при уже выданном notarize:
+MATCH (v:Validator)-[n:notarize]->(c:Candidate)
+MATCH (v)-[sk:skip]->(se:SkipEvent)
+WHERE n.slot = sk.slot
+RETURN v.sessionId AS session, v.validatorIdx AS validator, n.slot AS slot
+# → каждая строка = near-miss момент для alarm-skip
+
+# 4. Snapshotить g_state_counters в этот момент → reference vector
 ```
+
+Запросы для остальных инвариантов: [CYPHER_QUERIES.md](CYPHER_QUERIES.md).
 
 ### Snapshot extraction
 
@@ -175,12 +194,12 @@ mv corpus_merged/* simulation/corpus_fuzz_pool/
 
 ## Инварианты для Phase 3
 
-| Инвариант | Требует | Статус |
-|---|---|---|
-| dual-cert (notar+skip) | `g_notar_by_slot` + `g_skip_by_slot` | ✅ реализован (Phase 2) |
-| alarm-skip-after-notarize | Consensus актор + crash | 🔲 Шаг 2 |
-| amnesia-gap | crash_losing(ourVote) + bootstrap replay | ✅ частично (Phase 2 Шаг 3) |
-| two-cert для разных кандидатов | `g_notar_by_slot[X]` != new hash | ✅ реализован (Phase 2) |
+| Инвариант | Cypher query | Требует | Статус |
+|---|---|---|---|
+| dual-cert (notar+skip) | [#dual-cert](CYPHER_QUERIES.md#dual-cert) | `g_notar_by_slot` + `g_skip_by_slot` | ✅ реализован (Phase 2) |
+| alarm-skip-after-notarize | [#alarm-skip-after-notarize](CYPHER_QUERIES.md#alarm-skip-after-notarize) | Consensus актор + crash | 🔲 Шаг 2 |
+| amnesia-gap | [#amnesia-gap](CYPHER_QUERIES.md#amnesia-gap) | crash_losing(ourVote) + bootstrap replay | ✅ частично (Phase 2 Шаг 3) |
+| two-cert для разных кандидатов | [#dual-cert-issued](CYPHER_QUERIES.md#dual-cert-issued) | `g_notar_by_slot[X]` != new hash | ✅ реализован (Phase 2) |
 
 ---
 
