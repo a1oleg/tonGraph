@@ -25,6 +25,9 @@ simulation/corpus_fuzz_tl/
 simulation/corpus_fuzz_pool/
 simulation/corpus_fuzz_pool2/
 simulation/corpus_p3s3/
+simulation/corpus_s4a/
+simulation/corpus_s4b/
+simulation/corpus_s4c/
 simulation/crashes/
 simulation/crashes_tl/
 simulation/crashes_pool/
@@ -35,6 +38,12 @@ simulation/fuzz_tl.log
 simulation/fuzz_pool.log
 simulation/fuzz_consensus.log
 simulation/fuzz_p3s3.log
+simulation/fuzz_s4a.log
+simulation/fuzz_s4b.log
+simulation/fuzz_s4c.log
+simulation/crashes_s4a/
+simulation/crashes_s4b/
+simulation/crashes_s4c/
 .DS_Store
 dev/
 
