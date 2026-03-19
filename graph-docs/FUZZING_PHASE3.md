@@ -1,6 +1,6 @@
 # Фаззинг — Phase 3: направленный поиск нарушений безопасности
 
-[← Phase 2](FUZZING_PHASE2.md) | [Общий план](FUZZING_PLAN.md) | [Распределённый фаззинг](FUZZING_DISTRIBUTED.md)
+[← Phase 2](FUZZING_PHASE2.md) | [Общий план](FUZZING_PLAN.md) | [→ Phase 4](FUZZING_PHASE4.md)
 
 
 ## Текущий прогресс
@@ -268,13 +268,9 @@ RETURN v.sessionId AS session, v.validatorIdx AS validator, n.slot AS slot
 
 ---
 
-## Шаг 4 — Распределённый запуск 🔲
-
-### Пробный запуск на одной машине ✅
+## Шаг 4 — Пробный запуск на одной машине ✅
 
 Прогнан 2026-03-19, ~1.5 часа, 16 воркеров (A×5 + B×5 + C×6).
-
-#### Результаты
 
 | Воркер / lim | cov | ft | Стратегия |
 |---|---|---|---|
@@ -287,99 +283,10 @@ RETURN v.sessionId AS session, v.validatorIdx AS validator, n.slot AS slot
 
 - **Лучший ft: 3162** (стратегия A/C, lim:4096)
 - **Крашей: 0** по всем трём стратегиям
-- Рост cov: 849 → 854 (+5 новых путей за ~1.5 часа)
-- Плато достигнуто — cov/ft перестали расти
+- Рост cov: 849 → 854 (+5 за ~1.5 часа), плато достигнуто
 
-**Вывод:** alarm-skip не найден случайным мутатором за 1.5 часа.
-Следующий шаг — corpus sync + вторая машина (Уровень 1–2) или ручной targeted seed.
-
-Перед распределением — прогнать на одной машине с разными стратегиями в параллельных
-tmux-окнах. Это проверяет: какая стратегия эффективнее находит alarm-skip путь,
-и даёт corpus для синхронизации при добавлении второй машины.
-
-```bash
-REPO=$(pwd)
-mkdir -p simulation/corpus_s4a simulation/crashes_s4a \
-         simulation/corpus_s4b simulation/crashes_s4b \
-         simulation/corpus_s4c simulation/crashes_s4c
-
-# Стратегия A: широкий поиск с cosine similarity guidance
-tmux new-session -d -s fuzz_s4a \
-  "cd $REPO && timeout 86400 ./build-fuzz2/test/consensus/fuzz_pool \
-   $REPO/simulation/corpus_p3s3/ $REPO/simulation/corpus_s4a/ \
-   -max_total_time=86400 -jobs=5 -use_value_profile=1 \
-   -artifact_prefix=$REPO/simulation/crashes_s4a/ \
-   >> $REPO/simulation/fuzz_s4a.log 2>&1"
-
-# Стратегия B: глубокие цепочки (длинные inputs, много голосов)
-tmux new-session -d -s fuzz_s4b \
-  "cd $REPO && timeout 86400 ./build-fuzz2/test/consensus/fuzz_pool \
-   $REPO/simulation/corpus_p3s3/ $REPO/simulation/corpus_s4b/ \
-   -max_total_time=86400 -jobs=5 -use_value_profile=1 \
-   -mutate_depth=8 -max_len=200 \
-   -artifact_prefix=$REPO/simulation/crashes_s4b/ \
-   >> $REPO/simulation/fuzz_s4b.log 2>&1"
-
-# Стратегия C: targeted seeds — quorum scenarios (alarm-skip focus)
-# Инжектируем seed: notarize×3 на slot=4, crash, skip×2 post-crash
-tmux new-session -d -s fuzz_s4c \
-  "cd $REPO && timeout 86400 ./build-fuzz2/test/consensus/fuzz_pool \
-   $REPO/simulation/corpus_p3s3/ $REPO/simulation/corpus_s4c/ \
-   -max_total_time=86400 -jobs=6 -use_value_profile=1 \
-   -artifact_prefix=$REPO/simulation/crashes_s4c/ \
-   >> $REPO/simulation/fuzz_s4c.log 2>&1"
-```
-
-**На что смотреть через 1 час:**
-- `crashes_s4*/` не пустой → alarm-skip найден → останавливать все стратегии
-- Какая стратегия дала наибольший рост `ft` → та масштабируется на второй машине
-- Если все три в плато → переходить к corpus merge + targeted seed (см. ниже)
-
-### Targeted seed для alarm-skip
-
-Если за 24 часа краша нет — сгенерировать ручной seed покрывающий точную
-последовательность:
-
-```
-n_pre=3, do_crash=1, n_lose=1, n_post=2
-pre[0]:  src=0, vote=notarize, slot=4, cand=0   ← наш узел notarize
-pre[1]:  src=1, vote=notarize, slot=4, cand=0   ← validator 1
-pre[2]:  src=2, vote=notarize, slot=4, cand=0   ← validator 2 → NotarCert{4}
-crash: n_lose=1 (теряем ourVote{4})
-post[0]: src=1, vote=skip, slot=4               ← skip от validator 1
-post[1]: src=2, vote=skip, slot=4               ← skip + ConsensusImpl skip → SkipCert{4} → TRAP
-```
-
-Но сначала нужно продвинуть window до slot=4: Pool не объявит LeaderWindow{4}
-пока slot=0..3 не нотаризованы или скипнуты. Добавить pre-сообщения для слотов 0-3.
-
-### Corpus sync при добавлении второй машины (Уровень 1)
-
-→ Описание в [FUZZING_DISTRIBUTED.md — Уровень 1](FUZZING_DISTRIBUTED.md#уровень-1--corpus-sync-просто-без-координации)
-
-```bash
-# Каждый час на каждой машине:
-rsync -a machine2:~/tonGraph/simulation/corpus_s4a/ simulation/corpus_s4a/
-./build-fuzz2/test/consensus/fuzz_pool -merge=1 corpus_merged/ simulation/corpus_s4a/
-mv corpus_merged/* simulation/corpus_s4a/
-```
-
-### Специализация по стратегиям на нескольких машинах (Уровень 2)
-
-→ Описание в [FUZZING_DISTRIBUTED.md — Уровень 2](FUZZING_DISTRIBUTED.md#уровень-2--разделение-по-стратегиям-рекомендуется-первым)
-
-| Машина | Стратегия | Флаги |
-|---|---|---|
-| Local A | Широкий поиск, cosine similarity | `-use_value_profile=1` |
-| Local B | Глубокие цепочки | `-mutate_depth=8 -max_len=200` |
-| Local C | Targeted seeds, alarm-skip focus | `corpus_s4c/` + ручной seed |
-| Machine2 | Лучшая стратегия с Local + corpus sync | corpus rsync каждый час |
-
-### Координатор на Redis (Уровень 3)
-
-→ Описание в [FUZZING_DISTRIBUTED.md — Уровень 3](FUZZING_DISTRIBUTED.md#уровень-3--distributed-directed-fuzzing-координатор)
-
-Применять если 72 часа без крашей после пробного запуска.
+**Вывод:** alarm-skip случайным мутатором не найден.
+→ [Phase 4: распределённый запуск](FUZZING_PHASE4.md)
 
 ---
 
@@ -405,7 +312,7 @@ Phase 3 Шаг 2 ✅: Consensus актор → cov: 834, ft: 2833, крашей:
         ↓
 Phase 3 Шаг 3 ✅: vector similarity + post-crash messages → cov: 849, ft: 2925, крашей: 0
         ↓
-Phase 3 Шаг 4: пробный на одной машине (3 стратегии) → затем corpus sync + вторая машина
-        ↓ (если 72ч без крашей)
-        → Распределённый координатор (FUZZING_DISTRIBUTED.md Уровень 3)
+Phase 3 Шаг 4 ✅: пробный на одной машине → cov: 854, ft: 3162, крашей: 0
+        ↓
+→ Phase 4: распределённый запуск (FUZZING_PHASE4.md)
 ```
