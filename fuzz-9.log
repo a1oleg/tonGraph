@@ -1,1 +1,19 @@
-ERROR: The required directory "simulation/corpus_fuzz_run/" does not exist
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 2867034145
+INFO: Loaded 1 modules   (714 inline 8-bit counters): 714 [0x560bdbec7760, 0x560bdbec7a2a), 
+INFO: Loaded 1 PC tables (714 PCs): 714 [0x560bdbec7a30,0x560bdbeca6d0), 
+INFO:      547 files found in /home/a1oleg/tonGraph/simulation/corpus_fuzz_tl/
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: seed corpus: files: 547 min: 1b max: 636b total: 97622b rss: 28Mb
+#548	INITED cov: 215 ft: 257 corp: 41/2742b exec/s: 0 rss: 29Mb
+#1048576	pulse  cov: 215 ft: 257 corp: 41/2742b lim: 4096 exec/s: 524288 rss: 29Mb
+#2097152	pulse  cov: 215 ft: 257 corp: 41/2742b lim: 4096 exec/s: 419430 rss: 29Mb
+#4194304	pulse  cov: 215 ft: 257 corp: 41/2742b lim: 4096 exec/s: 419430 rss: 29Mb
+#8388608	pulse  cov: 215 ft: 257 corp: 41/2742b lim: 4096 exec/s: 419430 rss: 29Mb
+#16777216	pulse  cov: 215 ft: 257 corp: 41/2742b lim: 4096 exec/s: 390167 rss: 29Mb
+#33554432	pulse  cov: 215 ft: 257 corp: 41/2742b lim: 4096 exec/s: 385683 rss: 29Mb
+#67108864	pulse  cov: 215 ft: 257 corp: 41/2742b lim: 4096 exec/s: 379146 rss: 29Mb
+#134217728	pulse  cov: 215 ft: 257 corp: 41/2742b lim: 4096 exec/s: 381300 rss: 29Mb
+#268435456	pulse  cov: 215 ft: 257 corp: 41/2742b lim: 4096 exec/s: 382386 rss: 29Mb
+#536870912	pulse  cov: 215 ft: 257 corp: 41/2742b lim: 4096 exec/s: 380759 rss: 29Mb
+#1073741824	pulse  cov: 215 ft: 257 corp: 41/2742b lim: 4096 exec/s: 380220 rss: 29Mb
