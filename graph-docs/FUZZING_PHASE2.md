@@ -14,7 +14,28 @@ WAL-состояния, race conditions при доставке сообщени
 
 ## Статус
 
-🔲 Не реализовано. Требует ~500 строк scaffolding.
+| Компонент | Статус |
+|---|---|
+| `test/consensus/fuzz_tl.cpp` | ✅ TL deserialization fuzzer — 9 типов, без actor runtime |
+| `test/consensus/CMakeLists.txt` | ✅ `fuzz_tl` target при `FUZZING=ON` |
+| MockBus + MockKeyring + MockDb scaffolding | 🔲 ~500 строк, будущая работа |
+| `test/consensus/fuzz_pool.cpp` | 🔲 Full pool.cpp fuzzer |
+
+### Запуск fuzz_tl
+
+```bash
+cmake build -DFUZZING=ON
+cmake --build build --target fuzz_tl -- -j$(nproc)
+
+REPO=$(pwd)
+mkdir -p simulation/corpus_fuzz_tl simulation/crashes_tl
+tmux new-session -d -s fuzz_tl \
+  "./build/test/consensus/fuzz_tl \
+  $REPO/simulation/corpus_fuzz_tl/ \
+  -max_total_time=86400 -jobs=$(nproc) \
+  -artifact_prefix=$REPO/simulation/crashes_tl/ \
+  >> $REPO/simulation/fuzz_tl.log 2>&1"
+```
 
 ---
 
