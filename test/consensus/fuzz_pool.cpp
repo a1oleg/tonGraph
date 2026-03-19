@@ -52,6 +52,7 @@
 #include "ton/ton-types.h"
 
 #include "simulation/GraphLogger.h"
+#include "td/utils/logging.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -168,6 +169,9 @@ static FuzzState* g_state = nullptr;
 // ── One-time initialization ───────────────────────────────────────────────────
 
 extern "C" int LLVMFuzzerInitialize(int*, char***) {
+  // Suppress BusRuntime and pool.cpp verbose logging
+  SET_VERBOSITY_LEVEL(VERBOSITY_NAME(ERROR));
+
   // Disable GraphLogger
   simulation::GraphLogger::instance().init();
 
