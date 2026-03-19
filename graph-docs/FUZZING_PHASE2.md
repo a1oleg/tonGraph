@@ -4,31 +4,65 @@
 
 ## Что фаззим
 
-Реальный `pool.cpp` через mock actor runtime.
+Реальный `pool.cpp` через actor runtime.
 Находит баги в **реализации** — TL-десериализация, integer overflow, use-after-free,
-WAL-состояния, race conditions при доставке сообщений.
+WAL-состояния.
 
 В отличие от Phase 1 (модель, N≤6), здесь пространство состояний ~2^64.
 
 ---
 
-## Статус
+## Текущий прогресс
 
-| Компонент | Статус |
-|---|---|
-| `test/consensus/fuzz_tl.cpp` | ✅ TL deserialization fuzzer — 9 типов, без actor runtime |
-| `test/consensus/CMakeLists.txt` | ✅ `fuzz_tl` target при `FUZZING=ON` |
-| MockBus + MockKeyring + MockDb scaffolding | 🔲 ~500 строк, будущая работа |
-| `test/consensus/fuzz_pool.cpp` | 🔲 Full pool.cpp fuzzer |
+```
+Шаг 1  ✅  fuzz_tl       — TL-парсинг 9 wire-типов (без actor runtime)
+Шаг 2  🔲  fuzz_pool     — pool.cpp через BusRuntime + MockDb
+Шаг 3  🔲  WAL crash injection
+Шаг 4  🔲  vector-guided fuzzing (если 1–3 не дали результата)
+```
 
-### Запуск fuzz_tl
+---
+
+## Шаг 1 — fuzz_tl ✅
+
+**Что тестирует:** `fetch_tl_object` для 9 TL-типов simplex consensus:
+`vote`, `certificate`, `voteSignatureSet`, `voteSignature`, `candidateAndCert`,
+DB-типы (`ourVote`, `cert`, `poolState`, `finalizedBlock`).
+
+**Что ловит:** buffer overflow, OOB-read, assertion failure в TL-парсере при
+приёме любого произвольного байтового потока от пира.
+
+**Что НЕ тестирует:** бизнес-логику pool.cpp, подпись, WAL.
+
+### Сборка
 
 ```bash
 cmake build -DFUZZING=ON
 cmake --build build --target fuzz_tl -- -j$(nproc)
+```
 
+### Тестовый прогон (1 час)
+
+```bash
 REPO=$(pwd)
 mkdir -p simulation/corpus_fuzz_tl simulation/crashes_tl
+tmux new-session -d -s fuzz_tl \
+  "./build/test/consensus/fuzz_tl \
+  $REPO/simulation/corpus_fuzz_tl/ \
+  -max_total_time=3600 -jobs=$(nproc) \
+  -artifact_prefix=$REPO/simulation/crashes_tl/ \
+  >> $REPO/simulation/fuzz_tl.log 2>&1"
+```
+
+**На что смотреть в результатах тестового прогона:**
+- `crashes_tl/` — пусто? Если есть файлы → воспроизвести, понять какой тип упал
+- `fuzz_tl.log`: строка `cov:` — coverage растёт первые минуты, потом плато. Плато нормально — TL-парсер небольшой
+- Скорость: ожидаемо >500K iter/sec (TL-парсинг без криптографии очень быстрый)
+- Если `cov:` плато уже после 10 минут — всё покрыто, можно запускать полный прогон
+
+### Полный прогон (24 часа)
+
+```bash
 tmux new-session -d -s fuzz_tl \
   "./build/test/consensus/fuzz_tl \
   $REPO/simulation/corpus_fuzz_tl/ \
@@ -37,86 +71,74 @@ tmux new-session -d -s fuzz_tl \
   >> $REPO/simulation/fuzz_tl.log 2>&1"
 ```
 
----
-
-## Scaffolding (что нужно написать)
-
-```cpp
-// MockBus — детерминированная доставка сообщений
-struct MockBus {
-    void send(ActorId to, Message msg);
-    void deliver_next();          // управляемая доставка
-    void drop_next();             // симуляция потери пакета
-    void reorder(int i, int j);   // перестановка очереди
-};
-
-// MockKeyring — подписи без криптографии
-struct MockKeyring {
-    Signature sign(PublicKey key, Bytes data);  // детерминированно
-};
-
-// MockDb — WAL без диска
-struct MockDb {
-    void write(Key, Value);
-    void crash_and_recover();  // симуляция краша + восстановления
-};
-```
+Смысл полного прогона: TL-парсер покрывается быстро, но редкие крэши в corner case
+могут потребовать много итераций. 24 часа = ~50B итераций на 16 воркерах.
+Если за 1 час coverage вышло на плато и крашей нет — переходим к Шагу 2,
+не ждём 24 часа.
 
 ---
 
-## Стратегии мутации
+## Шаг 2 — fuzz_pool 🔲
 
-### 1. Снаружи внутрь (структурная валидность)
+**Что тестирует:** реальный `PoolImpl` (`pool.cpp`) с настоящим actor runtime,
+искусственным validator set (без сетевого слоя), MockDb.
 
-```
-Пространство: ~256^N (все байт-последовательности)
-      │
-      ▼  [FuzzedDataProvider]
-      │  Структурная валидность TL-сообщений
-      │  Сужение: ~10^9×
-      │
-      ▼  [Dictionary]
-      │  TL-теги, magic bytes, граничные значения
-      │
-      ▼  [Corpus из testnet]
-         Реальные trace.ndjson → corpus-файлы
-```
+**Что ловит:** баги в логике накопления голосов, обработке сертификатов,
+WAL-операциях при краше.
 
-### 2. Backwards reachability (vector-guided)
+**Скорость:** ожидаемо 1K–10K iter/sec (actor runtime значительно медленнее).
 
-Для `pool.cpp` аналитическое Pre(k) нереально — пространство слишком большое.
-Вместо этого: **vector-guided fuzzing**.
-
-```
-snapshot C++ состояния (notarize_weight map, requests_ queue, voted_notar flags)
-    → кодируем в числовой вектор
-    → Faiss/hnswlib хранит "эталонные опасные состояния" из известных PoC
-    → при фаззинге: cosine similarity к ближайшему опасному состоянию
-    → это фидбэк мутатору (вместо code coverage)
-```
-
-Мутатор делает шаг в сторону **уменьшения расстояния до нарушения**,
-не в сторону случайного покрытия новых базовых блоков.
-
-### 3. Coverage-directed к аномалиям
-
-```
-libFuzzer генерирует сценарий
-    → pool.cpp запускается с MockBus/MockKeyring/MockDb
-    → вычисляет "расстояние" до нарушения свойства
-      (например: max(notarize_weight) - threshold для #dual-cert)
-    → возвращает сигнал мутатору через LLVMFuzzerCustomMutator
-    → мутатор делает шаг в сторону уменьшения расстояния
-```
-
-### 4. WAL crash injection
+### Что нужно написать (~500 строк)
 
 ```cpp
-// В LLVMFuzzerTestOneInput:
-bool inject_crash = fdp.ConsumeBool();
-if (inject_crash) db.crash_and_recover();
-// → тестирует #amnesia-gap и #alarm-skip-after-notarize
+// MockDb — WAL без диска, с инжекцией краша
+class MockDb : public consensus::Db {
+    std::map<std::string, td::BufferSlice> kv_;
+public:
+    std::optional<td::BufferSlice> get(td::Slice key) const override;
+    std::vector<...> get_by_prefix(td::uint32 prefix) const override;
+    td::actor::Task<> set(td::BufferSlice key, td::BufferSlice value) override;
+    void crash_and_recover();  // сбрасывает несинхронизированные write
+};
+
+// Детерминированный validator set с fake-подписями (Ed25519 заменён XOR)
+// Инжекция IncomingProtocolMessage из fuzz input
+// Дрейн event queue после каждого сообщения
 ```
+
+### Тестовый прогон (1 час)
+
+На что смотреть:
+- `crashes_pool/` — любой crash важен, репортить
+- `cov:` — должна расти дольше чем у fuzz_tl (логика сложнее)
+- Если coverage плато <1 часа → генерировать targeted seeds из trace.ndjson
+
+### Полный прогон (72 часа)
+
+Pool.cpp сложнее TL-парсера: полный прогон имеет смысл дольше, чем fuzz_tl.
+72 часа — разумная верхняя граница до перехода к WAL crash injection.
+
+---
+
+## Шаг 3 — WAL crash injection 🔲
+
+**Что тестирует:** `#amnesia-gap` и `#alarm-skip-after-notarize` —
+баги которые проявляются только после crash+recover последовательности.
+
+Добавляется поверх fuzz_pool: `MockDb::crash_and_recover()` вызывается
+в случайный момент между сообщениями.
+
+**Полный прогон:** 24 часа.
+
+---
+
+## Шаг 4 — vector-guided fuzzing 🔲
+
+Применяется если шаги 1–3 не нашли SAFETY VIOLATION.
+Фидбэк мутатору — не code coverage, а cosine similarity к эталонным
+опасным состояниям из известных PoC (Faiss/hnswlib).
+
+Реализация занимает ~неделю. Принимается если остальные шаги исчерпаны.
 
 ---
 
@@ -124,52 +146,25 @@ if (inject_crash) db.crash_and_recover();
 
 | Проверка | Cypher query | Как проверять |
 |---|---|---|
-| alarm-skip-after-notarize | `#alarm-skip-after-notarize` | После WAL recover: если votedNotar=true и пришёл AlarmSkip → crash |
-| Amnesia gap | `#amnesia-gap` | VoteIntentSet записан, но WAL crash → после recover vote_intent отсутствует |
+| alarm-skip-after-notarize | `#alarm-skip-after-notarize` | После WAL recover: votedNotar=true + AlarmSkip → crash |
+| Amnesia gap | `#amnesia-gap` | VoteIntentSet записан, WAL crash → после recover vote_intent отсутствует |
 
-Оба требуют `MockDb::crash_and_recover()` — недоступно в Phase 1.
-
----
-
-## Управление plateau
-
-В Phase 2 plateau означает принципиально другое, чем в Phase 1:
-
-| Сигнал | Значение | Реакция |
-|---|---|---|
-| `ft:` не растёт >1h | Мутатор застрял в локальном минимуме | Merge corpus + новые targeted seeds |
-| `ft:` растёт медленно | Исследуем глубокий код | Нормально, продолжать |
-| Distance-to-violation не уменьшается | Не приближаемся к нарушению | Сменить seed или стратегию мутации |
-
-**Не останавливать при plateau — перезапускать с новой стратегией:**
-
-```bash
-# При обнаружении plateau (ft не растёт >1h):
-# 1. Минимизировать corpus
-./build-fuzz/simulation/fuzz_harness2 -merge=1 corpus_min/ corpus_fuzz_run/
-# 2. Догенерировать targeted seeds из текущих "ближайших" состояний
-python3 scripts/gen_targeted_corpus_phase2.py --from-closest
-# 3. Перезапустить с обновлённым corpus
-```
-
-**Corpus bloat.** `pool.cpp` генерирует намного больше интересных путей, чем модель.
-Corpus может раздуться до десятков тысяч файлов. Периодический merge в `fuzz_watch.sh` — каждые 4 часа:
-
-```bash
-# в fuzz_watch.sh
-if [ $(( $(date +%s) % 14400 )) -lt 10 ]; then
-  ./build-fuzz/.../fuzz_harness2 -merge=1 \
-    "$REPO/simulation/corpus_fuzz_run2_min/" \
-    "$REPO/simulation/corpus_fuzz_run2/"
-fi
-```
+Оба требуют `MockDb::crash_and_recover()` — Шаг 3.
 
 ---
 
-## Порядок реализации
+## Управление plateau (отличие от Phase 1)
 
-1. MockBus + MockKeyring + MockDb scaffolding
-2. `fuzz_harness2.cpp` — `LLVMFuzzerTestOneInput` вызывает `pool.cpp`
-3. Corpus из testnet: `trace.ndjson` → `trace_to_corpus_phase2.py`
-4. WAL crash injection
-5. Vector-guided fuzzing (опционально, если 1–4 не дали результата)
+В Phase 1 plateau = "всё покрыто, стоп". В Phase 2 пространство состояний ~2^64,
+plateau значит "мутатор застрял в локальном минимуме" — **не останавливать, перезапускать:**
+
+| Сигнал | Реакция |
+|---|---|
+| `ft:` не растёт >1h | Merge corpus + сгенерировать новые targeted seeds |
+| `ft:` растёт медленно | Нормально, продолжать |
+| Coverage плато, крашей нет | Перейти к следующему шагу |
+
+**Corpus bloat:** периодически минимизировать каждые 4 часа:
+```bash
+./build/test/consensus/fuzz_pool -merge=1 corpus_pool_min/ corpus_pool/
+```
