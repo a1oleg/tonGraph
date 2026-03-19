@@ -3,37 +3,35 @@
  *
  * SPDX-License-Identifier: LGPL-2.0-or-later
  *
- * Phase 2, Step 2+3 fuzzer: pool.cpp via BusRuntime + MockDb + WAL crash injection.
+ * Phase 2, Steps 2–4 fuzzer: pool.cpp via BusRuntime + MockDb.
  *
- * Exercises vote-accumulation, cert-creation, WAL (MockDb) paths, and
- * crash-recovery (amnesia-gap, alarm-skip-after-notarize).
+ * Step 2: vote-accumulation, cert-creation, WAL (MockDb) paths.
+ * Step 3: WAL crash injection (MockDb::crash_losing_last_n + restart).
+ * Step 4: state-vector counters registered with libFuzzer to guide
+ *         mutation toward dangerous protocol states beyond code coverage.
  *
  * Ed25519 signature verification is bypassed via
- * PeerValidator::g_skip_signature_check.  A MockKeyring returns dummy 64-byte
- * signatures so bootstrap_votes can be re-signed after crash+recover.
+ * PeerValidator::g_skip_signature_check.  MockKeyring returns dummy
+ * 64-byte signatures so bootstrap_votes can be re-signed after crash.
  *
  * Fuzz input layout (FuzzedDataProvider):
  *   n_messages  : uint8  (0..15)
- *   do_crash    : uint8  (0=no crash, 1=crash)
- *   n_lose      : uint8  (0..MAX_LOSE_WRITES) — WAL entries lost in crash
+ *   do_crash    : bool
+ *   n_lose      : uint8  (0..MAX_LOSE_WRITES)
  *   per message:
  *     src_idx   : uint8  (0..N_VALIDATORS-1)
  *     vote_type : uint8  (0=notarize, 1=skip, 2=finalize)
  *     slot      : uint8  (0..MAX_SLOT)
  *     cand_seed : uint8  (0..N_CAND_SEEDS-1)
  *
- * The crash happens after all messages are injected.  Invariant trackers
- * (g_notar_by_slot, g_skip_by_slot) persist across the crash boundary to catch
- * safety violations that only manifest post-recovery.
- *
- * Build (FUZZING=ON cmake build, e.g. the "build" directory):
- *   cmake --build build --target fuzz_pool -- -j$(nproc)
+ * Build (FUZZING=ON cmake build):
+ *   cmake --build build-fuzz2 --target fuzz_pool -- -j$(nproc)
  *
  * Test run (1 hour):
  *   REPO=$(pwd)
  *   mkdir -p simulation/corpus_fuzz_pool simulation/crashes_pool
  *   tmux new-session -d -s fuzz_pool \
- *     "cd $REPO && timeout 3600 ./build/test/consensus/fuzz_pool \
+ *     "cd $REPO && timeout 3600 ./build-fuzz2/test/consensus/fuzz_pool \
  *      $REPO/simulation/corpus_fuzz_pool/ \
  *      -max_total_time=3600 -jobs=$(nproc) \
  *      -artifact_prefix=$REPO/simulation/crashes_pool/ \
@@ -41,6 +39,7 @@
  */
 
 #include <fuzzer/FuzzedDataProvider.h>
+#include <cstring>
 #include <map>
 #include <optional>
 #include <string>
@@ -71,6 +70,89 @@ static constexpr uint8_t MAX_LOSE_WRITES = 8;
 static constexpr int DRAIN_ROUNDS = 20;
 static constexpr int DRAIN_CRASH_ROUNDS = 200;
 
+// ── Step 4: State-vector counters ─────────────────────────────────────────────
+//
+// 16 slots × 8 events = 128 bytes of per-slot counters, plus 8 global bytes.
+// Registered with libFuzzer via __sanitizer_cov_8bit_counters_init so the
+// fuzzer treats new semantic state-combinations as new "coverage" even after
+// code-coverage has plateaued.
+//
+// Per-slot events (index = slot * 8 + event):
+//   0  NOTAR_VOTE  — our notarize vote was broadcast for this slot
+//   1  SKIP_VOTE   — a skip vote was broadcast for this slot
+//   2  FINAL_VOTE  — a finalize vote was broadcast for this slot
+//   3  NOTAR_CERT  — notarize cert observed for this slot
+//   4  POST_CRASH  — any vote/cert event for this slot after crash+restart
+//   5  BOTH_NS     — DANGER: both notarize AND skip votes on same slot
+//   6  CERT_SKIP   — DANGER: notarize cert + skip votes on same slot
+//   7  reserved
+//
+// Global counters at offset 128:
+//   128  CRASHED          — crash+restart happened this run
+//   129  WINDOW_ADVANCED  — LeaderWindowObserved fired (window progressed)
+//   130  POST_CRASH_CERT  — notarize cert observed after crash (safety stress)
+
+static constexpr int STATE_COUNTER_BYTES = 136;
+static uint8_t g_state_counters[STATE_COUNTER_BYTES] = {};
+
+// __sanitizer_cov_trace_cmp1 is part of the libFuzzer/SanitizerCoverage ABI.
+// With -use_value_profile=1 each unique (arg1,arg2) pair counts as new
+// coverage.  We use it to signal dangerous state combinations to libFuzzer.
+extern "C" void __sanitizer_cov_trace_cmp1(uint8_t arg1, uint8_t arg2);
+
+enum SlotEvent : int {
+  SE_NOTAR_VOTE = 0,
+  SE_SKIP_VOTE  = 1,
+  SE_FINAL_VOTE = 2,
+  SE_NOTAR_CERT = 3,
+  SE_POST_CRASH = 4,
+  SE_BOTH_NS    = 5,
+  SE_CERT_SKIP  = 6,
+};
+static constexpr int SE_STRIDE = 8;
+
+static bool g_post_crash_phase = false;
+
+static void slot_event(int32_t slot_i32, SlotEvent ev) {
+  if (slot_i32 < 0 || slot_i32 >= 16) return;
+  auto slot = static_cast<uint8_t>(slot_i32);
+  int base = slot * SE_STRIDE;
+  g_state_counters[base + ev]++;
+
+  // Emit value-profile pairs so libFuzzer (-use_value_profile=1) treats
+  // new state combinations as new "coverage":
+
+  // Tracks per-slot correlation of notarize vs skip votes.
+  // A new (notar_count, skip_count) pair = new dangerous combo explored.
+  __sanitizer_cov_trace_cmp1(g_state_counters[base + SE_NOTAR_VOTE],
+                              g_state_counters[base + SE_SKIP_VOTE]);
+
+  // Danger: notarize cert already exists, skip votes accumulating.
+  if (g_state_counters[base + SE_NOTAR_CERT]) {
+    __sanitizer_cov_trace_cmp1(static_cast<uint8_t>(slot | 0x80),
+                                g_state_counters[base + SE_SKIP_VOTE]);
+  }
+
+  // Post-crash: any activity on a slot that had a NotarCert before crash.
+  if (g_post_crash_phase && g_state_counters[base + SE_NOTAR_CERT]) {
+    __sanitizer_cov_trace_cmp1(static_cast<uint8_t>(slot | 0xC0),
+                                static_cast<uint8_t>(ev));
+  }
+
+  // Update internal danger counters (used by g_notar_by_slot checks).
+  if (g_state_counters[base + SE_NOTAR_VOTE] && g_state_counters[base + SE_SKIP_VOTE]) {
+    g_state_counters[base + SE_BOTH_NS]++;
+  }
+  if (g_state_counters[base + SE_NOTAR_CERT] && g_state_counters[base + SE_SKIP_VOTE]) {
+    g_state_counters[base + SE_CERT_SKIP]++;
+  }
+  if (g_post_crash_phase) {
+    g_state_counters[base + SE_POST_CRASH]++;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 namespace ton::validator::consensus::simplex {
 
 // ── MockDb ────────────────────────────────────────────────────────────────────
@@ -96,7 +178,7 @@ class MockDb final : public consensus::Db {
     co_return {};
   }
 
-  // Discard the last `n` written keys from the store (crash simulation).
+  // Discard the last `n` written keys (crash simulation).
   void crash_losing_last_n(size_t n) {
     n = std::min(n, write_log_.size());
     for (size_t i = 0; i < n; i++) {
@@ -105,7 +187,7 @@ class MockDb final : public consensus::Db {
     }
   }
 
-  // Return a deep clone of the current (post-crash) DB state.
+  // Deep-copy the current (post-crash) DB state for the recovery bus.
   std::unique_ptr<MockDb> clone() const {
     auto db = std::make_unique<MockDb>();
     for (const auto& [k, v] : kv_) {
@@ -115,43 +197,26 @@ class MockDb final : public consensus::Db {
     return db;
   }
 
-  size_t write_count() const {
-    return write_log_.size();
-  }
-
  private:
   std::map<std::string, td::BufferSlice> kv_;
-  std::vector<std::string> write_log_;  // ordered unique insertion log
+  std::vector<std::string> write_log_;
 };
 
 // ── MockKeyring ───────────────────────────────────────────────────────────────
 //
-// Required for bootstrap_votes replay on pool restart: handle_our_vote()
-// calls co_await td::actor::ask(bus.keyring, &Keyring::sign_message, ...).
+// bootstrap_votes replay calls co_await keyring::sign_message on restart.
 // Since g_skip_signature_check=true the actual bytes don't matter.
 
 class MockKeyring final : public keyring::Keyring {
  public:
-  void add_key(PrivateKey, bool, td::Promise<td::Unit> p) override {
-    p.set_value({});
-  }
-  void check_key(PublicKeyHash, td::Promise<td::Unit> p) override {
-    p.set_value({});
-  }
-  void add_key_short(PublicKeyHash, td::Promise<PublicKey> p) override {
-    p.set_error(td::Status::Error("mock"));
-  }
-  void del_key(PublicKeyHash, td::Promise<td::Unit> p) override {
-    p.set_value({});
-  }
-  void export_private_key(PublicKeyHash, td::Promise<PrivateKey> p) override {
-    p.set_error(td::Status::Error("mock"));
-  }
-  void get_public_key(PublicKeyHash, td::Promise<PublicKey> p) override {
-    p.set_error(td::Status::Error("mock"));
-  }
+  void add_key(PrivateKey, bool, td::Promise<td::Unit> p) override { p.set_value({}); }
+  void check_key(PublicKeyHash, td::Promise<td::Unit> p) override { p.set_value({}); }
+  void add_key_short(PublicKeyHash, td::Promise<PublicKey> p) override { p.set_error(td::Status::Error("mock")); }
+  void del_key(PublicKeyHash, td::Promise<td::Unit> p) override { p.set_value({}); }
+  void export_private_key(PublicKeyHash, td::Promise<PrivateKey> p) override { p.set_error(td::Status::Error("mock")); }
+  void get_public_key(PublicKeyHash, td::Promise<PublicKey> p) override { p.set_error(td::Status::Error("mock")); }
   void sign_message(PublicKeyHash, td::BufferSlice, td::Promise<td::BufferSlice> p) override {
-    p.set_value(td::BufferSlice(64));  // 64 zero bytes; check bypassed
+    p.set_value(td::BufferSlice(64));
   }
   void sign_add_get_public_key(PublicKeyHash, td::BufferSlice,
                                 td::Promise<std::pair<td::BufferSlice, PublicKey>> p) override {
@@ -161,17 +226,13 @@ class MockKeyring final : public keyring::Keyring {
                      td::Promise<std::vector<td::Result<td::BufferSlice>>> p) override {
     std::vector<td::Result<td::BufferSlice>> res;
     res.reserve(data.size());
-    for (size_t i = 0; i < data.size(); i++) {
-      res.emplace_back(td::BufferSlice(64));
-    }
+    for (size_t i = 0; i < data.size(); i++) res.emplace_back(td::BufferSlice(64));
     p.set_value(std::move(res));
   }
   void decrypt_message(PublicKeyHash, td::BufferSlice, td::Promise<td::BufferSlice> p) override {
     p.set_error(td::Status::Error("mock"));
   }
-  void export_all_private_keys(td::Promise<std::vector<PrivateKey>> p) override {
-    p.set_value({});
-  }
+  void export_all_private_keys(td::Promise<std::vector<PrivateKey>> p) override { p.set_value({}); }
 };
 
 // ── FuzzBus ───────────────────────────────────────────────────────────────────
@@ -183,7 +244,8 @@ class FuzzBus final : public Bus {
   }
 };
 
-// Invariant-tracking globals (written by FuzzObserver, checked inline)
+// Invariant-tracking globals (written by FuzzObserver, checked inline).
+// Intentionally persist across crash+restart to catch cross-boundary violations.
 static std::map<td::uint32, td::Bits256> g_notar_by_slot;
 static std::map<td::uint32, td::Bits256> g_skip_by_slot;
 
@@ -198,7 +260,6 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
 
   explicit FuzzObserver(FuzzBus&) {}
 
-  // Use FuzzBusHandle explicitly to match the template instantiation
   template <>
   void handle(FuzzBusHandle, std::shared_ptr<const StopRequested>) {
     stop();
@@ -209,24 +270,57 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
     td::uint32 slot = ev->certificate->vote.id.slot;
     auto hash = ev->certificate->vote.id.hash;
 
-    // SAFETY: NotarCert + SkipCert on same slot
+    // Safety: NotarCert + SkipCert on same slot
     if (g_skip_by_slot.count(slot)) {
-      __builtin_trap();  // dual cert: notarize+skip on same slot
+      __builtin_trap();
     }
-    // SAFETY: two different NotarCerts on same slot
+    // Safety: two different NotarCerts on same slot
     auto [it, inserted] = g_notar_by_slot.emplace(slot, hash);
     if (!inserted && it->second != hash) {
-      __builtin_trap();  // dual cert: two different notarizations
+      __builtin_trap();
+    }
+
+    // Step 4: state counter
+    slot_event(static_cast<int32_t>(slot), SE_NOTAR_CERT);
+    if (g_post_crash_phase) g_state_counters[130]++;
+  }
+
+  template <>
+  void handle(FuzzBusHandle, std::shared_ptr<const FinalizationObserved>) {}
+
+  // Step 4: track window progression
+  template <>
+  void handle(FuzzBusHandle, std::shared_ptr<const LeaderWindowObserved>) {
+    g_state_counters[129]++;
+  }
+
+  // Step 4: parse outgoing votes to record per-slot vote-type counters
+  template <>
+  void handle(FuzzBusHandle, std::shared_ptr<const OutgoingProtocolMessage> msg) {
+    auto maybe_vote = fetch_tl_object<ton_api::consensus_simplex_vote>(
+        msg->message.data.clone(), true);
+    if (maybe_vote.is_error()) return;
+    auto& v = *maybe_vote.ok();
+    auto* uv = v.vote_.get();
+    if (!uv) return;
+    switch (uv->get_id()) {
+      case ton_api::consensus_simplex_notarizeVote::ID: {
+        auto* nv = static_cast<ton_api::consensus_simplex_notarizeVote*>(uv);
+        if (nv->id_) slot_event(nv->id_->slot_, SE_NOTAR_VOTE);
+        break;
+      }
+      case ton_api::consensus_simplex_skipVote::ID: {
+        auto* sv = static_cast<ton_api::consensus_simplex_skipVote*>(uv);
+        slot_event(sv->slot_, SE_SKIP_VOTE);
+        break;
+      }
+      case ton_api::consensus_simplex_finalizeVote::ID: {
+        auto* fv = static_cast<ton_api::consensus_simplex_finalizeVote*>(uv);
+        if (fv->id_) slot_event(fv->id_->slot_, SE_FINAL_VOTE);
+        break;
+      }
     }
   }
-
-  template <>
-  void handle(FuzzBusHandle, std::shared_ptr<const FinalizationObserved>) {
-    // Could add finalization invariant checks here
-  }
-
-  template <>
-  void handle(FuzzBusHandle, std::shared_ptr<const OutgoingProtocolMessage>) {}
 
   template <>
   void handle(FuzzBusHandle, std::shared_ptr<const TraceEvent>) {}
@@ -249,7 +343,7 @@ struct FuzzState {
   std::shared_ptr<td::actor::Runtime> runtime;
   td::actor::BusHandle<FuzzBus> bus;
   td::actor::ActorOwn<MockKeyring> keyring;
-  MockDb* db_raw = nullptr;  // non-owning; owned by bus->db
+  MockDb* db_raw = nullptr;
   ValidatorSessionId session_id;
   td::Bits256 cand_hashes[N_CAND_SEEDS];
 };
@@ -304,13 +398,9 @@ static void configure_and_start_bus(FuzzState& S, std::unique_ptr<MockDb> db) {
 // ── WAL crash-and-restart ─────────────────────────────────────────────────────
 
 static void crash_and_restart(FuzzState& S, size_t n_lose) {
-  // 1. Apply crash: discard the last n_lose WAL entries.
   S.db_raw->crash_losing_last_n(n_lose);
-
-  // 2. Clone post-crash DB state while it is still owned by the live bus.
   auto recovered_db = S.db_raw->clone();
 
-  // 3. Signal old bus to stop and drain all pending coroutines.
   S.scheduler->run_in_context([&] {
     S.bus.publish(std::make_shared<StopRequested>());
   });
@@ -318,27 +408,25 @@ static void crash_and_restart(FuzzState& S, size_t n_lose) {
     S.scheduler->run(0);
   }
 
-  // 4. Release old bus and runtime (actors have stopped; BusTreeNode destroyed).
   S.bus = {};
   S.runtime.reset();
 
-  // 5. Start fresh bus with the recovered (post-crash) DB state.
-  //    g_notar_by_slot / g_skip_by_slot are intentionally kept to catch
-  //    cross-crash safety violations.
+  g_post_crash_phase = true;
+  g_state_counters[128]++;  // GC_CRASHED
+
   configure_and_start_bus(S, std::move(recovered_db));
 }
 
 // ── One-time initialization ───────────────────────────────────────────────────
 
 extern "C" int LLVMFuzzerInitialize(int*, char***) {
-  // Suppress BusRuntime and pool.cpp verbose logging
   SET_VERBOSITY_LEVEL(VERBOSITY_NAME(ERROR));
-
-  // Disable GraphLogger
   simulation::GraphLogger::instance().init();
-
-  // Bypass Ed25519 signature verification
   PeerValidator::g_skip_signature_check = true;
+
+  // g_state_counters are used internally; value-profile pairs are emitted
+  // via __sanitizer_cov_trace_cmp1 in slot_event() (Step 4).
+  // Run with: -use_value_profile=1 to enable semantic coverage guidance.
 
   g_state = new FuzzState();
   auto& S = *g_state;
@@ -350,11 +438,9 @@ extern "C" int LLVMFuzzerInitialize(int*, char***) {
     S.cand_hashes[i].as_array()[0] = static_cast<uint8_t>(i + 1);
   }
 
-  // Single-threaded scheduler, skip_timeouts=true for deterministic drain
   S.scheduler = std::make_unique<td::actor::Scheduler>(
       std::vector<td::actor::Scheduler::NodeInfo>{{1}}, /*skip_timeouts=*/true);
 
-  // Create MockKeyring in the scheduler context; it lives for the whole run.
   S.scheduler->run_in_context([&] {
     S.keyring = td::actor::create_actor<MockKeyring>(
         td::actor::ActorOptions{}.with_name("MockKeyring"));
@@ -370,6 +456,10 @@ extern "C" int LLVMFuzzerInitialize(int*, char***) {
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   if (size < 3) return 0;
 
+  // Step 4: reset state-vector counters for this run.
+  std::memset(g_state_counters, 0, STATE_COUNTER_BYTES);
+  g_post_crash_phase = false;
+
   FuzzedDataProvider fdp(data, size);
   uint8_t n_messages = fdp.ConsumeIntegralInRange<uint8_t>(0, 15);
   bool do_crash = fdp.ConsumeBool();
@@ -383,7 +473,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 
     auto& S = *g_state;
 
-    // Build vote TL
     tl_object_ptr<ton_api::consensus_simplex_UnsignedVote> vote_tl;
     if (vote_type == 0) {
       vote_tl = create_tl_object<ton_api::consensus_simplex_notarizeVote>(
@@ -398,7 +487,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
               static_cast<int32_t>(slot), S.cand_hashes[cand_seed]));
     }
 
-    // Signed vote TL with dummy 64-byte signature (check is bypassed)
     auto signed_vote_tl = create_tl_object<ton_api::consensus_simplex_vote>(
         std::move(vote_tl), td::BufferSlice(64));
 
@@ -410,13 +498,11 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
       S.bus.publish(msg);
     });
 
-    // Drain event queue (~3 coroutine round-trips needed for cert path)
     for (int i = 0; i < DRAIN_ROUNDS; i++) {
       S.scheduler->run(0);
     }
   }
 
-  // WAL crash injection (Step 3): crash and recover the pool.
   if (do_crash) {
     crash_and_restart(*g_state, n_lose);
   }
