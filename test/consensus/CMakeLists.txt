@@ -13,10 +13,10 @@ target_link_libraries(test-consensus overlay tdutils tdactor adnl adnltest rldp 
 if(FUZZING)
   add_executable(fuzz_tl fuzz_tl.cpp)
   target_compile_options(fuzz_tl PRIVATE
-      -fsanitize=fuzzer,address
+      -fsanitize=fuzzer
       -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
       -g -O1
   )
-  target_link_options(fuzz_tl PRIVATE -fsanitize=fuzzer,address)
+  target_link_options(fuzz_tl PRIVATE -fsanitize=fuzzer)
   target_link_libraries(fuzz_tl PRIVATE tl_api tdutils tl-utils)
 endif()
