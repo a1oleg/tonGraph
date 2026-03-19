@@ -43,11 +43,15 @@ cmake --build build --target fuzz_tl -- -j$(nproc)
 
 ### Тестовый прогон (1 час)
 
+> **Важно:** `-max_total_time=3600` — таймер каждого воркера, не всего прогона.
+> Главный процесс ждёт пока завершатся все `-jobs=N` воркеров → суммарное время >1 часа.
+> Используй `timeout` чтобы прогон длился ровно час:
+
 ```bash
 REPO=$(pwd)
 mkdir -p simulation/corpus_fuzz_tl simulation/crashes_tl
 tmux new-session -d -s fuzz_tl \
-  "./build/test/consensus/fuzz_tl \
+  "cd $REPO && timeout 3600 ./build/test/consensus/fuzz_tl \
   $REPO/simulation/corpus_fuzz_tl/ \
   -max_total_time=3600 -jobs=$(nproc) \
   -artifact_prefix=$REPO/simulation/crashes_tl/ \
@@ -64,7 +68,7 @@ tmux new-session -d -s fuzz_tl \
 
 ```bash
 tmux new-session -d -s fuzz_tl \
-  "./build/test/consensus/fuzz_tl \
+  "cd $REPO && timeout 86400 ./build/test/consensus/fuzz_tl \
   $REPO/simulation/corpus_fuzz_tl/ \
   -max_total_time=86400 -jobs=$(nproc) \
   -artifact_prefix=$REPO/simulation/crashes_tl/ \
