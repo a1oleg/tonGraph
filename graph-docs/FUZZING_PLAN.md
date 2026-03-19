@@ -10,6 +10,8 @@
 | Статус | ✅ Реализовано, прогон завершён | 🔲 Будущая работа |
 | Подробнее | [FUZZING_PHASE1.md](FUZZING_PHASE1.md) | [FUZZING_PHASE2.md](FUZZING_PHASE2.md) |
 
+Масштабирование на несколько машин: [FUZZING_DISTRIBUTED.md](FUZZING_DISTRIBUTED.md)
+
 ---
 
 ## Оптимальный порядок (применимо к обеим фазам)
