@@ -70,6 +70,9 @@ td::StringBuilder& operator<<(td::StringBuilder& stream, const PeerValidatorId& 
 struct PeerValidator {
   [[nodiscard]] bool check_signature(ValidatorSessionId session, td::Slice data, td::Slice signature) const;
 
+  // Set to true in fuzz builds to bypass Ed25519 verification.
+  static bool g_skip_signature_check;
+
   bool operator==(const PeerValidator& other) const = default;
 
   PeerValidatorId idx;

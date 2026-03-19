@@ -22,7 +22,12 @@ td::StringBuilder& operator<<(td::StringBuilder& stream, const PeerValidatorId& 
   return stream << "validator " << id.value();
 }
 
+bool PeerValidator::g_skip_signature_check = false;
+
 bool PeerValidator::check_signature(ValidatorSessionId session, td::Slice data, td::Slice signature) const {
+  if (g_skip_signature_check) {
+    return true;
+  }
   auto signed_data = create_serialize_tl_object<tl::dataToSign>(session, td::BufferSlice(data));
   return key.create_encryptor().move_as_ok()->check_signature(signed_data, signature).is_ok();
 }
