@@ -59,3 +59,16 @@ INFO: seed corpus: files: 108 min: 1b max: 63b total: 2335b rss: 34Mb
 #2639602	NEW    cov: 795 ft: 1608 corp: 51/1227b lim: 4096 exec/s: 3510 rss: 37Mb L: 28/66 MS: 4 EraseBytes-CopyPart-CopyPart-CrossOver-
 #2847372	REDUCE cov: 795 ft: 1610 corp: 52/1253b lim: 4096 exec/s: 3502 rss: 37Mb L: 26/66 MS: 1 CopyPart-
 #2986360	NEW    cov: 795 ft: 1797 corp: 53/1309b lim: 4096 exec/s: 3492 rss: 37Mb L: 56/66 MS: 4 CopyPart-InsertRepeatedBytes-ChangeBinInt-ChangeBinInt-
+#3946467	NEW    cov: 795 ft: 1800 corp: 54/1324b lim: 4096 exec/s: 3428 rss: 37Mb L: 15/66 MS: 2 ShuffleBytes-CopyPart-
+#4194304	pulse  cov: 795 ft: 1800 corp: 54/1324b lim: 4096 exec/s: 3412 rss: 37Mb
+#4382770	REDUCE cov: 795 ft: 1800 corp: 54/1314b lim: 4096 exec/s: 3400 rss: 37Mb L: 16/66 MS: 1 EraseBytes-
+#4417756	REDUCE cov: 795 ft: 1800 corp: 54/1311b lim: 4096 exec/s: 3403 rss: 37Mb L: 13/66 MS: 5 ChangeBinInt-CMP-CopyPart-ChangeBit-EraseBytes- DE: "\000\000\000\000\000\000\000\014"-
+#4573256	REDUCE cov: 795 ft: 1800 corp: 54/1308b lim: 4096 exec/s: 3390 rss: 37Mb L: 32/66 MS: 1 EraseBytes-
+#5112712	REDUCE cov: 795 ft: 1800 corp: 54/1306b lim: 4096 exec/s: 3379 rss: 38Mb L: 26/66 MS: 3 PersAutoDict-ChangeBit-EraseBytes- DE: "\000\000"-
+#6053454	REDUCE cov: 795 ft: 1800 corp: 54/1305b lim: 4096 exec/s: 3350 rss: 38Mb L: 26/66 MS: 4 CopyPart-ChangeBinInt-EraseBytes-ChangeBinInt-
+#6216387	REDUCE cov: 795 ft: 1800 corp: 54/1302b lim: 4096 exec/s: 3347 rss: 38Mb L: 10/66 MS: 1 EraseBytes-
+#6264270	REDUCE cov: 795 ft: 1800 corp: 54/1291b lim: 4096 exec/s: 3349 rss: 38Mb L: 36/66 MS: 1 EraseBytes-
+#6501604	REDUCE cov: 795 ft: 1800 corp: 54/1283b lim: 4096 exec/s: 3346 rss: 38Mb L: 22/66 MS: 2 EraseBytes-ChangeByte-
+#6631660	NEW    cov: 795 ft: 1804 corp: 55/1303b lim: 4096 exec/s: 3339 rss: 38Mb L: 20/66 MS: 5 EraseBytes-EraseBytes-CMP-InsertRepeatedBytes-ShuffleBytes- DE: "\000\000\000\000\000\000\000\000"-
+#6678799	REDUCE cov: 795 ft: 1804 corp: 55/1302b lim: 4096 exec/s: 3339 rss: 38Mb L: 9/66 MS: 4 ChangeBinInt-ChangeByte-PersAutoDict-EraseBytes- DE: "\001\000\000\000\000\000\000\000"-
+#7284802	REDUCE cov: 795 ft: 1804 corp: 55/1299b lim: 4096 exec/s: 3330 rss: 38Mb L: 12/66 MS: 5 CMP-PersAutoDict-ShuffleBytes-EraseBytes-ShuffleBytes- DE: "\002\000\000\000\000\000\000\000"-"\000\000\000\000\000\000\000\014"-

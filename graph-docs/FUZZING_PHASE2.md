@@ -1,6 +1,6 @@
 # Фаззинг — Phase 2: уровень реализации
 
-[← Phase 1](FUZZING_PHASE1.md) | [Общий план](FUZZING_PLAN.md)
+[← Phase 1](FUZZING_PHASE1.md) | [Общий план](FUZZING_PLAN.md) | [→ Phase 3](FUZZING_PHASE3.md)
 
 ## Что фаззим
 

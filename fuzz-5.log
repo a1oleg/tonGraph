@@ -72,3 +72,13 @@ INFO: seed corpus: files: 108 min: 1b max: 63b total: 2335b rss: 34Mb
 #2451208	NEW    cov: 796 ft: 1794 corp: 55/1697b lim: 4096 exec/s: 2850 rss: 38Mb L: 16/191 MS: 1 InsertByte-
 #2451214	NEW    cov: 796 ft: 1795 corp: 56/1829b lim: 4096 exec/s: 2850 rss: 38Mb L: 132/191 MS: 1 CopyPart-
 #2451284	NEW    cov: 796 ft: 1796 corp: 57/1923b lim: 4096 exec/s: 2850 rss: 38Mb L: 94/191 MS: 5 InsertRepeatedBytes-ChangeByte-ChangeByte-CrossOver-ChangeBinInt-
+#2563142	NEW    cov: 796 ft: 1802 corp: 58/1935b lim: 4096 exec/s: 2851 rss: 38Mb L: 12/191 MS: 1 InsertByte-
+#3316545	REDUCE cov: 796 ft: 1802 corp: 58/1925b lim: 4096 exec/s: 2856 rss: 38Mb L: 30/191 MS: 5 EraseBytes-InsertByte-ChangeBinInt-InsertByte-InsertByte-
+#3469416	REDUCE cov: 796 ft: 1802 corp: 58/1921b lim: 4096 exec/s: 2857 rss: 38Mb L: 23/191 MS: 3 EraseBytes-EraseBytes-ChangeBit-
+#3538288	REDUCE cov: 796 ft: 1802 corp: 58/1916b lim: 4096 exec/s: 2855 rss: 38Mb L: 5/191 MS: 5 EraseBytes-ChangeBit-ChangeBinInt-InsertByte-EraseBytes-
+#3757327	REDUCE cov: 796 ft: 1802 corp: 58/1915b lim: 4096 exec/s: 2855 rss: 38Mb L: 7/191 MS: 2 EraseBytes-ChangeBit-
+#3779661	NEW    cov: 796 ft: 1804 corp: 59/1927b lim: 4096 exec/s: 2856 rss: 38Mb L: 12/191 MS: 3 PersAutoDict-CrossOver-EraseBytes- DE: "\000\000\000\001\000\000\000\004"-
+#4194304	pulse  cov: 796 ft: 1804 corp: 59/1927b lim: 4096 exec/s: 2866 rss: 38Mb
+#5740258	REDUCE cov: 796 ft: 1804 corp: 59/1926b lim: 4096 exec/s: 2864 rss: 38Mb L: 4/191 MS: 4 EraseBytes-ShuffleBytes-ChangeByte-ChangeBit-
+#6005334	REDUCE cov: 796 ft: 1804 corp: 59/1925b lim: 4096 exec/s: 2861 rss: 38Mb L: 6/191 MS: 2 ChangeBinInt-EraseBytes-
+#6028843	REDUCE cov: 796 ft: 1804 corp: 59/1922b lim: 4096 exec/s: 2862 rss: 38Mb L: 17/191 MS: 1 EraseBytes-
