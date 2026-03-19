@@ -348,8 +348,33 @@ mkdir -p simulation/corpus_fuzz_run simulation/crashes
 
 ---
 
+## Результаты Phase 1 прогона
+
+| Параметр | Значение |
+|---|---|
+| Дата | 2026-03-19 |
+| Длительность | ~12 часов (остановлен досрочно — coverage plateau) |
+| Итерации (воркер 0) | ~239M |
+| Скорость | ~6570 iter/sec |
+| Воркеров | 16–20 (nproc) |
+| Coverage | `cov: 913 ft: 5116` — плато с первых часов |
+| Corpus | 6064 файлов (вырос с 272 → 3343 → 5244 → 6064) |
+| **SAFETY VIOLATION** (`#dual-cert`) | **0** — не найден |
+| INVARIANT VIOLATION | Найдены (equivocation, duplicate proposal, notarize+skip) — ожидаемо |
+| Crashes | 0 |
+
+**Вывод:** Coverage вышла на плато `cov: 913` и не росла несколько часов — все достижимые ветки кода покрыты. `#dual-cert` в текущей модели не воспроизводится при N=3..6.
+
+Возможные причины:
+- Протокол корректен на уровне модели при данных предположениях
+- Harness не моделирует часть условий, необходимых для dual-cert (например, сетевые задержки, WAL crash)
+- Требуется Phase 2 с реальным `pool.cpp`
+
+---
+
 ## Следующие шаги (приоритет)
 
 1. ~~**`FuzzedDataProvider`**~~ — ✅ [54933808](https://github.com/a1oleg/tonGraph/commit/54933808) реализовано
 2. ~~**Properties as assertions**~~ — ✅ [0f729a39](https://github.com/a1oleg/tonGraph/commit/0f729a39) 6 из 8 Cypher-проверок в C++; 2 оставшихся требуют Phase 2
-3. **Phase 2** — real `pool.cpp` fuzzer (MockBus + MockKeyring + MockDb)
+3. ~~**Phase 1 прогон**~~ — ✅ 2026-03-19, ~239M итераций, SAFETY VIOLATION не найден
+4. **Phase 2** — real `pool.cpp` fuzzer (MockBus + MockKeyring + MockDb)
