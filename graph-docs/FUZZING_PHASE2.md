@@ -96,44 +96,49 @@ tmux new-session -d -s fuzz_tl \
 
 ---
 
-## Шаг 2 — fuzz_pool 🔲
+## Шаг 2 — fuzz_pool ✅ реализован, 🔲 тестовый прогон
 
 **Что тестирует:** реальный `PoolImpl` (`pool.cpp`) с настоящим actor runtime,
-искусственным validator set (без сетевого слоя), MockDb.
+N=4 validators (dummy keys), `MockDb` (in-memory WAL), `FuzzObserver` (dual-cert oracle).
 
 **Что ловит:** баги в логике накопления голосов, обработке сертификатов,
-WAL-операциях при краше.
+dual-cert (NotarCert+SkipCert на одном слоте = SAFETY VIOLATION).
 
-**Скорость:** ожидаемо 1K–10K iter/sec (actor runtime значительно медленнее).
+**Коммит:** `e7e08519`
 
-### Что нужно написать (~500 строк)
+**Реализация:** `test/consensus/fuzz_pool.cpp` (~270 строк)
+- `MockDb`: in-memory `consensus::Db` (синхронный `co_return {}`)
+- `FuzzBus`: extends `simplex::Bus`, `populate_collator_schedule()`
+- `FuzzObserver`: actor, отслеживает `NotarizationObserved`/`FinalizationObserved`, `__builtin_trap()` при dual-cert
+- `PeerValidator::g_skip_signature_check = true`: обход Ed25519 без изменений prod-кода
+- Fuzz input: FuzzedDataProvider → (src_idx, vote_type, slot, cand_seed) × N
+- Дрейн: 20 × `scheduler.run(0)` после каждого inject
 
-```cpp
-// MockDb — WAL без диска, с инжекцией краша
-class MockDb : public consensus::Db {
-    std::map<std::string, td::BufferSlice> kv_;
-public:
-    std::optional<td::BufferSlice> get(td::Slice key) const override;
-    std::vector<...> get_by_prefix(td::uint32 prefix) const override;
-    td::actor::Task<> set(td::BufferSlice key, td::BufferSlice value) override;
-    void crash_and_recover();  // сбрасывает несинхронизированные write
-};
-
-// Детерминированный validator set с fake-подписями (Ed25519 заменён XOR)
-// Инжекция IncomingProtocolMessage из fuzz input
-// Дрейн event queue после каждого сообщения
-```
+**Скорость:** **~5K iter/sec** на 1 воркер (actor runtime, BusRuntime overhead)
 
 ### Тестовый прогон (1 час)
 
+```bash
+REPO=$(pwd)
+mkdir -p simulation/corpus_fuzz_pool simulation/crashes_pool
+tmux new-session -d -s fuzz_pool \
+  "cd $REPO && timeout 3600 ./build/test/consensus/fuzz_pool \
+   $REPO/simulation/corpus_fuzz_pool/ \
+   -max_total_time=3600 -jobs=$(nproc) \
+   -artifact_prefix=$REPO/simulation/crashes_pool/ \
+   >> $REPO/simulation/fuzz_pool.log 2>&1"
+```
+
 На что смотреть:
-- `crashes_pool/` — любой crash важен, репортить
-- `cov:` — должна расти дольше чем у fuzz_tl (логика сложнее)
-- Если coverage плато <1 часа → генерировать targeted seeds из trace.ndjson
+- `crashes_pool/` — любой crash важен (dual-cert = `__builtin_trap`)
+- `cov:` — должна расти дольше чем у fuzz_tl (pool.cpp сложнее)
+- Если coverage плато <1 часа → переходить к полному прогону
+
+**Критерий перехода к Шагу 3:** coverage плато + 0 крашей за 1 час тестового прогона.
 
 ### Полный прогон (72 часа)
 
-Pool.cpp сложнее TL-парсера: полный прогон имеет смысл дольше, чем fuzz_tl.
+Pool.cpp сложнее TL-парсера: полный прогон имеет смысл дольше.
 72 часа — разумная верхняя граница до перехода к WAL crash injection.
 
 ---
