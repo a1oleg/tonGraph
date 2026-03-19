@@ -82,3 +82,5 @@ INFO: seed corpus: files: 108 min: 1b max: 63b total: 2335b rss: 34Mb
 #5740258	REDUCE cov: 796 ft: 1804 corp: 59/1926b lim: 4096 exec/s: 2864 rss: 38Mb L: 4/191 MS: 4 EraseBytes-ShuffleBytes-ChangeByte-ChangeBit-
 #6005334	REDUCE cov: 796 ft: 1804 corp: 59/1925b lim: 4096 exec/s: 2861 rss: 38Mb L: 6/191 MS: 2 ChangeBinInt-EraseBytes-
 #6028843	REDUCE cov: 796 ft: 1804 corp: 59/1922b lim: 4096 exec/s: 2862 rss: 38Mb L: 17/191 MS: 1 EraseBytes-
+#7336613	REDUCE cov: 796 ft: 1804 corp: 59/1921b lim: 4096 exec/s: 2854 rss: 38Mb L: 3/191 MS: 2 ShuffleBytes-EraseBytes-
+#7811535	REDUCE cov: 796 ft: 1804 corp: 59/1918b lim: 4096 exec/s: 2849 rss: 38Mb L: 52/191 MS: 4 CopyPart-InsertRepeatedBytes-ChangeBit-EraseBytes-
