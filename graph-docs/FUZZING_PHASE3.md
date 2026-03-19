@@ -6,7 +6,7 @@
 ## Текущий прогресс
 
 ```
-Шаг 1  ✅  state-vector counters + value-profile (реализован в fuzz_pool.cpp)
+Шаг 1  ✅  state-vector counters + value-profile → cov: 797, ft: 1999, corpus: 480, крашей: 0
 Шаг 2  🔲  Consensus актор + stub-резолверы (alarm-skip-after-notarize)
 Шаг 3  🔲  VectorDB guidance (Faiss/hnswlib)
 Шаг 4  🔲  Распределённый запуск (corpus sync + стратегии)
@@ -23,11 +23,27 @@
 - `slot_event()` эмитирует `__sanitizer_cov_trace_cmp1(counter, 0)` пары — без PC-table mismatch
 - Запуск: добавить `-use_value_profile=1` к аргументам fuzzer
 
-**Результат:** `ft` (feature targets) ~1050 → **1950** (+900 семантических путей),
+**Результат:** `ft` (feature targets) ~1050 → **1950** (+900 семантических путей) с `-use_value_profile=1`,
 без изменений production-кода.
 
 **Ограничение:** сигнал бинарный («эта пара встречалась / нет»), не непрерывный.
 Полный gradient descent к опасным состояниям — Шаг 3 (VectorDB).
+
+### Результаты продолжённого прогона (2026-03-19)
+
+Прогон продолжился после Phase 2 на том же corpus (без `-use_value_profile=1`),
+16 воркеров, остановлен вручную:
+
+| Параметр | Значение |
+|---|---|
+| Скорость | ~2650 iter/sec на воркер |
+| Coverage | `cov: 797` (+2 от Phase 2) |
+| ft (без value_profile) | `ft: 1999` |
+| Corpus | 480 файлов (все воркеры) |
+| **Крашей** | **0** |
+
+**Вывод:** coverage и ft на плато. Corpus богатый (480 файлов).
+Переходим к Шагу 2 (Consensus актор).
 
 ---
 

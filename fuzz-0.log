@@ -82,3 +82,6 @@ INFO: seed corpus: files: 108 min: 1b max: 63b total: 2335b rss: 34Mb
 #5625199	REDUCE cov: 796 ft: 1992 corp: 61/2235b lim: 4096 exec/s: 2679 rss: 38Mb L: 19/450 MS: 3 CMP-InsertRepeatedBytes-EraseBytes- DE: "\377\377\377\377\377\377\377\377"-
 #5659087	REDUCE cov: 797 ft: 1993 corp: 62/2265b lim: 4096 exec/s: 2682 rss: 38Mb L: 30/450 MS: 3 CrossOver-ChangeByte-ChangeByte-
 #5920621	REDUCE cov: 797 ft: 1996 corp: 63/2341b lim: 4096 exec/s: 2676 rss: 38Mb L: 76/450 MS: 2 InsertRepeatedBytes-ShuffleBytes-
+#8049247	REDUCE cov: 797 ft: 1999 corp: 64/2486b lim: 4096 exec/s: 2649 rss: 38Mb L: 145/450 MS: 4 ChangeByte-PersAutoDict-InsertRepeatedBytes-CrossOver- DE: "\377\377\377\377\377\377\377\377"-
+#8203757	REDUCE cov: 797 ft: 1999 corp: 64/2485b lim: 4096 exec/s: 2647 rss: 38Mb L: 3/450 MS: 3 EraseBytes-CopyPart-CopyPart-
+==206635== libFuzzer: run interrupted; exiting

@@ -85,3 +85,4 @@ INFO: seed corpus: files: 108 min: 1b max: 63b total: 2335b rss: 34Mb
 #7336613	REDUCE cov: 796 ft: 1804 corp: 59/1921b lim: 4096 exec/s: 2854 rss: 38Mb L: 3/191 MS: 2 ShuffleBytes-EraseBytes-
 #7811535	REDUCE cov: 796 ft: 1804 corp: 59/1918b lim: 4096 exec/s: 2849 rss: 38Mb L: 52/191 MS: 4 CopyPart-InsertRepeatedBytes-ChangeBit-EraseBytes-
 #8388608	pulse  cov: 796 ft: 1804 corp: 59/1918b lim: 4096 exec/s: 2848 rss: 38Mb
+==206641== libFuzzer: run interrupted; exiting
