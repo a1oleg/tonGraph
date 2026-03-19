@@ -80,7 +80,7 @@ node simulation/relay.mjs
 ```
 
 Читает `simulation/trace.ndjson` построчно и отправляет события через `AuraGraphReporter`.
-Требует заполненного `.env` (см. [MCP_NEO4J_AURA.md](MCP_NEO4J_AURA.md)).
+Требует заполненного `.env` (см. [MCP_NEO4J_AURA.md](mcps/MCP_NEO4J_AURA.md)).
 
 ---
 

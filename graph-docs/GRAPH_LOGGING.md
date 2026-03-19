@@ -187,7 +187,7 @@ simulation::GraphLogger::instance().init();
 3. Собрать: `cmake --build ./build --target simulation -j4`.
 4. Запустить сценарий: **[SIMULATION.md](SIMULATION.md)**.
 5. `node simulation/relay.mjs` → Neo4j.
-6. Проверить через MCP ([MCP_NEO4J_AURA.md](MCP_NEO4J_AURA.md)):
+6. Проверить через MCP ([MCP_NEO4J_AURA.md](mcps/MCP_NEO4J_AURA.md)):
    - Изолировать прогон: [#last-session](CYPHER_QUERIES.md#last-session)
    - Аномалии: [#equivocation](CYPHER_QUERIES.md#equivocation), [#dual-cert](CYPHER_QUERIES.md#dual-cert)
    - Очистить: [#clean](CYPHER_QUERIES.md#clean)
