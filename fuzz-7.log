@@ -76,3 +76,5 @@ INFO: seed corpus: files: 108 min: 1b max: 63b total: 2335b rss: 34Mb
 #4944531	REDUCE cov: 795 ft: 1792 corp: 54/1380b lim: 4096 exec/s: 2886 rss: 38Mb L: 40/97 MS: 5 ChangeBit-EraseBytes-ChangeByte-InsertByte-ChangeByte-
 #5203709	NEW    cov: 795 ft: 1803 corp: 55/1459b lim: 4096 exec/s: 2879 rss: 38Mb L: 79/97 MS: 5 CMP-CrossOver-CrossOver-ChangeBinInt-ShuffleBytes- DE: "\001\000"-
 #8388608	pulse  cov: 795 ft: 1803 corp: 55/1459b lim: 4096 exec/s: 2806 rss: 38Mb
+#8644607	NEW    cov: 796 ft: 1804 corp: 56/1474b lim: 4096 exec/s: 2804 rss: 38Mb L: 15/97 MS: 3 ChangeByte-ChangeByte-CrossOver-
+==206642== libFuzzer: run interrupted; exiting
