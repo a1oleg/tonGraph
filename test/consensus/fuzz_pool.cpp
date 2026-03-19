@@ -3,12 +3,17 @@
  *
  * SPDX-License-Identifier: LGPL-2.0-or-later
  *
- * Phase 2, Steps 2–4 fuzzer: pool.cpp via BusRuntime + MockDb.
+ * Phase 2 Steps 2–4 + Phase 3 Step 2 fuzzer: pool.cpp + ConsensusImpl.
  *
  * Step 2: vote-accumulation, cert-creation, WAL (MockDb) paths.
  * Step 3: WAL crash injection (MockDb::crash_losing_last_n + restart).
- * Step 4: state-vector counters registered with libFuzzer to guide
- *         mutation toward dangerous protocol states beyond code coverage.
+ * Step 4: state-vector counters for semantic coverage guidance.
+ * Phase 3 Step 2: ConsensusImpl registered, enabling alarm-skip-after-notarize
+ *   detection via the start_up() SkipVote broadcast path.
+ *   FuzzStubResolver handles ResolveState / ResolveCandidate with error returns
+ *   so detached coroutines in start_generation() abort gracefully.
+ *   SkipCerts detected in OutgoingProtocolMessage → cross-boundary
+ *   dual-cert (NotarCert + SkipCert) triggers __builtin_trap().
  *
  * Ed25519 signature verification is bypassed via
  * PeerValidator::g_skip_signature_check.  MockKeyring returns dummy
@@ -55,11 +60,15 @@
 #include "td/actor/BusRuntime.h"
 #include "td/actor/actor.h"
 #include "td/actor/common.h"
+#include "td/actor/coro_utils.h"
 #include "tl-utils/common-utils.hpp"
 #include "ton/ton-types.h"
+#include "validator/interfaces/validator-manager.h"
 
 #include "simulation/GraphLogger.h"
 #include "td/utils/logging.h"
+
+#include <cmath>
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -93,12 +102,91 @@ static constexpr int DRAIN_CRASH_ROUNDS = 200;
 //   130  POST_CRASH_CERT  — notarize cert observed after crash (safety stress)
 
 static constexpr int STATE_COUNTER_BYTES = 136;
+static constexpr int SE_STRIDE = 8;
 static uint8_t g_state_counters[STATE_COUNTER_BYTES] = {};
 
 // __sanitizer_cov_trace_cmp1 is part of the libFuzzer/SanitizerCoverage ABI.
 // With -use_value_profile=1 each unique (arg1,arg2) pair counts as new
 // coverage.  We use it to signal dangerous state combinations to libFuzzer.
 extern "C" void __sanitizer_cov_trace_cmp1(uint8_t arg1, uint8_t arg2);
+
+// ── Phase 3 Step 3: VectorDB — cosine similarity guidance ─────────────────────
+//
+// Three reference vectors (per-slot danger patterns, slot-agnostic):
+//   REF_ALARM_SKIP   — voted_notar pre-crash + post-crash + skip votes accumulating
+//   REF_AMNESIA      — notar_cert pre-crash + post-crash activity (amnesia gap)
+//   REF_DUAL_CERT    — notar_cert + cert_skip simultaneously
+//
+// After each LLVMFuzzerTestOneInput, we compute max cosine similarity between
+// g_state_counters and each reference pattern across all 16 slots, then emit
+// __sanitizer_cov_trace_cmp1 pairs encoding the similarity score.
+// libFuzzer (-use_value_profile=1) treats higher similarity as new coverage →
+// gradient descent toward dangerous states without Faiss/hnswlib.
+//
+// ref_pattern[i] uses indices relative to slot base (0..7):
+//   0=SE_NOTAR_VOTE 1=SE_SKIP_VOTE 2=SE_FINAL_VOTE 3=SE_NOTAR_CERT
+//   4=SE_POST_CRASH 5=SE_BOTH_NS   6=SE_CERT_SKIP  7=reserved
+
+static const float REF_ALARM_SKIP[SE_STRIDE] = {
+  255.f,  // SE_NOTAR_VOTE:  our node voted notarize (pre-crash)
+  200.f,  // SE_SKIP_VOTE:   skip votes accumulating (post-crash quorum forming)
+    0.f,  // SE_FINAL_VOTE
+  255.f,  // SE_NOTAR_CERT:  notarize cert observed (pre-crash)
+  200.f,  // SE_POST_CRASH:  post-crash activity on this slot
+    0.f,  // SE_BOTH_NS
+    0.f,  // SE_CERT_SKIP
+    0.f,  // reserved
+};
+
+static const float REF_AMNESIA[SE_STRIDE] = {
+  255.f,  // SE_NOTAR_VOTE:  our vote was broadcast before crash
+    0.f,  // SE_SKIP_VOTE
+    0.f,  // SE_FINAL_VOTE
+  255.f,  // SE_NOTAR_CERT:  notar cert formed
+  255.f,  // SE_POST_CRASH:  now in post-crash phase
+    0.f,  // SE_BOTH_NS
+    0.f,  // SE_CERT_SKIP
+    0.f,  // reserved
+};
+
+static const float REF_DUAL_CERT[SE_STRIDE] = {
+    0.f,  // SE_NOTAR_VOTE
+    0.f,  // SE_SKIP_VOTE
+    0.f,  // SE_FINAL_VOTE
+  255.f,  // SE_NOTAR_CERT:  notarize cert present
+    0.f,  // SE_POST_CRASH
+    0.f,  // SE_BOTH_NS
+  255.f,  // SE_CERT_SKIP:   skip cert also present → dual-cert
+    0.f,  // reserved
+};
+
+static float cosine_sim_slot(const float* ref, const uint8_t* counters_at_base) {
+  float dot = 0.f, na = 0.f, nb = 0.f;
+  for (int i = 0; i < SE_STRIDE; i++) {
+    float a = ref[i];
+    float b = static_cast<float>(counters_at_base[i]);
+    dot += a * b;
+    na  += a * a;
+    nb  += b * b;
+  }
+  if (na < 1e-9f || nb < 1e-9f) return 0.f;
+  return dot / std::sqrt(na * nb);
+}
+
+// Emit similarity scores for all three reference vectors across all slots.
+// Channel byte: 0xE0 | (ref_idx << 4) | slot — unique per (ref, slot) pair.
+static void emit_vector_guidance() {
+  const float* refs[3] = {REF_ALARM_SKIP, REF_AMNESIA, REF_DUAL_CERT};
+  for (int r = 0; r < 3; r++) {
+    for (int slot = 0; slot < 16; slot++) {
+      float sim = cosine_sim_slot(refs[r], &g_state_counters[slot * SE_STRIDE]);
+      auto sim_byte = static_cast<uint8_t>(sim * 255.f);
+      // Channel: 0xA0 = alarm-skip family, 0xB0 = amnesia family, 0xC0 = dual-cert
+      auto channel  = static_cast<uint8_t>(0xA0 + r * 0x10 + slot);
+      __sanitizer_cov_trace_cmp1(channel, sim_byte);
+    }
+  }
+}
 
 enum SlotEvent : int {
   SE_NOTAR_VOTE = 0,
@@ -109,7 +197,6 @@ enum SlotEvent : int {
   SE_BOTH_NS    = 5,
   SE_CERT_SKIP  = 6,
 };
-static constexpr int SE_STRIDE = 8;
 
 static bool g_post_crash_phase = false;
 
@@ -294,9 +381,29 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
     g_state_counters[129]++;
   }
 
-  // Step 4: parse outgoing votes to record per-slot vote-type counters
+  // Step 4 + Phase 3 Step 2: parse outgoing messages — votes and certificates.
+  // SkipCert detection enables alarm-skip-after-notarize safety check.
   template <>
   void handle(FuzzBusHandle, std::shared_ptr<const OutgoingProtocolMessage> msg) {
+    // Try certificate first (certificate TL id != vote TL id).
+    auto maybe_cert = fetch_tl_object<ton_api::consensus_simplex_certificate>(
+        msg->message.data.clone(), true);
+    if (maybe_cert.is_ok()) {
+      auto& cert = *maybe_cert.ok();
+      auto* uv = cert.vote_.get();
+      if (uv && uv->get_id() == ton_api::consensus_simplex_skipVote::ID) {
+        auto* sv = static_cast<ton_api::consensus_simplex_skipVote*>(uv);
+        td::uint32 slot = static_cast<td::uint32>(sv->slot_);
+        g_skip_by_slot.emplace(slot, td::Bits256{});
+        slot_event(static_cast<int32_t>(slot), SE_CERT_SKIP);
+        // Safety: SkipCert on a slot that already has a NotarCert → violation
+        if (g_notar_by_slot.count(slot)) {
+          __builtin_trap();
+        }
+      }
+      return;
+    }
+
     auto maybe_vote = fetch_tl_object<ton_api::consensus_simplex_vote>(
         msg->message.data.clone(), true);
     if (maybe_vote.is_error()) return;
@@ -320,6 +427,29 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
         break;
       }
     }
+  }
+
+  // Phase 3 Step 2: stub resolvers so Consensus coroutines abort gracefully
+  // instead of hanging forever when StateResolver / CandidateResolver are absent.
+
+  template <>
+  td::actor::Task<ResolveState::Result> process(FuzzBusHandle, std::shared_ptr<ResolveState>) {
+    co_return td::Status::Error("mock");
+  }
+
+  template <>
+  td::actor::Task<ResolveCandidate::Result> process(FuzzBusHandle, std::shared_ptr<ResolveCandidate>) {
+    co_return td::Status::Error("mock");
+  }
+
+  template <>
+  td::actor::Task<StoreCandidate::ReturnType> process(FuzzBusHandle, std::shared_ptr<StoreCandidate>) {
+    co_return td::Unit{};
+  }
+
+  template <>
+  td::actor::Task<ValidateCandidateResult> process(FuzzBusHandle, std::shared_ptr<ValidationRequest>) {
+    co_return CandidateReject{"mock", {}};
   }
 
   template <>
@@ -384,6 +514,7 @@ static void configure_and_start_bus(FuzzState& S, std::unique_ptr<MockDb> db) {
   S.runtime = std::make_shared<td::actor::Runtime>();
   Pool::register_in(*S.runtime);
   simplex::Db::register_in(*S.runtime);
+  Consensus::register_in(*S.runtime);  // Phase 3 Step 2: enables alarm-skip path via start_up()
   S.runtime->register_actor<FuzzObserver>("FuzzObserver");
 
   S.scheduler->run_in_context([&] {
@@ -453,59 +584,68 @@ extern "C" int LLVMFuzzerInitialize(int*, char***) {
 
 // ── Per-iteration fuzzing ─────────────────────────────────────────────────────
 
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  if (size < 3) return 0;
+// Inject a single vote message into the bus and drain the scheduler.
+static void inject_vote(FuzzedDataProvider& fdp) {
+  if (fdp.remaining_bytes() < 4) return;
+  auto& S = *g_state;
 
-  // Step 4: reset state-vector counters for this run.
+  auto src_idx   = fdp.ConsumeIntegralInRange<uint8_t>(0, N_VALIDATORS - 1);
+  auto vote_type = fdp.ConsumeIntegralInRange<uint8_t>(0, 2);
+  auto slot      = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_SLOT);
+  auto cand_seed = fdp.ConsumeIntegralInRange<uint8_t>(0, N_CAND_SEEDS - 1);
+
+  tl_object_ptr<ton_api::consensus_simplex_UnsignedVote> vote_tl;
+  if (vote_type == 0) {
+    vote_tl = create_tl_object<ton_api::consensus_simplex_notarizeVote>(
+        create_tl_object<ton_api::consensus_candidateId>(
+            static_cast<int32_t>(slot), S.cand_hashes[cand_seed]));
+  } else if (vote_type == 1) {
+    vote_tl = create_tl_object<ton_api::consensus_simplex_skipVote>(
+        static_cast<int32_t>(slot));
+  } else {
+    vote_tl = create_tl_object<ton_api::consensus_simplex_finalizeVote>(
+        create_tl_object<ton_api::consensus_candidateId>(
+            static_cast<int32_t>(slot), S.cand_hashes[cand_seed]));
+  }
+
+  auto signed_vote_tl = create_tl_object<ton_api::consensus_simplex_vote>(
+      std::move(vote_tl), td::BufferSlice(64));
+  auto msg_bytes = serialize_tl_object(signed_vote_tl, true);
+  auto msg = std::make_shared<IncomingProtocolMessage>(
+      PeerValidatorId{src_idx}, ProtocolMessage{std::move(msg_bytes)});
+
+  S.scheduler->run_in_context([&] { S.bus.publish(msg); });
+  for (int i = 0; i < DRAIN_ROUNDS; i++) S.scheduler->run(0);
+}
+
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
+  if (size < 4) return 0;
+
+  // Reset state-vector counters for this run.
   std::memset(g_state_counters, 0, STATE_COUNTER_BYTES);
   g_post_crash_phase = false;
 
   FuzzedDataProvider fdp(data, size);
-  uint8_t n_messages = fdp.ConsumeIntegralInRange<uint8_t>(0, 15);
-  bool do_crash = fdp.ConsumeBool();
-  uint8_t n_lose = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_LOSE_WRITES);
 
-  for (uint8_t m = 0; m < n_messages && fdp.remaining_bytes() >= 4; m++) {
-    auto src_idx   = fdp.ConsumeIntegralInRange<uint8_t>(0, N_VALIDATORS - 1);
-    auto vote_type = fdp.ConsumeIntegralInRange<uint8_t>(0, 2);
-    auto slot      = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_SLOT);
-    auto cand_seed = fdp.ConsumeIntegralInRange<uint8_t>(0, N_CAND_SEEDS - 1);
+  // Fuzz input layout (Phase 3 Step 3):
+  //   n_pre    : uint8 (0..7)  — messages before crash
+  //   do_crash : bool
+  //   n_lose   : uint8 (0..MAX_LOSE_WRITES)
+  //   n_post   : uint8 (0..7)  — messages after crash (enables alarm-skip quorum)
+  //   per message: src_idx, vote_type, slot, cand_seed
+  uint8_t n_pre    = fdp.ConsumeIntegralInRange<uint8_t>(0, 7);
+  bool    do_crash = fdp.ConsumeBool();
+  uint8_t n_lose   = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_LOSE_WRITES);
+  uint8_t n_post   = fdp.ConsumeIntegralInRange<uint8_t>(0, 7);
 
-    auto& S = *g_state;
+  for (uint8_t m = 0; m < n_pre; m++)  inject_vote(fdp);
 
-    tl_object_ptr<ton_api::consensus_simplex_UnsignedVote> vote_tl;
-    if (vote_type == 0) {
-      vote_tl = create_tl_object<ton_api::consensus_simplex_notarizeVote>(
-          create_tl_object<ton_api::consensus_candidateId>(
-              static_cast<int32_t>(slot), S.cand_hashes[cand_seed]));
-    } else if (vote_type == 1) {
-      vote_tl = create_tl_object<ton_api::consensus_simplex_skipVote>(
-          static_cast<int32_t>(slot));
-    } else {
-      vote_tl = create_tl_object<ton_api::consensus_simplex_finalizeVote>(
-          create_tl_object<ton_api::consensus_candidateId>(
-              static_cast<int32_t>(slot), S.cand_hashes[cand_seed]));
-    }
+  if (do_crash) crash_and_restart(*g_state, n_lose);
 
-    auto signed_vote_tl = create_tl_object<ton_api::consensus_simplex_vote>(
-        std::move(vote_tl), td::BufferSlice(64));
+  for (uint8_t m = 0; m < n_post; m++) inject_vote(fdp);
 
-    auto msg_bytes = serialize_tl_object(signed_vote_tl, true);
-    auto msg = std::make_shared<IncomingProtocolMessage>(
-        PeerValidatorId{src_idx}, ProtocolMessage{std::move(msg_bytes)});
-
-    S.scheduler->run_in_context([&] {
-      S.bus.publish(msg);
-    });
-
-    for (int i = 0; i < DRAIN_ROUNDS; i++) {
-      S.scheduler->run(0);
-    }
-  }
-
-  if (do_crash) {
-    crash_and_restart(*g_state, n_lose);
-  }
+  // Phase 3 Step 3: emit cosine similarity scores toward reference danger states.
+  emit_vector_guidance();
 
   return 0;
 }
