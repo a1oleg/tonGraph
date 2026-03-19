@@ -37,7 +37,7 @@ else:
 | `crypto/create-state` | Fift-интерпретатор |
 
 Сейчас в `build/` собраны только `simulation/Debug/ConsensusHarness.exe` и `crypto/Debug/tlbc.exe`.
-Остальные не собраны из-за ошибки C1128 (`/bigobj`) на крупных TU (см. `BUILD_AND_RUN.md`).
+Остальные не собраны из-за ошибки C1128 (`/bigobj`) на крупных TU (см. [SIMULATION.md](SIMULATION.md#c1128)).
 
 ### Блокер 3 — `tonapi` не сгенерирован (решён)
 
