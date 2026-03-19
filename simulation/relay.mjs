@@ -1,5 +1,5 @@
 // relay.mjs — reads simulation/trace.ndjson line-by-line and pushes events
-// into Neo4j Aura using the schema defined in GRAPH_LOGGING_PLAN.md.
+// into Neo4j Aura using the schema defined in graph-docs/GRAPH_LOGGING.md.
 //
 // Schema written to Neo4j:
 //   (Validator)-[:propose {slot,tsMs}]->(Candidate)
