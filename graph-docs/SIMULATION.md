@@ -1,7 +1,7 @@
 # ConsensusHarness — сборка, запуск и Byzantine сценарии
 
 > Официальные инструкции сборки TON для Windows: [ton-blockchain/ton — Windows 10/11](https://github.com/ton-blockchain/ton#windows-10-11-server-x86-64).
-> Первичная настройка (cmake configure, Windows fixes) — **[SETUP.md](SETUP.md)**.
+> Первичная настройка на Windows — **[SETUP_WINDOWS.md](setups/SETUP_WINDOWS.md)**. Для WSL — **[SETUP_WSL.md](setups/SETUP_WSL.md)**.
 
 ---
 
