@@ -9,7 +9,7 @@
 Шаг 1  ✅  state-vector counters + value-profile → cov: 797, ft: 1999, corpus: 480, крашей: 0
 Шаг 2  ✅  Consensus актор + stub-резолверы → cov: 834 (+37), ft: 2833 (+834), крашей: 0
 Шаг 3  ✅  VectorDB cosine similarity + post-crash messages → cov: 849 (+15), ft: 2925, крашей: 0
-Шаг 4  🔲  Распределённый запуск (corpus sync + стратегии)
+Шаг 4  🔲  Распределённый запуск — начинаем с пробного на одной машине (3 стратегии)
 ```
 
 ---
@@ -148,34 +148,43 @@ broadcast, LeaderWindowObserved handler). Сценарий alarm-skip-after-nota
 
 ---
 
-## Шаг 3 — VectorDB guidance 🔲
+## Шаг 3 — Vector similarity guidance ✅
 
 ### Концепция
 
-Шаг 1 реализует value-profile пары (`__sanitizer_cov_trace_cmp1`) —
-бинарный сигнал «эта комбинация состояний встречалась». Полная vector guidance:
+Шаг 1 даёт бинарный сигнал «эта пара состояний встречалась». Шаг 3 добавляет
+**непрерывный** сигнал направленности: насколько текущее состояние близко к
+конкретному опасному сценарию.
 
-1. **Эталонные опасные состояния** (`reference_vectors`) — снимки состояния
-   pool.cpp перед известными SAFETY VIOLATION (из теоретического анализа протокола
-   или из PoC тестов).
+**Что выступает «базой»:** не отдельная VectorDB (Faiss/hnswlib не нужна при
+3 reference vectors). База — три константных float-массива в `.bss` процесса.
+Similarity search — brute-force O(3 × 16) per iteration. Faiss/hnswlib актуален
+когда reference vectors > ~100 или они динамические (из Neo4j/simulation).
 
-2. **Snapshot текущего состояния** после каждого `LLVMFuzzerTestOneInput`:
-   - для каждого слота: `notarize_weight`, `skip_weight`, `voted_notar`, certs
-   - flattened в float-вектор размерности ~64
+**Три компонента:**
 
-3. **Cosine similarity** к ближайшему reference_vector → fitness score
+1. **Reference vectors** (3 штуки, hardcoded) — паттерн опасного состояния
+   per-slot (размерность 8 = SE_STRIDE):
+   - `REF_ALARM_SKIP`: `SE_NOTAR_VOTE` + `SE_NOTAR_CERT` + `SE_POST_CRASH` + `SE_SKIP_VOTE`
+   - `REF_AMNESIA`: `SE_NOTAR_VOTE` + `SE_NOTAR_CERT` + `SE_POST_CRASH`
+   - `REF_DUAL_CERT`: `SE_NOTAR_CERT` + `SE_CERT_SKIP`
 
-4. **Мутатор** (`LLVMFuzzerCustomMutator`) предпочитает мутации,
-   которые увеличивают fitness score.
+2. **Snapshot** — `g_state_counters[slot * 8 + event]` (уже пишется в Шаге 1),
+   передаётся в `cosine_sim_slot()` после каждого `LLVMFuzzerTestOneInput`.
+
+3. **Similarity → libFuzzer signal**: `__sanitizer_cov_trace_cmp1(channel, sim_byte)`,
+   48 уникальных каналов (3 ref × 16 slots). С `-use_value_profile=1` libFuzzer
+   gradient descent-ит к более высокому sim_byte без LLVMFuzzerCustomMutator.
 
 ### Отличие от value-profile (Шаг 1)
 
-| | Шаг 1 (value-profile) | Шаг 3 (VectorDB) |
+| | Шаг 1 (value-profile) | Шаг 3 (vector similarity) |
 |---|---|---|
 | Сигнал | бинарные пары (arg1, arg2) | continuous cosine similarity [0,1] |
 | Направление | хаотичное — "новые комбинации" | целевое — "ближе к конкретному опасному состоянию" |
-| Зависимость | нет | Faiss/hnswlib |
-| Сложность | ✅ реализован | ✅ реализован (без Faiss — brute-force, 3 вектора) |
+| "База" | нет | 3 float-массива в памяти (brute-force) |
+| Faiss/hnswlib | не нужен | нужен если reference vectors > ~100 |
+| Сложность | ✅ реализован | ✅ реализован |
 
 ### Реализация (2026-03-19)
 
@@ -261,37 +270,95 @@ RETURN v.sessionId AS session, v.validatorIdx AS validator, n.slot AS slot
 
 ## Шаг 4 — Распределённый запуск 🔲
 
-При наличии нескольких машин Phase 3 масштабируется горизонтально.
+### Пробный запуск на одной машине (начинаем здесь)
 
-### Быстрый старт: corpus sync (Уровень 1)
+Перед распределением — прогнать на одной машине с разными стратегиями в параллельных
+tmux-окнах. Это проверяет: какая стратегия эффективнее находит alarm-skip путь,
+и даёт corpus для синхронизации при добавлении второй машины.
+
+```bash
+REPO=$(pwd)
+mkdir -p simulation/corpus_s4a simulation/crashes_s4a \
+         simulation/corpus_s4b simulation/crashes_s4b \
+         simulation/corpus_s4c simulation/crashes_s4c
+
+# Стратегия A: широкий поиск с cosine similarity guidance
+tmux new-session -d -s fuzz_s4a \
+  "cd $REPO && timeout 86400 ./build-fuzz2/test/consensus/fuzz_pool \
+   $REPO/simulation/corpus_p3s3/ $REPO/simulation/corpus_s4a/ \
+   -max_total_time=86400 -jobs=5 -use_value_profile=1 \
+   -artifact_prefix=$REPO/simulation/crashes_s4a/ \
+   >> $REPO/simulation/fuzz_s4a.log 2>&1"
+
+# Стратегия B: глубокие цепочки (длинные inputs, много голосов)
+tmux new-session -d -s fuzz_s4b \
+  "cd $REPO && timeout 86400 ./build-fuzz2/test/consensus/fuzz_pool \
+   $REPO/simulation/corpus_p3s3/ $REPO/simulation/corpus_s4b/ \
+   -max_total_time=86400 -jobs=5 -use_value_profile=1 \
+   -mutate_depth=8 -max_len=200 \
+   -artifact_prefix=$REPO/simulation/crashes_s4b/ \
+   >> $REPO/simulation/fuzz_s4b.log 2>&1"
+
+# Стратегия C: targeted seeds — quorum scenarios (alarm-skip focus)
+# Инжектируем seed: notarize×3 на slot=4, crash, skip×2 post-crash
+tmux new-session -d -s fuzz_s4c \
+  "cd $REPO && timeout 86400 ./build-fuzz2/test/consensus/fuzz_pool \
+   $REPO/simulation/corpus_p3s3/ $REPO/simulation/corpus_s4c/ \
+   -max_total_time=86400 -jobs=6 -use_value_profile=1 \
+   -artifact_prefix=$REPO/simulation/crashes_s4c/ \
+   >> $REPO/simulation/fuzz_s4c.log 2>&1"
+```
+
+**На что смотреть через 1 час:**
+- `crashes_s4*/` не пустой → alarm-skip найден → останавливать все стратегии
+- Какая стратегия дала наибольший рост `ft` → та масштабируется на второй машине
+- Если все три в плато → переходить к corpus merge + targeted seed (см. ниже)
+
+### Targeted seed для alarm-skip
+
+Если за 24 часа краша нет — сгенерировать ручной seed покрывающий точную
+последовательность:
+
+```
+n_pre=3, do_crash=1, n_lose=1, n_post=2
+pre[0]:  src=0, vote=notarize, slot=4, cand=0   ← наш узел notarize
+pre[1]:  src=1, vote=notarize, slot=4, cand=0   ← validator 1
+pre[2]:  src=2, vote=notarize, slot=4, cand=0   ← validator 2 → NotarCert{4}
+crash: n_lose=1 (теряем ourVote{4})
+post[0]: src=1, vote=skip, slot=4               ← skip от validator 1
+post[1]: src=2, vote=skip, slot=4               ← skip + ConsensusImpl skip → SkipCert{4} → TRAP
+```
+
+Но сначала нужно продвинуть window до slot=4: Pool не объявит LeaderWindow{4}
+пока slot=0..3 не нотаризованы или скипнуты. Добавить pre-сообщения для слотов 0-3.
+
+### Corpus sync при добавлении второй машины (Уровень 1)
 
 → Описание в [FUZZING_DISTRIBUTED.md — Уровень 1](FUZZING_DISTRIBUTED.md#уровень-1--corpus-sync-просто-без-координации)
 
 ```bash
 # Каждый час на каждой машине:
-rsync -a machine2:~/tonGraph/simulation/corpus_fuzz_pool/ simulation/corpus_fuzz_pool/
-./build-fuzz2/test/consensus/fuzz_pool -merge=1 corpus_merged/ simulation/corpus_fuzz_pool/
-mv corpus_merged/* simulation/corpus_fuzz_pool/
+rsync -a machine2:~/tonGraph/simulation/corpus_s4a/ simulation/corpus_s4a/
+./build-fuzz2/test/consensus/fuzz_pool -merge=1 corpus_merged/ simulation/corpus_s4a/
+mv corpus_merged/* simulation/corpus_s4a/
 ```
 
-### Специализация по стратегиям (Уровень 2)
+### Специализация по стратегиям на нескольких машинах (Уровень 2)
 
 → Описание в [FUZZING_DISTRIBUTED.md — Уровень 2](FUZZING_DISTRIBUTED.md#уровень-2--разделение-по-стратегиям-рекомендуется-первым)
 
-Для Phase 3 конкретно:
-
-| Машина | Фокус | Флаги |
+| Машина | Стратегия | Флаги |
 |---|---|---|
-| A | Широкий поиск, crash injection | `-use_value_profile=1` |
-| B | Глубокие цепочки (много голосов per iteration) | `-mutate_depth=8 -max_len=200` |
-| C | Короткие targeted seeds — quorum scenarios | `n_messages=3, все голоса за один слот` |
-| D | Только crash+restart, нет обычных iteration | `do_crash=1` всегда |
+| Local A | Широкий поиск, cosine similarity | `-use_value_profile=1` |
+| Local B | Глубокие цепочки | `-mutate_depth=8 -max_len=200` |
+| Local C | Targeted seeds, alarm-skip focus | `corpus_s4c/` + ручной seed |
+| Machine2 | Лучшая стратегия с Local + corpus sync | corpus rsync каждый час |
 
 ### Координатор на Redis (Уровень 3)
 
 → Описание в [FUZZING_DISTRIBUTED.md — Уровень 3](FUZZING_DISTRIBUTED.md#уровень-3--distributed-directed-fuzzing-координатор)
 
-Применять если Шаг 3 (VectorDB) не даёт новых крашей за 72 часа.
+Применять если 72 часа без крашей после пробного запуска.
 
 ---
 
@@ -315,9 +382,9 @@ Phase 3 Шаг 1 ✅: state-vector counters + value-profile (ft: 1999)
         ↓
 Phase 3 Шаг 2 ✅: Consensus актор → cov: 834, ft: 2833, крашей: 0
         ↓
-Phase 3 Шаг 3 ✅: VectorDB cosine similarity + post-crash messages → cov: 849, ft: 2925, крашей: 0
-        ↓ (при наличии нескольких машин, параллельно)
-Phase 3 Шаг 4: corpus sync + специализация стратегий
+Phase 3 Шаг 3 ✅: vector similarity + post-crash messages → cov: 849, ft: 2925, крашей: 0
+        ↓
+Phase 3 Шаг 4: пробный на одной машине (3 стратегии) → затем corpus sync + вторая машина
         ↓ (если 72ч без крашей)
         → Распределённый координатор (FUZZING_DISTRIBUTED.md Уровень 3)
 ```
