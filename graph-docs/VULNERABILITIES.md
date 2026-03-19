@@ -13,9 +13,18 @@
 **Описание:** Byzantine валидатор подписывает два разных `NotarizeVote` за один и тот же `slot`
 с разными `candidateId`.
 
-**Сценарий:** `ConsensusHarness --scenario equivocation`
+**Инвариант:**
+```
+∀ v ∈ Validators, ∀ s ∈ Slots, ∀ T ∈ {notarize, finalize}:
+  |{c | voted_T(v, c, s)}| ≤ 1
 
-**Инвариант:** [INVARIANTS.md#equivocation](INVARIANTS.md#equivocation)
+∀ v, s:
+  voted_notarize(v, c, s) ∧ voted_skip(v, s) ⇒ ⊥
+
+Нарушение ⇒ MisbehaviorReport(v) обязателен.
+```
+
+**Сценарий:** `ConsensusHarness --scenario equivocation`
 
 **Детектирование (Cypher):** [CYPHER_QUERIES.md#equivocation](CYPHER_QUERIES.md#equivocation)
 
@@ -28,9 +37,18 @@
 **Описание:** Лидер генерирует кандидата, но не доставляет `propose` валидаторам.
 Все валидаторы по таймауту шлют `SkipVote`, слот пропускается — прогресс заблокирован.
 
-**Сценарий:** `ConsensusHarness --scenario message_withholding`
+**Инвариант:**
+```
+∀ s ∈ Slots, L = leader(s):
+  Correct(L) ⇒ ◇ Propose(L, s)           [liveness]
 
-**Инвариант:** [INVARIANTS.md#withholding](INVARIANTS.md#withholding)
+∀ s: alarm(s) fires ⇒ ¬voted_notar(s)    [корректность таймаута]
+
+¬Propose(L, s) ∧ t > T_timeout ⇒
+  ∀ v: SkipVote(v, s) eventually
+```
+
+**Сценарий:** `ConsensusHarness --scenario message_withholding`
 
 **Детектирование (Cypher):** [CYPHER_QUERIES.md#withholding](CYPHER_QUERIES.md#withholding)
 
@@ -43,9 +61,16 @@
 **Описание:** Лидер шлёт разным группам валидаторов разные кандидаты (`cand_A`, `cand_B`)
 за один `slot`. Ни одна группа не набирает кворум → слот пропускается.
 
-**Сценарий:** `ConsensusHarness --scenario byzantine_leader`
+**Инвариант:**
+```
+∀ L = leader(s), ∀ s ∈ Slots:
+  |{c | Propose(L, c, s)}| ≤ 1
 
-**Инвариант:** [INVARIANTS.md#byzantine-leader](INVARIANTS.md#byzantine-leader)
+∃ c₁ ≠ c₂: Propose(L, c₁, s) ∧ Propose(L, c₂, s)
+  ⇒ MisbehaviorReport(L) обязателен
+```
+
+**Сценарий:** `ConsensusHarness --scenario byzantine_leader`
 
 **Детектирование (Cypher):** [CYPHER_QUERIES.md#byzantine-leader](CYPHER_QUERIES.md#byzantine-leader)
 
@@ -58,7 +83,16 @@
 **Описание:** Два валидатора финализируют разные блоки в одном `slot` — нарушение safety.
 Возникает при Byzantine quorum или ошибке в логике сертификации.
 
-**Инвариант:** [INVARIANTS.md#state-divergence](INVARIANTS.md#state-divergence)
+**Инвариант:**
+```
+∀ s ∈ Slots:
+  |{c | FinalizeCert(c, s)}| ≤ 1          [safety]
+
+FinalizeCert(c₁, s) ∧ FinalizeCert(c₂, s)
+  ⇒ c₁ = c₂
+
+SkipCert(s) ∧ FinalizeCert(c, s) ⇒ ⊥
+```
 
 **Детектирование (Cypher):** [CYPHER_QUERIES.md#dual-cert](CYPHER_QUERIES.md#dual-cert)
 
@@ -68,10 +102,20 @@
 
 ### 5. Amnesia attack
 
-**Описание:** Валидатор «забывает» ранее выданный `NotarizeVote` (локed кандидат)
+**Описание:** Валидатор «забывает» ранее выданный `NotarizeVote` (locked кандидат)
 и голосует за другой кандидат в том же `slot`. Аналог surround vote в Ethereum.
 
-**Инвариант:** [INVARIANTS.md#amnesia](INVARIANTS.md#amnesia)
+**Инвариант:**
+```
+∀ v ∈ Validators, ∀ s ∈ Slots, ∀ c:
+  broadcast(vote(v, c, s))
+    ⇒ persisted_to_db(v, c, s)            [до broadcast]
+
+restart(v) ⇒ state(v) = load_from_db(v)
+
+¬persisted(v, c, s) ∧ restart(v)
+  ⇒ ¬voted_notarize(v, c, s) after restart
+```
 
 **Детектирование (Cypher):** [CYPHER_QUERIES.md#amnesia](CYPHER_QUERIES.md#amnesia)
 
@@ -84,7 +128,17 @@
 **Описание:** `NotarizeVote` доставляется до `Propose` в одном `slot`.
 Если реализация не защищена от out-of-order, возможна некорректная обработка.
 
-**Инвариант:** [INVARIANTS.md#out-of-order](INVARIANTS.md#out-of-order)
+**Инвариант:**
+```
+∀ v, s:
+  recv(vote, s) before recv(propose, s)
+    ⇒ vote deferred or rejected          [no out-of-order accept]
+
+bootstrap_replay(votes) with conflict(v, s)
+  ⇒ MisbehaviorReport(v) обязателен
+
+tolerate_conflicts(v) = true ⇒ log_only ≠ suppress
+```
 
 **Детектирование (Cypher):** [CYPHER_QUERIES.md#out-of-order](CYPHER_QUERIES.md#out-of-order)
 
@@ -98,10 +152,19 @@
 сообщений (напр. дублированные `BroadcastVote`). Суммарно: O(N·t) сообщений → перегрузка
 bandwidth (~1 Gbps на типичном железе).
 
+**Инвариант:**
+```
+∀ t ∈ Time:
+  |requests_| = O(|Validators|)           [bounded queue]
+
+∀ v_byzantine, ∀ honest h:
+  msgs_received(h, t) = O(1) per slot    [per-validator, per-slot]
+
+retries(candidateId) ≤ R_max = const
+```
+
 **Проверка:** Измерить число входящих сообщений на честный узел при Byzantine отправителе
 за N слотов. Должно быть O(1) на слот, не O(слоты).
-
-**Инвариант:** [INVARIANTS.md#linear-flood](INVARIANTS.md#linear-flood)
 
 **Логирование:** `MsgReceived` эмитируется в `pool.cpp handle(IncomingProtocolMessage)`
 для каждого принятого vote/cert — commit [`f7be06af`](../../../commits/f7be06af).
@@ -119,7 +182,16 @@ bandwidth (~1 Gbps на типичном железе).
 Стоимость сертификации становится O(|Validators| × K) вместо O(|Validators|).
 При K=100 и N=100 — 10 000 операций на сообщение, реалистичный DoS.
 
-**Инвариант:** [INVARIANTS.md#superlinear](INVARIANTS.md#superlinear)
+**Инвариант:**
+```
+∀ s ∈ Slots:
+  |notarize_weight[s]| = O(1)             [один candidateId per slot]
+
+cert_creation_cost(s) = O(|Validators|)
+
+total_processing_cost(msgs)
+  = O(|msgs| · |Validators|)             [линейно, не O(N²)]
+```
 
 **Логирование:** `ResourceLoad` эмитируется в `pool.cpp handle_vote` после каждого
 `handle_typed_vote<NotarizeVote>` — фиксирует `notarize_weight.size()` и `requests_.size()`
