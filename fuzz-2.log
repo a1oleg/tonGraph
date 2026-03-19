@@ -83,3 +83,4 @@ INFO: seed corpus: files: 108 min: 1b max: 63b total: 2335b rss: 34Mb
 #5694356	REDUCE cov: 796 ft: 1805 corp: 55/1256b lim: 4096 exec/s: 3182 rss: 38Mb L: 3/131 MS: 2 ChangeBit-EraseBytes-
 #6679213	NEW    cov: 796 ft: 1809 corp: 56/1283b lim: 4096 exec/s: 3179 rss: 38Mb L: 27/131 MS: 5 ShuffleBytes-ChangeBit-CMP-ChangeByte-PersAutoDict- DE: "\377\377\377\377\377\377\377\017"-"\000\000"-
 #6897365	REDUCE cov: 796 ft: 1809 corp: 56/1282b lim: 4096 exec/s: 3161 rss: 38Mb L: 6/131 MS: 1 EraseBytes-
+#8388608	pulse  cov: 796 ft: 1809 corp: 56/1282b lim: 4096 exec/s: 3055 rss: 38Mb
