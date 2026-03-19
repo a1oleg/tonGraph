@@ -22,10 +22,13 @@ simulation/trace.ndjson
 simulation/trace_fuzz.ndjson
 simulation/corpus_fuzz_run/
 simulation/corpus_fuzz_tl/
+simulation/corpus_fuzz_pool/
 simulation/crashes/
 simulation/crashes_tl/
+simulation/crashes_pool/
 simulation/fuzz.log
 simulation/fuzz_tl.log
+simulation/fuzz_pool.log
 .DS_Store
 dev/
 
