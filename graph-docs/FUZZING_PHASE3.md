@@ -9,7 +9,7 @@
 Шаг 1  ✅  state-vector counters + value-profile → cov: 797, ft: 1999, corpus: 480, крашей: 0
 Шаг 2  ✅  Consensus актор + stub-резолверы → cov: 834 (+37), ft: 2833 (+834), крашей: 0
 Шаг 3  ✅  VectorDB cosine similarity + post-crash messages → cov: 849 (+15), ft: 2925, крашей: 0
-Шаг 4  🏃  Пробный запуск на одной машине — 3 стратегии (A×5 + B×5 + C×6 = 16 воркеров, запущен 2026-03-19)
+Шаг 4  ✅  Пробный запуск на одной машине — cov: 854, ft: 3162, крашей: 0 (запущен и остановлен 2026-03-19)
 ```
 
 ---
@@ -270,7 +270,28 @@ RETURN v.sessionId AS session, v.validatorIdx AS validator, n.slot AS slot
 
 ## Шаг 4 — Распределённый запуск 🔲
 
-### Пробный запуск на одной машине (начинаем здесь)
+### Пробный запуск на одной машине ✅
+
+Прогнан 2026-03-19, ~1.5 часа, 16 воркеров (A×5 + B×5 + C×6).
+
+#### Результаты
+
+| Воркер / lim | cov | ft | Стратегия |
+|---|---|---|---|
+| fuzz-0 (lim:200) | 854 | 3132 | B (-max_len=200) |
+| fuzz-1 (lim:200) | 851 | 3112 | B |
+| fuzz-2 (lim:4096) | 853 | **3162** | A/C |
+| fuzz-3 (lim:4096) | 850 | 3143 | A/C |
+| fuzz-4 (lim:200) | 851 | 3107 | B |
+| fuzz-5 (lim:4096) | 850 | 3155 | A/C |
+
+- **Лучший ft: 3162** (стратегия A/C, lim:4096)
+- **Крашей: 0** по всем трём стратегиям
+- Рост cov: 849 → 854 (+5 новых путей за ~1.5 часа)
+- Плато достигнуто — cov/ft перестали расти
+
+**Вывод:** alarm-skip не найден случайным мутатором за 1.5 часа.
+Следующий шаг — corpus sync + вторая машина (Уровень 1–2) или ручной targeted seed.
 
 Перед распределением — прогнать на одной машине с разными стратегиями в параллельных
 tmux-окнах. Это проверяет: какая стратегия эффективнее находит alarm-skip путь,
@@ -367,7 +388,7 @@ mv corpus_merged/* simulation/corpus_s4a/
 | Инвариант | Cypher query | Требует | Статус |
 |---|---|---|---|
 | dual-cert (notar+skip) | [#dual-cert](CYPHER_QUERIES.md#dual-cert) | `g_notar_by_slot` + `g_skip_by_slot` | ✅ реализован (Phase 2) |
-| alarm-skip-after-notarize | [#alarm-skip-after-notarize](CYPHER_QUERIES.md#alarm-skip-after-notarize) | Consensus актор + crash | 🔲 Шаг 2 |
+| alarm-skip-after-notarize | [#alarm-skip-after-notarize](CYPHER_QUERIES.md#alarm-skip-after-notarize) | Consensus актор + crash | ✅ реализован (Шаги 2–3), краш не найден |
 | amnesia-gap | [#amnesia-gap](CYPHER_QUERIES.md#amnesia-gap) | crash_losing(ourVote) + bootstrap replay | ✅ частично (Phase 2 Шаг 3) |
 | two-cert для разных кандидатов | [#dual-cert-issued](CYPHER_QUERIES.md#dual-cert-issued) | `g_notar_by_slot[X]` != new hash | ✅ реализован (Phase 2) |
 
