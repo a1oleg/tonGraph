@@ -7,8 +7,8 @@
 
 ```
 Шаг 1  ✅  state-vector counters + value-profile → cov: 797, ft: 1999, corpus: 480, крашей: 0
-Шаг 2  🔲  Consensus актор + stub-резолверы (alarm-skip-after-notarize)
-Шаг 3  🔲  VectorDB guidance (Faiss/hnswlib)
+Шаг 2  ✅  Consensus актор + stub-резолверы → cov: 834 (+37), ft: 2833 (+834), крашей: 0
+Шаг 3  ✅  VectorDB cosine similarity + post-crash messages → cov: 849 (+15), ft: 2925, крашей: 0
 Шаг 4  🔲  Распределённый запуск (corpus sync + стратегии)
 ```
 
@@ -131,6 +131,21 @@ RETURN a.slot, a.tsMs
 ```
 → [CYPHER_QUERIES.md#alarm-skip-after-notarize](CYPHER_QUERIES.md#alarm-skip-after-notarize)
 
+### Результаты (2026-03-19)
+
+| Параметр | Значение |
+|---|---|
+| Скорость | ~2180 iter/sec на воркер |
+| Coverage | `cov: 834` (+37 от Шага 1 — новые пути ConsensusImpl) |
+| ft (с `-use_value_profile=1`) | `ft: 2833` (+834 от Шага 1) |
+| **Крашей** | **0** |
+
+**Вывод:** ConsensusImpl добавил 37 новых кодовых путей (alarm(), start_up() SkipVote
+broadcast, LeaderWindowObserved handler). Сценарий alarm-skip-after-notarize не сработал
+автоматически — требует точной последовательности (NotarVote → crash → restart с
+`first_nonannounced_window > 0` → SkipVote → quorum SkipVotes от других валидаторов).
+Случайный мутатор не находит её за разумное время → нужен VectorDB guidance (Шаг 3).
+
 ---
 
 ## Шаг 3 — VectorDB guidance 🔲
@@ -160,7 +175,37 @@ RETURN a.slot, a.tsMs
 | Сигнал | бинарные пары (arg1, arg2) | continuous cosine similarity [0,1] |
 | Направление | хаотичное — "новые комбинации" | целевое — "ближе к конкретному опасному состоянию" |
 | Зависимость | нет | Faiss/hnswlib |
-| Сложность | ✅ реализован | ~1 неделя |
+| Сложность | ✅ реализован | ✅ реализован (без Faiss — brute-force, 3 вектора) |
+
+### Реализация (2026-03-19)
+
+Вместо Faiss/hnswlib реализован brute-force cosine similarity — достаточно для 3 reference vectors:
+
+- **`REF_ALARM_SKIP`**: `SE_NOTAR_VOTE` + `SE_NOTAR_CERT` + `SE_POST_CRASH` + `SE_SKIP_VOTE`
+- **`REF_AMNESIA`**: `SE_NOTAR_VOTE` + `SE_NOTAR_CERT` + `SE_POST_CRASH`
+- **`REF_DUAL_CERT`**: `SE_NOTAR_CERT` + `SE_CERT_SKIP`
+
+Per-slot: `cosine_sim_slot(ref, &g_state_counters[slot * SE_STRIDE])` → `sim_byte ∈ [0,255]`
+Emit: `__sanitizer_cov_trace_cmp1(0xA0 + r*0x10 + slot, sim_byte)` — 48 уникальных каналов.
+
+**Также добавлено:** `n_post` сообщения после краша (`uint8, 0..7`) — критично для alarm-skip:
+ConsensusImpl после рестарта отправляет SkipVote{X}, но quorum (3 из 4) требует ещё 2 голоса.
+Без post-crash injection quorum никогда не достигался.
+
+### Результаты (2026-03-19)
+
+| Параметр | Значение |
+|---|---|
+| Скорость | ~2800–3160 iter/sec на воркер |
+| Coverage | `cov: 849` (+15 от Шага 2) |
+| ft (с `-use_value_profile=1`) | `ft: 2925` |
+| Corpus | 966 файлов |
+| **Крашей** | **0** |
+
+**Вывод:** cosine similarity guidance расширяет семантическое пространство,
+coverage плато стабильное. alarm-skip последовательность потенциально достижима
+(post-crash injection добавлен), но требует точной мутации на конкретный слот →
+направленный corpus нужен для форсирования.
 
 ### Связь с FUZZING_DISTRIBUTED.md
 
@@ -266,11 +311,11 @@ mv corpus_merged/* simulation/corpus_fuzz_pool/
 ```
 Phase 2 завершена → code coverage исчерпан (cov: 795)
         ↓
-Phase 3 Шаг 1 ✅: state-vector counters + value-profile (ft: 1950)
+Phase 3 Шаг 1 ✅: state-vector counters + value-profile (ft: 1999)
         ↓
-Phase 3 Шаг 2: добавить Consensus актор → alarm-skip путь открыт
-        ↓ (если плато)
-Phase 3 Шаг 3: VectorDB guidance → gradient descent к опасным состояниям
+Phase 3 Шаг 2 ✅: Consensus актор → cov: 834, ft: 2833, крашей: 0
+        ↓
+Phase 3 Шаг 3 ✅: VectorDB cosine similarity + post-crash messages → cov: 849, ft: 2925, крашей: 0
         ↓ (при наличии нескольких машин, параллельно)
 Phase 3 Шаг 4: corpus sync + специализация стратегий
         ↓ (если 72ч без крашей)
