@@ -87,7 +87,49 @@ class FuzzStateResolver final : public SpawnsWith<FuzzBus>, ConnectsTo<FuzzBus> 
 Для stub достаточно вернуть ошибку: `start_generation()` в consensus.cpp
 запущен через `.start().detach()`, ошибка не проваливается наружу.
 
-**Оценка:** 1–2 дня.
+### Что делать: план на 1–2 дня
+
+**День 1 — реализация:**
+
+1. Изучить интерфейс `ResolveState` и `ResolveCandidate` в `consensus.cpp` —
+   понять какие именно типы возвращаются, убедиться что `co_return Error` не роняет bus
+2. Написать `FuzzStateResolver` и `FuzzCandidateResolver` по скетчу выше
+3. Добавить `Consensus::register_in(*S.runtime)` в `configure_and_start_bus()`
+4. Собрать — ожидаем compile errors вокруг `ChainStateRef`, чинить до зелёного
+5. Проверить что harness вообще запускается: один ручной тест-input, нет segfault/hang
+
+**День 2 — тестовый прогон и верификация:**
+
+```bash
+REPO=$(pwd)
+mkdir -p simulation/corpus_fuzz_pool2 simulation/crashes_pool2
+tmux new-session -d -s fuzz_consensus \
+  "cd $REPO && timeout 3600 ./build-fuzz2/test/consensus/fuzz_pool \
+   $REPO/simulation/corpus_fuzz_pool/ \
+   $REPO/simulation/corpus_fuzz_pool2/ \
+   -max_total_time=3600 -jobs=$(nproc) \
+   -use_value_profile=1 \
+   -artifact_prefix=$REPO/simulation/crashes_pool2/ \
+   >> $REPO/simulation/fuzz_consensus.log 2>&1"
+```
+
+**Что ищем в результатах:**
+
+| Сигнал | Интерпретация |
+|---|---|
+| `crashes_pool2/` не пустой | alarm-skip-after-notarize сработал → воспроизводим вручную |
+| `cov:` заметно вырос (>797) | ConsensusImpl добавил новые пути — alarm() достигнут |
+| `cov:` не изменился | Consensus актор не активируется — смотреть почему (drain rounds мало?) |
+| `ft:` растёт дольше чем за 5 мин | Хорошо — новое пространство состояний исследуется |
+
+**На что смотреть в Cypher после краша:**
+```cypher
+-- Проверить alarm-skip-after-notarize:
+MATCH (a:AlarmSkip)
+WHERE a.votedNotar = true
+RETURN a.slot, a.tsMs
+```
+→ [CYPHER_QUERIES.md#alarm-skip-after-notarize](CYPHER_QUERIES.md#alarm-skip-after-notarize)
 
 ---
 
