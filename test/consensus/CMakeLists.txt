@@ -20,7 +20,7 @@ if(FUZZING)
   target_link_options(fuzz_tl PRIVATE -fsanitize=fuzzer)
   target_link_libraries(fuzz_tl PRIVATE tl_api tdutils tl-utils)
 
-  # ── fuzz_pool — Phase 2 Step 2: pool.cpp via BusRuntime + MockDb ─────────────
+  # ── fuzz_pool — Phase 2 Step 2+3: pool.cpp via BusRuntime + MockDb + crash ───
   add_executable(fuzz_pool fuzz_pool.cpp)
   target_compile_options(fuzz_pool PRIVATE
       -fsanitize=fuzzer
@@ -31,7 +31,7 @@ if(FUZZING)
   target_link_libraries(fuzz_pool PRIVATE
       tl_api tdutils tdactor tl-utils
       validator ton_validator
-      keys adnl overlay
+      keys adnl overlay keyring
   )
   target_include_directories(fuzz_pool PRIVATE
       ${CMAKE_SOURCE_DIR}
