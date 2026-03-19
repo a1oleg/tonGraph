@@ -1,48 +1,18 @@
 INFO: Running with entropic power schedule (0xFF, 100).
-INFO: Seed: 8999292
-INFO: Loaded 1 modules   (714 inline 8-bit counters): 714 [0x5b230f253760, 0x5b230f253a2a), 
-INFO: Loaded 1 PC tables (714 PCs): 714 [0x5b230f253a30,0x5b230f2566d0), 
-INFO:      387 files found in /home/a1oleg/tonGraph/simulation/corpus_fuzz_tl/
+INFO: Seed: 2081981916
+INFO: Loaded 1 modules   (4157 inline 8-bit counters): 4157 [0x560b201241c8, 0x560b20125205), 
+INFO: Loaded 1 PC tables (4157 PCs): 4157 [0x560b20125208,0x560b201355d8), 
+INFO:       31 files found in /home/a1oleg/tonGraph/simulation/corpus_fuzz_pool/
 INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
-INFO: seed corpus: files: 387 min: 1b max: 636b total: 44498b rss: 28Mb
-#388	INITED cov: 215 ft: 255 corp: 40/2393b exec/s: 0 rss: 28Mb
-#182855	REDUCE cov: 215 ft: 255 corp: 40/2391b lim: 2202 exec/s: 0 rss: 28Mb L: 286/387 MS: 2 ChangeBit-EraseBytes-
-#389167	REDUCE cov: 215 ft: 255 corp: 40/2387b lim: 4096 exec/s: 0 rss: 28Mb L: 282/387 MS: 2 ChangeBit-EraseBytes-
-#443013	REDUCE cov: 215 ft: 255 corp: 40/2386b lim: 4096 exec/s: 443013 rss: 28Mb L: 281/387 MS: 1 EraseBytes-
-#628409	REDUCE cov: 215 ft: 255 corp: 40/2381b lim: 4096 exec/s: 628409 rss: 28Mb L: 276/387 MS: 1 EraseBytes-
-#1048576	pulse  cov: 215 ft: 255 corp: 40/2381b lim: 4096 exec/s: 524288 rss: 28Mb
-#1721331	REDUCE cov: 215 ft: 255 corp: 40/2380b lim: 4096 exec/s: 430332 rss: 28Mb L: 236/387 MS: 3 ChangeBit-ChangeBit-EraseBytes-
-#2097152	pulse  cov: 215 ft: 255 corp: 40/2380b lim: 4096 exec/s: 524288 rss: 28Mb
-#4194304	pulse  cov: 215 ft: 255 corp: 40/2380b lim: 4096 exec/s: 466033 rss: 28Mb
-#5223313	REDUCE cov: 215 ft: 255 corp: 40/2379b lim: 4096 exec/s: 435276 rss: 28Mb L: 368/387 MS: 1 EraseBytes-
-#8388608	pulse  cov: 215 ft: 255 corp: 40/2379b lim: 4096 exec/s: 364722 rss: 28Mb
-#16777216	pulse  cov: 215 ft: 255 corp: 40/2379b lim: 4096 exec/s: 381300 rss: 28Mb
-#18277531	RELOAD cov: 215 ft: 257 corp: 41/2861b lim: 4096 exec/s: 388883 rss: 28Mb
-#18390834	REDUCE cov: 215 ft: 257 corp: 41/2854b lim: 4096 exec/s: 383142 rss: 28Mb L: 475/475 MS: 3 ChangeBit-ChangeByte-EraseBytes-
-#18392400	REDUCE cov: 215 ft: 257 corp: 41/2833b lim: 4096 exec/s: 383175 rss: 28Mb L: 454/454 MS: 1 EraseBytes-
-#21515453	REDUCE cov: 215 ft: 257 corp: 41/2832b lim: 4096 exec/s: 358590 rss: 28Mb L: 453/453 MS: 1 EraseBytes-
-#28378801	REDUCE cov: 215 ft: 257 corp: 41/2831b lim: 4096 exec/s: 368555 rss: 28Mb L: 386/453 MS: 3 ChangeByte-ShuffleBytes-EraseBytes-
-#33554432	pulse  cov: 215 ft: 257 corp: 41/2831b lim: 4096 exec/s: 364722 rss: 28Mb
-#40691661	REDUCE cov: 215 ft: 257 corp: 41/2830b lim: 4096 exec/s: 373317 rss: 28Mb L: 385/453 MS: 1 EraseBytes-
-#45889226	REDUCE cov: 215 ft: 257 corp: 41/2829b lim: 4096 exec/s: 367113 rss: 28Mb L: 452/452 MS: 3 ChangeBit-ChangeBinInt-EraseBytes-
-#67108864	pulse  cov: 215 ft: 257 corp: 41/2829b lim: 4096 exec/s: 372827 rss: 28Mb
-#67175840	REDUCE cov: 215 ft: 257 corp: 41/2827b lim: 4096 exec/s: 373199 rss: 28Mb L: 192/452 MS: 2 ChangeBit-EraseBytes-
-#78786680	REDUCE cov: 215 ft: 257 corp: 41/2820b lim: 4096 exec/s: 373396 rss: 28Mb L: 229/452 MS: 2 EraseBytes-ChangeBit-
-#79827969	REDUCE cov: 215 ft: 257 corp: 41/2818b lim: 4096 exec/s: 374779 rss: 28Mb L: 227/452 MS: 2 ShuffleBytes-EraseBytes-
-#80692881	REDUCE cov: 215 ft: 257 corp: 41/2817b lim: 4096 exec/s: 373578 rss: 28Mb L: 226/452 MS: 1 EraseBytes-
-#82469793	REDUCE cov: 215 ft: 257 corp: 41/2815b lim: 4096 exec/s: 374862 rss: 28Mb L: 224/452 MS: 1 EraseBytes-
-#134217728	pulse  cov: 215 ft: 257 corp: 41/2815b lim: 4096 exec/s: 375960 rss: 28Mb
-#268435456	pulse  cov: 215 ft: 257 corp: 41/2815b lim: 4096 exec/s: 378611 rss: 28Mb
-#283710133	REDUCE cov: 215 ft: 257 corp: 41/2802b lim: 4096 exec/s: 379291 rss: 28Mb L: 439/439 MS: 2 ChangeByte-EraseBytes-
-#283730274	REDUCE cov: 215 ft: 257 corp: 41/2786b lim: 4096 exec/s: 379318 rss: 28Mb L: 423/423 MS: 1 EraseBytes-
-#283732006	REDUCE cov: 215 ft: 257 corp: 41/2768b lim: 4096 exec/s: 379320 rss: 28Mb L: 405/405 MS: 2 InsertRepeatedBytes-EraseBytes-
-#290762845	REDUCE cov: 215 ft: 257 corp: 41/2767b lim: 4096 exec/s: 380082 rss: 28Mb L: 404/404 MS: 1 EraseBytes-
-#347266070	REDUCE cov: 215 ft: 257 corp: 41/2766b lim: 4096 exec/s: 379111 rss: 28Mb L: 384/404 MS: 2 ChangeBit-EraseBytes-
-#353856382	REDUCE cov: 215 ft: 257 corp: 41/2764b lim: 4096 exec/s: 379674 rss: 28Mb L: 126/404 MS: 2 ChangeBinInt-EraseBytes-
-#353910803	REDUCE cov: 215 ft: 257 corp: 41/2762b lim: 4096 exec/s: 379732 rss: 28Mb L: 124/404 MS: 1 EraseBytes-
-#353945669	REDUCE cov: 215 ft: 257 corp: 41/2755b lim: 4096 exec/s: 379770 rss: 28Mb L: 117/404 MS: 1 EraseBytes-
-#354039412	REDUCE cov: 215 ft: 257 corp: 41/2754b lim: 4096 exec/s: 379870 rss: 28Mb L: 116/404 MS: 1 EraseBytes-
-#536870912	pulse  cov: 215 ft: 257 corp: 41/2754b lim: 4096 exec/s: 379414 rss: 28Mb
-#1073741824	pulse  cov: 215 ft: 257 corp: 41/2754b lim: 4096 exec/s: 380354 rss: 28Mb
-#1369212247	DONE   cov: 215 ft: 257 corp: 41/2754b lim: 4096 exec/s: 380125 rss: 28Mb
-Done 1369212247 runs in 3602 second(s)
+INFO: seed corpus: files: 31 min: 1b max: 57b total: 565b rss: 32Mb
+#32	INITED cov: 104 ft: 491 corp: 22/430b exec/s: 0 rss: 33Mb
+#16384	pulse  cov: 104 ft: 491 corp: 22/430b lim: 217 exec/s: 8192 rss: 33Mb
+#32768	pulse  cov: 104 ft: 491 corp: 22/430b lim: 379 exec/s: 6553 rss: 33Mb
+#65536	pulse  cov: 104 ft: 491 corp: 22/430b lim: 704 exec/s: 6553 rss: 33Mb
+#131072	pulse  cov: 104 ft: 491 corp: 22/430b lim: 1358 exec/s: 6241 rss: 33Mb
+#262144	pulse  cov: 104 ft: 491 corp: 22/430b lim: 2664 exec/s: 6241 rss: 33Mb
+#524288	pulse  cov: 104 ft: 491 corp: 22/430b lim: 4096 exec/s: 5577 rss: 33Mb
+#1048576	pulse  cov: 104 ft: 491 corp: 22/430b lim: 4096 exec/s: 5577 rss: 33Mb
+#2097152	pulse  cov: 104 ft: 491 corp: 22/430b lim: 4096 exec/s: 5533 rss: 33Mb
+#4194304	pulse  cov: 104 ft: 491 corp: 22/430b lim: 4096 exec/s: 5518 rss: 33Mb
+==176459== libFuzzer: run interrupted; exiting
