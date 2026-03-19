@@ -60,3 +60,12 @@ INFO: seed corpus: files: 108 min: 1b max: 63b total: 2335b rss: 34Mb
 #2171091	NEW    cov: 796 ft: 1605 corp: 45/1261b lim: 4096 exec/s: 3484 rss: 38Mb L: 41/189 MS: 5 ChangeBit-ChangeByte-InsertByte-InsertRepeatedBytes-CMP- DE: "\017\000\000\000\000\000\000\000"-
 #2955462	NEW    cov: 796 ft: 1615 corp: 46/1265b lim: 4096 exec/s: 3456 rss: 38Mb L: 4/189 MS: 5 ChangeByte-EraseBytes-CrossOver-EraseBytes-CMP- DE: "\001\001"-
 #2974718	NEW    cov: 796 ft: 1623 corp: 47/1289b lim: 4096 exec/s: 3458 rss: 38Mb L: 24/189 MS: 3 CrossOver-CrossOver-EraseBytes-
+#3137971	REDUCE cov: 796 ft: 1623 corp: 47/1285b lim: 4096 exec/s: 3467 rss: 38Mb L: 9/189 MS: 1 EraseBytes-
+#3825199	NEW    cov: 796 ft: 1624 corp: 48/1312b lim: 4096 exec/s: 3294 rss: 38Mb L: 27/189 MS: 1 ShuffleBytes-
+#3825200	NEW    cov: 796 ft: 1787 corp: 49/1339b lim: 4096 exec/s: 3294 rss: 38Mb L: 27/189 MS: 1 ChangeByte-
+#3825281	NEW    cov: 796 ft: 1801 corp: 50/1350b lim: 4096 exec/s: 3294 rss: 38Mb L: 11/189 MS: 1 ShuffleBytes-
+#4194304	pulse  cov: 796 ft: 1801 corp: 50/1350b lim: 4096 exec/s: 3231 rss: 38Mb
+#4483109	REDUCE cov: 796 ft: 1801 corp: 50/1349b lim: 4096 exec/s: 3186 rss: 38Mb L: 26/189 MS: 5 ChangeBit-ShuffleBytes-CopyPart-CopyPart-EraseBytes-
+#4527435	REDUCE cov: 796 ft: 1801 corp: 50/1348b lim: 4096 exec/s: 3177 rss: 38Mb L: 25/189 MS: 4 ShuffleBytes-ChangeByte-ChangeBinInt-EraseBytes-
+#5677643	NEW    cov: 796 ft: 1802 corp: 51/1431b lim: 4096 exec/s: 3114 rss: 38Mb L: 83/189 MS: 4 ChangeBinInt-EraseBytes-InsertRepeatedBytes-EraseBytes-
+#5858140	REDUCE cov: 796 ft: 1803 corp: 52/1457b lim: 4096 exec/s: 3102 rss: 38Mb L: 26/189 MS: 4 InsertByte-ChangeByte-CopyPart-EraseBytes-

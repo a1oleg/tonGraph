@@ -73,3 +73,13 @@ INFO: seed corpus: files: 108 min: 1b max: 63b total: 2335b rss: 34Mb
 #2588362	REDUCE cov: 795 ft: 1790 corp: 53/1194b lim: 4096 exec/s: 3199 rss: 38Mb L: 7/131 MS: 2 PersAutoDict-EraseBytes- DE: "\377\377\377\377"-
 #2731284	REDUCE cov: 795 ft: 1790 corp: 53/1184b lim: 4096 exec/s: 3201 rss: 38Mb L: 10/131 MS: 2 EraseBytes-ChangeByte-
 #2757971	REDUCE cov: 795 ft: 1804 corp: 54/1264b lim: 4096 exec/s: 3206 rss: 38Mb L: 80/131 MS: 4 ShuffleBytes-InsertRepeatedBytes-ShuffleBytes-ShuffleBytes-
+#2974438	REDUCE cov: 795 ft: 1804 corp: 54/1262b lim: 4096 exec/s: 3198 rss: 38Mb L: 8/131 MS: 2 EraseBytes-PersAutoDict- DE: "\370\377\377\377\377\377\377\177"-
+#2988014	REDUCE cov: 795 ft: 1804 corp: 54/1261b lim: 4096 exec/s: 3199 rss: 38Mb L: 6/131 MS: 4 ShuffleBytes-InsertByte-EraseBytes-ShuffleBytes-
+#3264693	REDUCE cov: 795 ft: 1804 corp: 54/1259b lim: 4096 exec/s: 3191 rss: 38Mb L: 11/131 MS: 5 ChangeBit-ShuffleBytes-ChangeBinInt-EraseBytes-PersAutoDict- DE: "\000\000"-
+#3637550	REDUCE cov: 795 ft: 1804 corp: 54/1254b lim: 4096 exec/s: 3196 rss: 38Mb L: 3/131 MS: 5 CMP-ChangeBinInt-EraseBytes-ChangeBit-EraseBytes- DE: "\377\377\377\377"-
+#4194304	pulse  cov: 795 ft: 1804 corp: 54/1254b lim: 4096 exec/s: 3192 rss: 38Mb
+#5159888	REDUCE cov: 796 ft: 1805 corp: 55/1265b lim: 4096 exec/s: 3191 rss: 38Mb L: 11/131 MS: 5 EraseBytes-CopyPart-CMP-ChangeBit-CopyPart- DE: "\377\377\377\377\377\377\377\000"-
+#5422243	REDUCE cov: 796 ft: 1805 corp: 55/1259b lim: 4096 exec/s: 3182 rss: 38Mb L: 7/131 MS: 4 ShuffleBytes-PersAutoDict-ChangeBit-EraseBytes- DE: "\377\377\377\377\377\377\377\000"-
+#5694356	REDUCE cov: 796 ft: 1805 corp: 55/1256b lim: 4096 exec/s: 3182 rss: 38Mb L: 3/131 MS: 2 ChangeBit-EraseBytes-
+#6679213	NEW    cov: 796 ft: 1809 corp: 56/1283b lim: 4096 exec/s: 3179 rss: 38Mb L: 27/131 MS: 5 ShuffleBytes-ChangeBit-CMP-ChangeByte-PersAutoDict- DE: "\377\377\377\377\377\377\377\017"-"\000\000"-
+#6897365	REDUCE cov: 796 ft: 1809 corp: 56/1282b lim: 4096 exec/s: 3161 rss: 38Mb L: 6/131 MS: 1 EraseBytes-
