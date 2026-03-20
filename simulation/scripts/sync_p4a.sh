@@ -6,15 +6,15 @@ BRANCH=testnet
 while true; do
   cd $REPO
 
-  # Push new corpus files
+  # Commit new corpus files
   git add simulation/corpus_p4a/ 2>/dev/null
   if ! git diff --cached --quiet; then
     git commit -m "corpus p4a sync $(date '+%H:%M')"
-    git push origin $BRANCH
   fi
 
-  # Pull corpus from machine 2
+  # Pull remote changes first, then push
   git pull --rebase origin $BRANCH 2>/dev/null || git pull origin $BRANCH
+  git push origin $BRANCH 2>/dev/null || true
 
   # Merge p4b into p4a
   if [ -d simulation/corpus_p4b ] && [ "$(ls -A simulation/corpus_p4b 2>/dev/null)" ]; then
