@@ -20,6 +20,7 @@ test/regression-tests.cache/
 simulation/node_modules
 simulation/trace.ndjson
 simulation/trace_fuzz.ndjson
+simulation/corpus_fuzz/
 simulation/corpus_fuzz_run/
 simulation/corpus_fuzz_tl/
 simulation/corpus_fuzz_pool/
