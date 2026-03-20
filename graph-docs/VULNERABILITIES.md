@@ -100,7 +100,38 @@ SkipCert(s) ∧ FinalizeCert(c, s) ⇒ ⊥
 
 ---
 
-### 5. Amnesia attack
+### 5. Alarm-skip-after-notarize ✅ ПОДТВЕРЖДЁН (Phase 4)
+
+**Описание:** `ConsensusImpl` после restart вычисляет окно alarm из bootstrap-сертификатов.
+При определённой последовательности голосов alarm срабатывает на слоте, который **уже нотаризован** —
+узел рассылает `SkipCert` на нотаризованный слот. Другие узлы могут принять SkipCert
+и отказаться от нотаризации → расхождение состояний цепи.
+
+**Инвариант:**
+```
+∀ s ∈ Slots:
+  NotarCert(s) ⇒ ¬SkipCert(s)
+
+NotarCert(s) ∧ SkipCert(s) ⇒ ⊥   [safety violation]
+```
+
+**Воспроизведение:**
+```bash
+# PoC: 60 байт, exit 77 (SIGTRAP)
+./build-fuzz2/test/consensus/fuzz_pool alarm_skip_seed_p4
+echo $?  # 77
+```
+
+**Путь:** 4 валидатора, 13 слотов. Последовательность голосов создаёт NotarCert на слоте S,
+затем restart + bootstrap провоцирует alarm на том же S → `SkipCert(S)`.
+
+**Найден:** libFuzzer Phase 4, ~3000 мутаций от corpus_p3s3. Воспроизведён >9000 раз.
+
+**Классификация контеста:** Consensus bug — safety violation (`SkipCert ∧ NotarCert` на одном слоте).
+
+---
+
+### 6. Amnesia attack
 
 **Описание:** Валидатор «забывает» ранее выданный `NotarizeVote` (locked кандидат)
 и голосует за другой кандидат в том же `slot`. Аналог surround vote в Ethereum.
