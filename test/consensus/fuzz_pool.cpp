@@ -352,11 +352,14 @@ class FuzzBus final : public Bus {
 
 // Invariant-tracking globals (written by FuzzObserver, checked inline).
 // Intentionally persist across crash+restart to catch cross-boundary violations.
-// Tagged with g_run_id so that drain-phase residual events from the previous run
-// do not falsely trigger the trap in the next run's reset drain.
 static uint64_t g_run_id = 0;
 static std::map<td::uint32, std::pair<uint64_t, td::Bits256>> g_notar_by_slot;
 static std::map<td::uint32, std::pair<uint64_t, td::Bits256>> g_skip_by_slot;
+// Safety traps are only active during the main test body, not during
+// start-of-run reset drains or end-of-run flush drains. This prevents the
+// scheduler's asynchronous certificate delivery from triggering a cross-run
+// false positive when a SkipCert queued by run N is delivered during run N+1.
+static bool g_safety_active = false;
 
 // ── FuzzObserver ──────────────────────────────────────────────────────────────
 
@@ -380,20 +383,24 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
     auto hash = ev->certificate->vote.id.hash;
     // Safety: NotarCert + SkipCert on same slot — only within the same run.
     // (run_id guards against drain-phase residual events from a previous run.)
-    auto skip_it = g_skip_by_slot.find(slot);
-    if (skip_it != g_skip_by_slot.end() && skip_it->second.first == g_run_id) {
-      fprintf(stderr, "[TRAP] NotarCert slot=%u already has SkipCert, post=%d\n",
-              slot, (int)g_post_crash_phase);
-      __builtin_trap();
+    if (g_safety_active) {
+      auto skip_it = g_skip_by_slot.find(slot);
+      if (skip_it != g_skip_by_slot.end() && skip_it->second.first == g_run_id) {
+        fprintf(stderr, "[TRAP] NotarCert slot=%u already has SkipCert, post=%d\n",
+                slot, (int)g_post_crash_phase);
+        __builtin_trap();
+      }
+      // Safety: two different NotarCerts on same slot
+      auto [it, inserted] = g_notar_by_slot.emplace(slot, std::make_pair(g_run_id, hash));
+      if (!inserted && it->second.first == g_run_id && it->second.second != hash) {
+        fprintf(stderr, "[TRAP] Dual NotarCert slot=%u, post=%d\n",
+                slot, (int)g_post_crash_phase);
+        __builtin_trap();
+      }
+      if (!inserted) it->second = {g_run_id, hash};
+    } else {
+      g_notar_by_slot.emplace(slot, std::make_pair(g_run_id, hash));
     }
-    // Safety: two different NotarCerts on same slot (within same run)
-    auto [it, inserted] = g_notar_by_slot.emplace(slot, std::make_pair(g_run_id, hash));
-    if (!inserted && it->second.first == g_run_id && it->second.second != hash) {
-      fprintf(stderr, "[TRAP] Dual NotarCert slot=%u, post=%d\n",
-              slot, (int)g_post_crash_phase);
-      __builtin_trap();
-    }
-    if (!inserted) it->second = {g_run_id, hash};  // update run_id for same-hash reuse
 
     // Step 4: state counter
     slot_event(static_cast<int32_t>(slot), SE_NOTAR_CERT);
@@ -425,12 +432,13 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
         g_skip_by_slot.emplace(slot, std::make_pair(g_run_id, td::Bits256{}));
         slot_event(static_cast<int32_t>(slot), SE_CERT_SKIP);
         // Safety: SkipCert on a slot that already has a NotarCert → violation
-        // Only fire within the same run (run_id guard).
-        auto notar_it = g_notar_by_slot.find(slot);
-        if (notar_it != g_notar_by_slot.end() && notar_it->second.first == g_run_id) {
-          fprintf(stderr, "[TRAP] SkipCert slot=%u, g_notar_by_slot.count=%zu, post=%d\n",
-                  slot, g_notar_by_slot.size(), (int)g_post_crash_phase);
-          __builtin_trap();
+        if (g_safety_active) {
+          auto notar_it = g_notar_by_slot.find(slot);
+          if (notar_it != g_notar_by_slot.end() && notar_it->second.first == g_run_id) {
+            fprintf(stderr, "[TRAP] SkipCert slot=%u, g_notar_by_slot.count=%zu, post=%d\n",
+                    slot, g_notar_by_slot.size(), (int)g_post_crash_phase);
+            __builtin_trap();
+          }
         }
       }
       return;
@@ -671,28 +679,35 @@ static void inject_vote(FuzzedDataProvider& fdp) {
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   if (size < 4) return 0;
 
-  // Tear down the existing Pool/Runtime/Db and start fresh.
-  // IMPORTANT: drain BEFORE clearing maps. Residual NotarizationObserved /
-  // OutgoingProtocolMessage events from the previous run may still be queued
-  // and get processed during drain. Clearing maps before drain would cause
-  // those events to re-populate them, defeating the cleanup.
+  // Full reset: destroy and recreate the scheduler to avoid scheduler IO-queue
+  // accumulation across runs. After 1000+ runs, unprocessed messages from
+  // destroyed actors accumulate in the scheduler's queue. When new actors are
+  // created with recycled IDs, stale messages can be misdelivered. Recreating
+  // the scheduler gives a completely clean queue every run.
+  delete g_state;
+  g_state = new FuzzState();
   auto& S = *g_state;
-  S.scheduler->run_in_context([&] { S.bus.publish(std::make_shared<StopRequested>()); });
-  for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) S.scheduler->run(0);
-  S.bus = {};
-  S.runtime.reset();
 
-  // Advance run counter and reset per-run state.
-  // g_run_id is used by FuzzObserver to tag events — only same-run events can
-  // trigger the safety traps. Incrementing here (after drain, before new run)
-  // ensures residual events from the drain above are tagged with the OLD run_id
-  // and are ignored by the trap checks in the new run.
+  S.session_id = td::Bits256{};
+  S.session_id.as_array()[0] = 0x42;
+  for (size_t i = 0; i < N_CAND_SEEDS; i++) {
+    S.cand_hashes[i] = td::Bits256{};
+    S.cand_hashes[i].as_array()[0] = static_cast<uint8_t>(i + 1);
+  }
+  S.scheduler = std::make_unique<td::actor::Scheduler>(
+      std::vector<td::actor::Scheduler::NodeInfo>{{0}}, /*skip_timeouts=*/true);
+  S.scheduler->run_in_context([&] {
+    S.keyring = td::actor::create_actor<MockKeyring>(
+        td::actor::ActorOptions{}.with_name("MockKeyring"));
+  });
+
   ++g_run_id;
   std::memset(g_state_counters, 0, STATE_COUNTER_BYTES);
   g_post_crash_phase = false;
 
   configure_and_start_bus(S, std::make_unique<MockDb>());
 
+  g_safety_active = true;
   FuzzedDataProvider fdp(data, size);
 
   // Fuzz input layout (Phase 4 Step 0):
@@ -713,6 +728,13 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   if (do_crash) crash_and_restart(*g_state, n_lose);
 
   for (uint8_t m = 0; m < n_post; m++) inject_vote(fdp);
+
+  // Final drain: flush all pending events (e.g. SkipCert from a just-reached
+  // quorum). Safety checks remain active during this drain — if a violation
+  // fires here, it genuinely belongs to this run.
+  auto& S_final = *g_state;
+  for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) S_final.scheduler->run(0);
+  g_safety_active = false;
 
   // Phase 3 Step 3: emit cosine similarity scores toward reference danger states.
   emit_vector_guidance();
