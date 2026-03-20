@@ -136,16 +136,28 @@ echo $?  # 77
 **Описание:** Валидатор «забывает» ранее выданный `NotarizeVote` (locked кандидат)
 и голосует за другой кандидат в том же `slot`. Аналог surround vote в Ethereum.
 
+**Два уровня:**
+
+| | #amnesia-gap | #amnesia |
+|---|---|---|
+| **Что** | Структурная предпосылка | Эксплуатация |
+| **Событие** | `handle_our_vote` делает broadcast ДО `co_await db->set()` в db.cpp | После restart (с потерей записи) валидатор голосует за cand_B на том же slot |
+| **Статус** | ✅ Структурно подтверждён (Phase 2–3) | ⚠️ Путь ясен, harness не триггерит |
+| **Причина** | Async gap между broadcast и DB write | Harness не инжектирует Propose → ConsensusImpl не получает новый кандидат post-crash |
+
 **Инвариант:**
 ```
 ∀ v ∈ Validators, ∀ s ∈ Slots, ∀ c:
   broadcast(vote(v, c, s))
-    ⇒ persisted_to_db(v, c, s)            [до broadcast]
+    ⇒ persisted_to_db(v, c, s)            [до broadcast — НЕ выполняется]
 
 restart(v) ⇒ state(v) = load_from_db(v)
 
 ¬persisted(v, c, s) ∧ restart(v)
   ⇒ ¬voted_notarize(v, c, s) after restart
+
+Нарушение: gap(v, c, s) ∧ crash ∧ propose(cand_B, s)
+  ⇒ voted_notarize(v, c, s) ∧ voted_notarize(v, cand_B, s)  [equivocation]
 ```
 
 **Детектирование (Cypher):** [CYPHER_QUERIES.md#amnesia](CYPHER_QUERIES.md#amnesia)
