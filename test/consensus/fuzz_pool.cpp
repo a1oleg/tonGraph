@@ -375,8 +375,6 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
   void handle(FuzzBusHandle, std::shared_ptr<const NotarizationObserved> ev) {
     td::uint32 slot = ev->certificate->vote.id.slot;
     auto hash = ev->certificate->vote.id.hash;
-    fprintf(stderr, "[DBG] NotarCert slot=%u post_crash=%d\n", slot, (int)g_post_crash_phase);
-
     // Safety: NotarCert + SkipCert on same slot
     if (g_skip_by_slot.count(slot)) {
       __builtin_trap();
@@ -405,8 +403,6 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
   // SkipCert detection enables alarm-skip-after-notarize safety check.
   template <>
   void handle(FuzzBusHandle, std::shared_ptr<const OutgoingProtocolMessage> msg) {
-    fprintf(stderr, "[DBG] OutgoingProtocolMessage len=%zu post=%d\n",
-            msg->message.data.size(), (int)g_post_crash_phase);
     // Try certificate first (certificate TL id != vote TL id).
     auto maybe_cert = fetch_tl_object<ton_api::consensus_simplex_certificate>(
         msg->message.data.clone(), true);
@@ -419,8 +415,6 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
         g_skip_by_slot.emplace(slot, td::Bits256{});
         slot_event(static_cast<int32_t>(slot), SE_CERT_SKIP);
         // Safety: SkipCert on a slot that already has a NotarCert → violation
-        fprintf(stderr, "[DBG] SkipCert slot=%u, g_notar_by_slot.count=%zu, post_crash=%d\n",
-                slot, g_notar_by_slot.count(slot), (int)g_post_crash_phase);
         if (g_notar_by_slot.count(slot)) {
           __builtin_trap();
         }
@@ -604,8 +598,12 @@ extern "C" int LLVMFuzzerInitialize(int*, char***) {
     S.cand_hashes[i].as_array()[0] = static_cast<uint8_t>(i + 1);
   }
 
+  // NodeInfo{{0}}: zero CPU threads → all actors route to the IO queue, which is
+  // drained synchronously by run(0) on the main thread. NodeInfo{{1}} would create
+  // a background CPU thread and make actor execution non-deterministic / async
+  // (messages processed concurrently with inject_vote drain rounds).
   S.scheduler = std::make_unique<td::actor::Scheduler>(
-      std::vector<td::actor::Scheduler::NodeInfo>{{1}}, /*skip_timeouts=*/true);
+      std::vector<td::actor::Scheduler::NodeInfo>{{0}}, /*skip_timeouts=*/true);
 
   S.scheduler->run_in_context([&] {
     S.keyring = td::actor::create_actor<MockKeyring>(
@@ -628,9 +626,6 @@ static void inject_vote(FuzzedDataProvider& fdp) {
   auto vote_type = fdp.ConsumeIntegralInRange<uint8_t>(0, 2);
   auto slot      = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_SLOT);
   auto cand_seed = fdp.ConsumeIntegralInRange<uint8_t>(0, N_CAND_SEEDS - 1);
-  fprintf(stderr, "[DBG] inject: src=%u vtype=%u slot=%u cand=%u post=%d\n",
-          src_idx, vote_type, slot, cand_seed, (int)g_post_crash_phase);
-
   tl_object_ptr<ton_api::consensus_simplex_UnsignedVote> vote_tl;
   if (vote_type == 0) {
     vote_tl = create_tl_object<ton_api::consensus_simplex_notarizeVote>(
@@ -677,9 +672,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   bool    do_crash = fdp.ConsumeBool();
   uint8_t n_lose   = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_LOSE_WRITES);
   uint8_t n_post   = fdp.ConsumeIntegralInRange<uint8_t>(0, 7);
-  fprintf(stderr, "[DBG] n_pre=%u do_crash=%d n_lose=%u n_post=%u remaining=%zu\n",
-          n_pre, (int)do_crash, n_lose, n_post, fdp.remaining_bytes());
-
   for (uint8_t m = 0; m < n_pre; m++)  inject_vote(fdp);
 
   if (do_crash) crash_and_restart(*g_state, n_lose);
