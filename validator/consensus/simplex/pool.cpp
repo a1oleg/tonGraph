@@ -305,6 +305,7 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
 
   void start_up() override {
     auto &bus = *owning_bus();
+    fprintf(stderr, "[POOL] start_up called, validator=%zu\n", bus.local_id.idx.value());
 
     slots_per_leader_window_ = bus.simplex_config.slots_per_leader_window;
     max_leader_window_desync_ = bus.simplex_config.max_leader_window_desync;
@@ -375,6 +376,8 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
   template <>
   void handle(BusHandle, std::shared_ptr<const IncomingProtocolMessage> message) {
     auto &bus = *owning_bus();
+    fprintf(stderr, "[POOL] IncomingProtocolMessage src=%zu size=%zu\n",
+            message->source.value(), message->message.data.size());
     td::uint32 first_too_new_slot =
         (now_ / slots_per_leader_window_ + max_leader_window_desync_ + 1) * slots_per_leader_window_;
 
@@ -630,6 +633,8 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
 
   void handle_typed_vote(const PeerValidator &validator, Signed<NotarizeVote> vote, State::SlotRef &slot) {
     auto new_weight = (slot.state->notarize_weight[vote.vote.id] += validator.weight);
+    fprintf(stderr, "[POOL] handle_typed_vote NotarizeVote slot=%u new_weight=%u threshold=%u will_be_notar=%d\n",
+            vote.vote.id.slot, new_weight, weight_threshold_, slot.state->will_be_notarized());
     if (!slot.state->will_be_notarized() && new_weight >= weight_threshold_) {
       handle_certificate(slot.state->create_cert(vote.vote)).start().detach();
     }
@@ -793,13 +798,17 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
 
   // ===== Certificate handling =====
   td::actor::Task<> handle_certificate(CertificateRef<Vote> cert) {
+    fprintf(stderr, "[POOL] handle_certificate start slot=%u\n", cert->vote.referenced_slot());
     auto slot = state_->slot_at(cert->vote.referenced_slot());
     if (!slot.has_value() || !slot->state->certs.needs(cert->vote)) {
+      fprintf(stderr, "[POOL] handle_certificate early return slot=%u (no slot or not needed)\n", cert->vote.referenced_slot());
       co_return {};
     }
     slot->state->certs.remember_prospective(cert->vote);
 
+    fprintf(stderr, "[POOL] handle_certificate before SaveCertificate slot=%u\n", cert->vote.referenced_slot());
     co_await owning_bus().publish<SaveCertificate>(cert);
+    fprintf(stderr, "[POOL] handle_certificate after SaveCertificate slot=%u\n", cert->vote.referenced_slot());
 
     slot = state_->slot_at(cert->vote.referenced_slot());
     if (!slot.has_value()) {
@@ -850,7 +859,9 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
         {"weight",      static_cast<int64_t>(cert->signatures.size())},
         {"sessionId",   owning_bus()->session_id.to_hex()},
     });
+    fprintf(stderr, "[POOL] publishing NotarizationObserved slot=%u\n", id.slot);
     owning_bus().publish<NotarizationObserved>(id, cert);
+    fprintf(stderr, "[POOL] NotarizationObserved published slot=%u\n", id.slot);
 
     next_nonskipped_slot_after(id.slot).state->add_available_base(id);
 
