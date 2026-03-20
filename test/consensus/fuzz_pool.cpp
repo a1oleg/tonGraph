@@ -353,6 +353,7 @@ class FuzzBus final : public Bus {
 // Invariant-tracking globals (written by FuzzObserver, checked inline).
 // Intentionally persist across crash+restart to catch cross-boundary violations.
 static uint64_t g_run_id = 0;
+static uint64_t g_invocation = 0;
 static std::map<td::uint32, std::pair<uint64_t, td::Bits256>> g_notar_by_slot;
 static std::map<td::uint32, std::pair<uint64_t, td::Bits256>> g_skip_by_slot;
 // Safety traps are only active during the main test body, not during
@@ -386,15 +387,11 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
     if (g_safety_active) {
       auto skip_it = g_skip_by_slot.find(slot);
       if (skip_it != g_skip_by_slot.end() && skip_it->second.first == g_run_id) {
-        fprintf(stderr, "[TRAP] NotarCert slot=%u already has SkipCert, post=%d\n",
-                slot, (int)g_post_crash_phase);
         __builtin_trap();
       }
       // Safety: two different NotarCerts on same slot
       auto [it, inserted] = g_notar_by_slot.emplace(slot, std::make_pair(g_run_id, hash));
       if (!inserted && it->second.first == g_run_id && it->second.second != hash) {
-        fprintf(stderr, "[TRAP] Dual NotarCert slot=%u, post=%d\n",
-                slot, (int)g_post_crash_phase);
         __builtin_trap();
       }
       if (!inserted) it->second = {g_run_id, hash};
@@ -435,8 +432,6 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
         if (g_safety_active) {
           auto notar_it = g_notar_by_slot.find(slot);
           if (notar_it != g_notar_by_slot.end() && notar_it->second.first == g_run_id) {
-            fprintf(stderr, "[TRAP] SkipCert slot=%u, g_notar_by_slot.count=%zu, post=%d\n",
-                    slot, g_notar_by_slot.size(), (int)g_post_crash_phase);
             __builtin_trap();
           }
         }
@@ -677,6 +672,7 @@ static void inject_vote(FuzzedDataProvider& fdp) {
 }
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
+  ++g_invocation;
   if (size < 4) return 0;
 
   // Full reset: destroy and recreate the scheduler to avoid scheduler IO-queue
