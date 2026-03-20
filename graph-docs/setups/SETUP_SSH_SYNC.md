@@ -38,7 +38,7 @@ ssh a1oleg@172.21.121.84 "echo OK"
 
 ```bash
 export MACHINE1=a1oleg@172.21.121.84
-export MACHINE2=user@<IP_машины2>   # заполнить когда известен IP машины 2
+export MACHINE2=a1oleg@172.25.8.251
 ```
 
 ---
