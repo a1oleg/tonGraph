@@ -525,8 +525,12 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
 
   template <>
   td::actor::Task<ResolveState::Result> process(FuzzBusHandle, std::shared_ptr<ResolveState>) {
-    // Return empty ChainStateRef — ValidationRequest stub ignores it.
-    co_return ResolveState::Result{ChainStateRef{}, std::nullopt};
+    // Return error so start_generation() aborts gracefully. Null ChainStateRef causes
+    // SEGV in scheduler teardown via HazardPointers. ValidationRequest (CandidateAccept)
+    // is only reached via try_notarize() which calls ResolveState first — if ResolveState
+    // fails, try_notarize aborts before ValidationRequest, so Propose injection (vtype=3)
+    // only works in standalone test_amnesia_poc.cpp (which uses its own observer).
+    co_return td::Status::Error("mock");
   }
 
   template <>
