@@ -1,0 +1,29 @@
+Already up to date.
+[15:53:31] sync done (p4a: 260 files)
+[testnet 93eae279] corpus p4a sync 16:04
+ 15 files changed, 2 insertions(+)
+ create mode 100644 simulation/corpus_p4a/18ae29c554cbbe3c9c7a98f1dbb2ce5f866b13ee
+ create mode 100644 simulation/corpus_p4a/2d0795f656f8c616718fdc2880ea8f84d92784e2
+ create mode 100644 simulation/corpus_p4a/32e8d8878e48d55924d6f3d8aeadc4415c72a890
+ create mode 100644 simulation/corpus_p4a/396507bf599b7a4cd596be2985dca2d620560515
+ create mode 100644 simulation/corpus_p4a/431fa18c24e2fac46848ca02ee6e642456fae2ce
+ create mode 100644 simulation/corpus_p4a/4ac1086fae8722e84f5aac2fdf10c6a4d02703cc
+ create mode 100644 simulation/corpus_p4a/4ebd1ce3356a50d3f8af52ae9140229b1d40d479
+ create mode 100644 simulation/corpus_p4a/502f5bd66c9e30318fb45094b69c469b2dda9594
+ create mode 100644 simulation/corpus_p4a/785c8070ec59b366697d77cbb2d4424c1c909349
+ create mode 100644 simulation/corpus_p4a/9059102a3250766b11b4ab0cd1a2148fbc9c6c69
+ create mode 100644 simulation/corpus_p4a/94505b6bd3368aba017524f58cc185e70e7b639a
+ create mode 100644 simulation/corpus_p4a/9a9009170e9ac1d3278e4f84269833adf979a032
+ create mode 100644 simulation/corpus_p4a/a8df233c455a32b8219c0af6c87c47574df1fd63
+ create mode 100644 simulation/corpus_p4a/b2dc72c7bc2e4fbcd88de8c1408eaf3ffe21e23b
+ create mode 100644 simulation/corpus_p4a/f104afb924d95eb64706776e312b9037866cc46b
+[16:04:46] sync done (p4a: 268 files)
+[testnet 77cdba98] corpus p4a sync 16:15
+ 5 files changed, 1 insertion(+)
+ create mode 100644 simulation/corpus_p4a/06f9c6aa598f4792f0c19a7b58bf9f32d82f58c4
+ create mode 100644 simulation/corpus_p4a/4a7f6b8a0c3c54e2a0f430a75fb3312f8cf81330
+ create mode 100644 simulation/corpus_p4a/8b78048e58b83d9efba6911b4627f0180a9c931d
+ create mode 100644 simulation/corpus_p4a/dbbed0a2c393fcfe09182e1cf30ceb6e73c00135
+ create mode 100644 simulation/corpus_p4a/f6713a5cf621e666622a391cde71ac02036a3cf8
+Current branch testnet is up to date.
+[16:16:00] sync done (p4a: 274 files)
