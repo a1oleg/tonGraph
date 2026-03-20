@@ -2,6 +2,22 @@ add_executable(test-consensus test-consensus.cpp)
 target_link_libraries(test-consensus overlay tdutils tdactor adnl adnltest rldp tl_api dht validator ton_validator validator)
 # add_test(test-consensus test-consensus)
 
+# ── test_amnesia_poc — Amnesia equivocation standalone PoC ───────────────────
+# No FUZZING=ON required. Demonstrates that ConsensusImpl broadcasts
+# NotarizeVote before DbImpl persists it, enabling equivocation after restart.
+# Expected exit code: 77 (SIGTRAP via __builtin_trap).
+add_executable(test_amnesia_poc test_amnesia_poc.cpp)
+target_compile_options(test_amnesia_poc PRIVATE -g -O1)
+target_link_libraries(test_amnesia_poc PRIVATE
+    tl_api tdutils tdactor tl-utils
+    validator ton_validator
+    keys adnl overlay keyring
+)
+target_include_directories(test_amnesia_poc PRIVATE
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/simulation
+)
+
 # ── fuzz_tl — Phase 2 TL deserialization fuzzer ──────────────────────────────
 # Requires clang and FUZZING=ON in the top-level build:
 #
