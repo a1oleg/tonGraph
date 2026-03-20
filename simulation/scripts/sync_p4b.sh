@@ -10,11 +10,13 @@ while true; do
   git add simulation/corpus_p4b/ 2>/dev/null
   if ! git diff --cached --quiet; then
     git commit -m "corpus p4b sync $(date '+%H:%M')"
-    git push origin $BRANCH
   fi
 
-  # Забрать corpus машины 1
+  # Забрать corpus машины 1 (до push — чтобы избежать rejected)
   git pull --rebase origin $BRANCH 2>/dev/null || git pull origin $BRANCH
+
+  # Теперь push поверх актуального remote
+  git push origin $BRANCH
 
   # Merge corpus p4a в p4b
   if [ -d simulation/corpus_p4a ] && [ "$(ls -A simulation/corpus_p4a)" ]; then
