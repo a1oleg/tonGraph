@@ -25,7 +25,7 @@
  *   n_lose      : uint8  (0..MAX_LOSE_WRITES)
  *   per message:
  *     src_idx   : uint8  (0..N_VALIDATORS-1)
- *     vote_type : uint8  (0=notarize, 1=skip, 2=finalize)
+ *     vote_type : uint8  (0=notarize, 1=skip, 2=finalize, 3=propose/CandidateReceived)
  *     slot      : uint8  (0..MAX_SLOT)
  *     cand_seed : uint8  (0..N_CAND_SEEDS-1)
  *
@@ -370,6 +370,10 @@ static uint64_t g_invocation = 0;
 static std::map<td::uint32, std::pair<uint64_t, td::Bits256>> g_notar_by_slot;
 static std::map<td::uint32, std::pair<uint64_t, td::Bits256>> g_skip_by_slot;
 static std::map<td::uint32, std::pair<uint64_t, td::Bits256>> g_final_by_slot;
+// Amnesia equivocation tracking: val 0's individual NotarizeVotes per slot.
+// Populated from OutgoingProtocolMessage (all such messages come from the local node).
+// Trap if two different hashes for the same slot within the same run → amnesia.
+static std::map<td::uint32, std::pair<uint64_t, td::Bits256>> g_our_notar_vote;
 // Safety traps are only active during the main test body, not during
 // start-of-run reset drains or end-of-run flush drains. This prevents the
 // scheduler's asynchronous certificate delivery from triggering a cross-run
@@ -485,7 +489,17 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
     switch (uv->get_id()) {
       case ton_api::consensus_simplex_notarizeVote::ID: {
         auto* nv = static_cast<ton_api::consensus_simplex_notarizeVote*>(uv);
-        if (nv->id_) slot_event(nv->id_->slot_, SE_NOTAR_VOTE);
+        if (nv->id_) {
+          slot_event(nv->id_->slot_, SE_NOTAR_VOTE);
+          // Amnesia equivocation trap: val 0 voted twice on same slot with different cand.
+          td::uint32 slot = static_cast<td::uint32>(nv->id_->slot_);
+          td::Bits256 hash = nv->id_->hash_;
+          auto [it, inserted] = g_our_notar_vote.emplace(slot, std::make_pair(g_run_id, hash));
+          if (!inserted && g_safety_active && it->second.first == g_run_id && it->second.second != hash) {
+            __builtin_trap();
+          }
+          if (!inserted) it->second = {g_run_id, hash};
+        }
         break;
       }
       case ton_api::consensus_simplex_skipVote::ID: {
@@ -503,10 +517,16 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
 
   // Phase 3 Step 2: stub resolvers so Consensus coroutines abort gracefully
   // instead of hanging forever when StateResolver / CandidateResolver are absent.
+  //
+  // Phase 4 Step 2 (amnesia): ResolveState and ValidationRequest now return success
+  // so that try_notarize() completes when vtype=3 (Propose) is injected.
+  // ResolveCandidate still returns error (candidate resolution not needed for voting).
+  // OurLeaderWindowStarted is published but has no handler in harness → ignored safely.
 
   template <>
   td::actor::Task<ResolveState::Result> process(FuzzBusHandle, std::shared_ptr<ResolveState>) {
-    co_return td::Status::Error("mock");
+    // Return empty ChainStateRef — ValidationRequest stub ignores it.
+    co_return ResolveState::Result{ChainStateRef{}, std::nullopt};
   }
 
   template <>
@@ -521,7 +541,8 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
 
   template <>
   td::actor::Task<ValidateCandidateResult> process(FuzzBusHandle, std::shared_ptr<ValidationRequest>) {
-    co_return CandidateReject{"mock", {}};
+    // Accept all candidates: allows ConsensusImpl to emit NotarizeVote via try_notarize().
+    co_return CandidateAccept{0.0};
   }
 
   template <>
@@ -681,9 +702,29 @@ static void inject_vote(FuzzedDataProvider& fdp) {
   // would conflict with ConsensusImpl's own votes and trigger LOG_FATAL in pool.cpp.
   // Peers are validators 1..N_VALIDATORS-1.
   auto src_idx   = fdp.ConsumeIntegralInRange<uint8_t>(1, N_VALIDATORS - 1);
-  auto vote_type = fdp.ConsumeIntegralInRange<uint8_t>(0, 2);
+  auto vote_type = fdp.ConsumeIntegralInRange<uint8_t>(0, 3);
   auto slot      = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_SLOT);
   auto cand_seed = fdp.ConsumeIntegralInRange<uint8_t>(0, N_CAND_SEEDS - 1);
+
+  // vtype=3: Propose injection — publish CandidateReceived{slot, cand_seed} directly.
+  // Triggers ConsensusImpl::try_notarize() → (with CandidateAccept stub) → NotarizeVote.
+  // slot=0 with no parent requires BlockCandidate variant (Candidate constructor CHECK).
+  // src_idx is used as the leader (PeerValidatorId of the proposer).
+  if (vote_type == 3) {
+    CandidateId cand_id{.slot = static_cast<td::uint32>(slot), .hash = S.cand_hashes[cand_seed]};
+    ParentId parent_id = std::nullopt;  // slot 0: no parent; WaitForParent resolves immediately
+    BlockCandidate bc{};
+    bc.id = BlockIdExt{BlockId{basechainId, shardIdAll, 0}};
+    auto candidate = td::make_ref<Candidate>(
+        cand_id, parent_id, PeerValidatorId{src_idx},
+        std::variant<BlockIdExt, BlockCandidate>(std::in_place_type<BlockCandidate>, std::move(bc)),
+        td::BufferSlice(64));
+    auto ev = std::make_shared<CandidateReceived>(CandidateReceived{std::move(candidate)});
+    S.scheduler->run_in_context([&] { S.bus.publish(ev); });
+    for (int i = 0; i < DRAIN_ROUNDS; i++) S.scheduler->run(0);
+    return;
+  }
+
   tl_object_ptr<ton_api::consensus_simplex_UnsignedVote> vote_tl;
   if (vote_type == 0) {
     vote_tl = create_tl_object<ton_api::consensus_simplex_notarizeVote>(
@@ -737,6 +778,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   ++g_run_id;
   std::memset(g_state_counters, 0, STATE_COUNTER_BYTES);
   g_post_crash_phase = false;
+  g_our_notar_vote.clear();
 
   configure_and_start_bus(S, std::make_unique<MockDb>());
 
