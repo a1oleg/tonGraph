@@ -7,7 +7,7 @@
 Phase 3 завершена: `cov: 854, ft: 3162, крашей: 0`.
 alarm-skip-after-notarize случайным мутатором за 1.5 часа не найден.
 
-**Phase 4 Step 0 (фикс):** `n_pre` поднят с 7 до 15 — `slots_per_leader_window=4`
+**Phase 4 Step 02 (фикс):** `n_pre` поднят с 7 до 15 — `slots_per_leader_window=4`
 требует ≥12 pre-crash голосов чтобы `first_nonannounced_window` вышел за 0
 и ConsensusImpl при restart начал слать SkipVote.
 
