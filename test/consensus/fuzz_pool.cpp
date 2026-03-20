@@ -710,12 +710,14 @@ static void inject_vote(FuzzedDataProvider& fdp) {
   auto slot      = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_SLOT);
   auto cand_seed = fdp.ConsumeIntegralInRange<uint8_t>(0, N_CAND_SEEDS - 1);
 
-  // vtype=3: Propose injection — publish CandidateReceived{slot, cand_seed} directly.
-  // Triggers ConsensusImpl::try_notarize() → (with CandidateAccept stub) → NotarizeVote.
-  // slot=0 with no parent requires BlockCandidate variant (Candidate constructor CHECK).
+  // vtype=3: Propose injection — publish CandidateReceived{slot=0, cand_seed} directly.
+  // Triggers ConsensusImpl::try_notarize() → ResolveState (returns error) → aborts.
+  // slot is clamped to 0: Pool::maybe_resolve_request resolves WaitForParent immediately
+  // only when next_slot_after_parent == id.slot (i.e. parent=nullopt, slot=0 → 0==0).
+  // For slot>0 with parent_id=nullopt, WaitForParent suspends indefinitely → SEGV on crash.
   // src_idx is used as the leader (PeerValidatorId of the proposer).
   if (vote_type == 3) {
-    CandidateId cand_id{.slot = static_cast<td::uint32>(slot), .hash = S.cand_hashes[cand_seed]};
+    CandidateId cand_id{.slot = 0, .hash = S.cand_hashes[cand_seed]};
     ParentId parent_id = std::nullopt;  // slot 0: no parent; WaitForParent resolves immediately
     BlockCandidate bc{};
     bc.id = BlockIdExt{BlockId{basechainId, shardIdAll, 0}};
