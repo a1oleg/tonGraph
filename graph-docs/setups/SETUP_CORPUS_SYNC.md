@@ -17,11 +17,9 @@
 
 ```bash
 cd ~/tonGraph
+git pull origin testnet   # уже сделано, corpus_p4a пуст (крашащий seed убран)
 mkdir -p simulation/corpus_p4a simulation/crashes_p4a
-cp alarm_skip_seed_p4 simulation/corpus_p4a/
-git add simulation/corpus_p4a/
-git commit -m "corpus p4a: initial seed"
-git push origin testnet
+# corpus_p4a начинается пустым — fuzzer наполнит его сам через corpus_p3s3
 ```
 
 ### Машина 2
@@ -30,11 +28,7 @@ git push origin testnet
 cd ~/tonGraph
 git pull origin testnet
 mkdir -p simulation/corpus_p4b simulation/crashes_p4b
-# Взять seed и corpus машины 1 как стартовый corpus:
-cp simulation/corpus_p4a/* simulation/corpus_p4b/
-git add simulation/corpus_p4b/
-git commit -m "corpus p4b: initial seed from machine 1"
-git push origin testnet
+# corpus_p4b тоже начинается пустым (синхронизируется через GitHub каждые 10 мин)
 ```
 
 ---
@@ -45,25 +39,35 @@ git push origin testnet
 
 ```bash
 REPO=~/tonGraph
+mkdir -p simulation/corpus_p4a simulation/crashes_p4a
+# Примечание: НЕ кладём alarm_skip_seed_p4 в corpus — это крашащий input.
 tmux new-session -d -s fuzz_p4a \
   "cd $REPO && ./build-fuzz2/test/consensus/fuzz_pool \
+   $REPO/simulation/corpus_p3s3/ \
    $REPO/simulation/corpus_p4a/ \
    -use_value_profile=1 \
-   -jobs=$(nproc) \
+   -fork=\$(nproc) -ignore_crashes=1 \
    -artifact_prefix=$REPO/simulation/crashes_p4a/ \
    >> $REPO/simulation/fuzz_p4a.log 2>&1"
 ```
+
+> **Почему `-fork` вместо `-jobs`:** libFuzzer не обрабатывает SIGTRAP (от
+> `__builtin_trap()`). С `-jobs=N` SIGTRAP в воркере убивает координатора.
+> `-fork=N -ignore_crashes=1` — воркер крашится, координатор продолжает.
 
 ### Машина 2 — стратегия B (глубокие цепочки)
 
 ```bash
 REPO=~/tonGraph
+mkdir -p simulation/corpus_p4b simulation/crashes_p4b
+git pull origin testnet   # взять corpus_p4a от машины 1
 tmux new-session -d -s fuzz_p4b \
   "cd $REPO && ./build-fuzz2/test/consensus/fuzz_pool \
+   $REPO/simulation/corpus_p3s3/ \
    $REPO/simulation/corpus_p4b/ \
    -use_value_profile=1 \
+   -fork=\$(nproc) -ignore_crashes=1 \
    -mutate_depth=8 -max_len=200 \
-   -jobs=$(nproc) \
    -artifact_prefix=$REPO/simulation/crashes_p4b/ \
    >> $REPO/simulation/fuzz_p4b.log 2>&1"
 ```
@@ -167,16 +171,16 @@ tmux new-session -d -s sync_p4b "~/tonGraph/simulation/scripts/sync_p4b.sh"
 ## Мониторинг
 
 ```bash
-# Статус фаззинга (на каждой машине):
-for i in $(seq 0 $(($(nproc)-1))); do
-  ft=$(grep -oP 'ft: \K[0-9]+' fuzz-$i.log 2>/dev/null | tail -1)
-  cov=$(grep -oP 'cov: \K[0-9]+' fuzz-$i.log 2>/dev/null | tail -1)
-  echo "worker-$i: cov=$cov ft=$ft"
-done
+# Статус фаззинга (fork-mode — лог общий):
+tail -f ~/tonGraph/simulation/fuzz_p4a.log   # машина 1
+tail -f ~/tonGraph/simulation/fuzz_p4b.log   # машина 2
 
-# Крашей нет?
-ls ~/tonGraph/simulation/crashes_p4a/   # машина 1
-ls ~/tonGraph/simulation/crashes_p4b/   # машина 2
+# Краткая сводка: coverage, exec/s, кол-во крашей:
+grep "cov:" ~/tonGraph/simulation/fuzz_p4a.log | tail -1
+
+# Количество найденных крашей:
+ls ~/tonGraph/simulation/crashes_p4a/ | wc -l   # машина 1
+ls ~/tonGraph/simulation/crashes_p4b/ | wc -l   # машина 2
 ```
 
 ---
