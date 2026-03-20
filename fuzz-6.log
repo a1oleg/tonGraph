@@ -1,181 +1,790 @@
+[1;31m[ 1][t 0][2026-03-20 07:25:08.336010259][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
 INFO: Running with entropic power schedule (0xFF, 100).
-INFO: Seed: 3924258043
-INFO: Loaded 1 modules   (6135 inline 8-bit counters): 6135 [0x55c3ef5f02e8, 0x55c3ef5f1adf), 
-INFO: Loaded 1 PC tables (6135 PCs): 6135 [0x55c3ef5f1ae0,0x55c3ef609a50), 
-INFO:        1 files found in /home/a1oleg/tonGraph/simulation/corpus_p3s3/
+INFO: Seed: 3102836735
+INFO: Loaded 1 modules   (6990 inline 8-bit counters): 6990 [0x61f50846d2e8, 0x61f50846ee36), 
+INFO: Loaded 1 PC tables (6990 PCs): 6990 [0x61f50846ee38,0x61f50848a318), 
+INFO:     1471 files found in /home/a1oleg/tonGraph/simulation/corpus_p3s3/
+INFO:        1 files found in /home/a1oleg/tonGraph/simulation/corpus_p4a/
 INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
-INFO: seed corpus: files: 1 min: 3b max: 3b total: 3b rss: 34Mb
-#2	INITED cov: 2 ft: 4 corp: 1/3b exec/s: 0 rss: 35Mb
-	NEW_FUNC[1/1]: 0x55c3ee9cd750 in inject_vote(FuzzedDataProvider&) /home/a1oleg/tonGraph/test/consensus/fuzz_pool.cpp:588
-#6	NEW    cov: 25 ft: 69 corp: 2/7b lim: 4 exec/s: 0 rss: 37Mb L: 4/4 MS: 4 ChangeBit-ChangeByte-ChangeByte-CopyPart-
-#9	NEW    cov: 26 ft: 74 corp: 3/11b lim: 4 exec/s: 0 rss: 37Mb L: 4/4 MS: 3 EraseBytes-ChangeByte-CopyPart-
-#12	NEW    cov: 26 ft: 76 corp: 4/13b lim: 4 exec/s: 0 rss: 37Mb L: 2/4 MS: 3 ChangeASCIIInt-EraseBytes-CrossOver-
-	NEW_FUNC[1/103]: 0x55c3ee9cc040 in configure_and_start_bus(FuzzState&, std::unique_ptr<ton::validator::consensus::simplex::MockDb, std::default_delete<ton::validator::consensus::simplex::MockDb>>) /home/a1oleg/tonGraph/test/consensus/fuzz_pool.cpp:485
-	NEW_FUNC[2/103]: 0x55c3ee9ce930 in td::actor::Scheduler::start() /home/a1oleg/tonGraph/tdactor/td/actor/common.h:135
-#26	NEW    cov: 766 ft: 1590 corp: 5/17b lim: 4 exec/s: 0 rss: 37Mb L: 4/4 MS: 4 InsertByte-EraseBytes-InsertByte-CopyPart-
-#28	NEW    cov: 766 ft: 1592 corp: 6/21b lim: 4 exec/s: 0 rss: 37Mb L: 4/4 MS: 2 CopyPart-CopyPart-
-#31	REDUCE cov: 766 ft: 1592 corp: 6/20b lim: 4 exec/s: 0 rss: 37Mb L: 1/4 MS: 3 CopyPart-ShuffleBytes-EraseBytes-
-#35	NEW    cov: 766 ft: 1593 corp: 7/24b lim: 4 exec/s: 0 rss: 37Mb L: 4/4 MS: 4 CopyPart-ChangeASCIIInt-CopyPart-ChangeASCIIInt-
-#38	NEW    cov: 767 ft: 1596 corp: 8/28b lim: 4 exec/s: 0 rss: 37Mb L: 4/4 MS: 3 ChangeBit-CrossOver-InsertByte-
-#44	NEW    cov: 767 ft: 1598 corp: 9/32b lim: 4 exec/s: 0 rss: 37Mb L: 4/4 MS: 1 ChangeBit-
-#46	NEW    cov: 767 ft: 1599 corp: 10/36b lim: 4 exec/s: 0 rss: 37Mb L: 4/4 MS: 2 ShuffleBytes-ShuffleBytes-
-#62	NEW    cov: 768 ft: 1602 corp: 11/40b lim: 4 exec/s: 0 rss: 37Mb L: 4/4 MS: 1 ShuffleBytes-
-#66	NEW    cov: 769 ft: 1605 corp: 12/44b lim: 4 exec/s: 0 rss: 37Mb L: 4/4 MS: 4 EraseBytes-ChangeByte-CrossOver-CopyPart-
-#67	NEW    cov: 769 ft: 1608 corp: 13/48b lim: 4 exec/s: 0 rss: 37Mb L: 4/4 MS: 1 ChangeByte-
-#80	NEW    cov: 769 ft: 1609 corp: 14/52b lim: 4 exec/s: 0 rss: 37Mb L: 4/4 MS: 3 ChangeByte-ChangeByte-ChangeASCIIInt-
-#101	NEW    cov: 769 ft: 1610 corp: 15/56b lim: 4 exec/s: 0 rss: 37Mb L: 4/4 MS: 1 ChangeByte-
-#103	NEW    cov: 769 ft: 1611 corp: 16/60b lim: 4 exec/s: 0 rss: 37Mb L: 4/4 MS: 2 EraseBytes-CopyPart-
-#191	NEW    cov: 769 ft: 1614 corp: 17/64b lim: 4 exec/s: 0 rss: 37Mb L: 4/4 MS: 3 CopyPart-ChangeASCIIInt-ShuffleBytes-
-#381	NEW    cov: 769 ft: 1615 corp: 18/68b lim: 4 exec/s: 0 rss: 37Mb L: 4/4 MS: 5 CopyPart-ChangeBit-ChangeByte-CopyPart-CopyPart-
-#594	NEW    cov: 769 ft: 1618 corp: 19/74b lim: 6 exec/s: 0 rss: 37Mb L: 6/6 MS: 3 EraseBytes-CrossOver-InsertRepeatedBytes-
-#598	NEW    cov: 769 ft: 1620 corp: 20/79b lim: 6 exec/s: 0 rss: 37Mb L: 5/6 MS: 4 ShuffleBytes-ChangeBit-EraseBytes-InsertRepeatedBytes-
-	NEW_FUNC[1/4]: 0x55c3ee9f3a10 in std::_Sp_counted_ptr_inplace<ton::validator::consensus::IncomingProtocolMessage, std::allocator<void>, (__gnu_cxx::_Lock_policy)2>::_M_dispose() /usr/bin/../lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/shared_ptr_base.h:612
-	NEW_FUNC[2/4]: 0x55c3ee9f3a70 in std::_Sp_counted_ptr_inplace<ton::validator::consensus::IncomingProtocolMessage, std::allocator<void>, (__gnu_cxx::_Lock_policy)2>::_M_destroy() /usr/bin/../lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/shared_ptr_base.h:619
-#804	NEW    cov: 810 ft: 1705 corp: 21/87b lim: 8 exec/s: 0 rss: 37Mb L: 8/8 MS: 1 CrossOver-
-#805	NEW    cov: 810 ft: 1708 corp: 22/94b lim: 8 exec/s: 0 rss: 37Mb L: 7/8 MS: 1 InsertByte-
-#808	NEW    cov: 811 ft: 1714 corp: 23/102b lim: 8 exec/s: 0 rss: 37Mb L: 8/8 MS: 3 InsertByte-ChangeASCIIInt-CopyPart-
-#828	NEW    cov: 813 ft: 1718 corp: 24/110b lim: 8 exec/s: 0 rss: 37Mb L: 8/8 MS: 5 InsertRepeatedBytes-CopyPart-ChangeByte-ChangeBit-CrossOver-
-#839	NEW    cov: 813 ft: 1729 corp: 25/118b lim: 8 exec/s: 0 rss: 37Mb L: 8/8 MS: 1 InsertRepeatedBytes-
-#1147	NEW    cov: 813 ft: 1732 corp: 26/128b lim: 11 exec/s: 0 rss: 37Mb L: 10/10 MS: 3 CopyPart-ChangeByte-InsertRepeatedBytes-
-#1152	REDUCE cov: 813 ft: 1733 corp: 27/137b lim: 11 exec/s: 0 rss: 37Mb L: 9/10 MS: 5 ChangeBit-ShuffleBytes-InsertByte-ChangeByte-InsertRepeatedBytes-
-#1156	NEW    cov: 813 ft: 1735 corp: 28/148b lim: 11 exec/s: 0 rss: 37Mb L: 11/11 MS: 4 InsertRepeatedBytes-EraseBytes-CrossOver-InsertRepeatedBytes-
-#1479	NEW    cov: 813 ft: 1782 corp: 29/160b lim: 14 exec/s: 0 rss: 37Mb L: 12/12 MS: 3 ShuffleBytes-ChangeBinInt-CMP- DE: "\377\377\377\377\377\377\377\377"-
-#1494	NEW    cov: 813 ft: 1793 corp: 30/173b lim: 14 exec/s: 0 rss: 37Mb L: 13/13 MS: 5 CrossOver-CrossOver-InsertByte-InsertByte-CrossOver-
-#1498	NEW    cov: 813 ft: 1794 corp: 31/187b lim: 14 exec/s: 0 rss: 37Mb L: 14/14 MS: 4 ShuffleBytes-CrossOver-InsertRepeatedBytes-InsertByte-
-#1619	NEW    cov: 813 ft: 1795 corp: 32/201b lim: 14 exec/s: 0 rss: 37Mb L: 14/14 MS: 1 ShuffleBytes-
-#1720	NEW    cov: 813 ft: 1797 corp: 33/214b lim: 14 exec/s: 0 rss: 37Mb L: 13/14 MS: 1 InsertRepeatedBytes-
-#1755	NEW    cov: 813 ft: 1802 corp: 34/226b lim: 14 exec/s: 0 rss: 37Mb L: 12/14 MS: 5 ChangeBit-CopyPart-CrossOver-CMP-InsertRepeatedBytes- DE: "\001\000"-
-#2074	NEW    cov: 813 ft: 1843 corp: 35/243b lim: 17 exec/s: 0 rss: 37Mb L: 17/17 MS: 4 ChangeASCIIInt-InsertRepeatedBytes-CrossOver-CopyPart-
-#2076	NEW    cov: 813 ft: 1845 corp: 36/258b lim: 17 exec/s: 0 rss: 37Mb L: 15/17 MS: 2 ChangeBit-InsertRepeatedBytes-
-#2078	NEW    cov: 813 ft: 1846 corp: 37/275b lim: 17 exec/s: 0 rss: 37Mb L: 17/17 MS: 2 PersAutoDict-InsertRepeatedBytes- DE: "\001\000"-
-#2083	NEW    cov: 813 ft: 1847 corp: 38/291b lim: 17 exec/s: 0 rss: 37Mb L: 16/17 MS: 5 ShuffleBytes-ChangeByte-CrossOver-ChangeByte-CopyPart-
-#2251	NEW    cov: 813 ft: 1849 corp: 39/308b lim: 17 exec/s: 0 rss: 37Mb L: 17/17 MS: 3 CrossOver-InsertByte-ShuffleBytes-
-#2456	NEW    cov: 813 ft: 1850 corp: 40/318b lim: 17 exec/s: 0 rss: 37Mb L: 10/17 MS: 5 InsertByte-ChangeBinInt-EraseBytes-ChangeBit-EraseBytes-
-#2534	NEW    cov: 813 ft: 1851 corp: 41/334b lim: 17 exec/s: 0 rss: 37Mb L: 16/17 MS: 3 CrossOver-EraseBytes-CopyPart-
-#2956	NEW    cov: 813 ft: 1852 corp: 42/353b lim: 21 exec/s: 0 rss: 37Mb L: 19/19 MS: 2 InsertByte-CopyPart-
-#2957	NEW    cov: 813 ft: 1890 corp: 43/374b lim: 21 exec/s: 0 rss: 37Mb L: 21/21 MS: 1 PersAutoDict- DE: "\377\377\377\377\377\377\377\377"-
-#3012	NEW    cov: 813 ft: 1892 corp: 44/395b lim: 21 exec/s: 0 rss: 37Mb L: 21/21 MS: 5 CrossOver-ChangeBinInt-ChangeBit-ShuffleBytes-InsertRepeatedBytes-
-#3016	NEW    cov: 813 ft: 1893 corp: 45/415b lim: 21 exec/s: 0 rss: 37Mb L: 20/21 MS: 4 CrossOver-PersAutoDict-EraseBytes-PersAutoDict- DE: "\377\377\377\377\377\377\377\377"-"\377\377\377\377\377\377\377\377"-
-#3277	NEW    cov: 813 ft: 1894 corp: 46/428b lim: 21 exec/s: 0 rss: 37Mb L: 13/21 MS: 1 CrossOver-
-#3615	RELOAD cov: 813 ft: 1905 corp: 51/547b lim: 21 exec/s: 3615 rss: 37Mb
-#3860	REDUCE cov: 813 ft: 1905 corp: 51/546b lim: 25 exec/s: 3860 rss: 37Mb L: 5/29 MS: 5 CMP-ShuffleBytes-CopyPart-EraseBytes-InsertByte- DE: "\377\377"-
-#3887	NEW    cov: 816 ft: 1922 corp: 52/568b lim: 25 exec/s: 3887 rss: 37Mb L: 22/29 MS: 2 ChangeBit-ChangeBit-
-#4734	NEW    cov: 816 ft: 1925 corp: 53/601b lim: 33 exec/s: 4734 rss: 37Mb L: 33/33 MS: 2 ChangeBinInt-InsertRepeatedBytes-
-#4757	NEW    cov: 816 ft: 1927 corp: 54/632b lim: 33 exec/s: 4757 rss: 37Mb L: 31/33 MS: 3 EraseBytes-ShuffleBytes-InsertRepeatedBytes-
-#4791	NEW    cov: 816 ft: 1928 corp: 55/664b lim: 33 exec/s: 4791 rss: 37Mb L: 32/33 MS: 4 CopyPart-InsertRepeatedBytes-ShuffleBytes-InsertRepeatedBytes-
-	NEW_FUNC[1/1]: 0x55c3ee9cfe00 in void std::vector<td::unique_ptr<td::detail::SharedPtrRaw<td::actor::core::ActorInfo, td::SharedObjectPool<td::actor::core::ActorInfo>::Deleter>>, std::allocator<td::unique_ptr<td::detail::SharedPtrRaw<td::actor::core::ActorInfo, td::SharedObjectPool<td::actor::core::ActorInfo>::Deleter>>>>::_M_realloc_insert<td::unique_ptr<td::detail::SharedPtrRaw<td::actor::core::ActorInfo, td::SharedObjectPool<td::actor::core::ActorInfo>::Deleter>>>(__gnu_cxx::__normal_iterator<td::unique_ptr<td::detail::SharedPtrRaw<td::actor::core::ActorInfo, td::SharedObjectPool<td::actor::core::ActorInfo>::Deleter>>*, std::vector<td::unique_ptr<td::detail::SharedPtrRaw<td::actor::core::ActorInfo, td::SharedObjectPool<td::actor::core::ActorInfo>::Deleter>>, std::allocator<td::unique_ptr<td::detail::SharedPtrRaw<td::actor::core::ActorInfo, td::SharedObjectPool<td::actor::core::ActorInfo>::Deleter>>>>>, td::unique_ptr<td::detail::SharedPtrRaw<td::actor::core::ActorInfo, td::SharedObjectPool<td::actor::core::ActorInfo>::D
-#4794	NEW    cov: 836 ft: 1984 corp: 56/677b lim: 33 exec/s: 4794 rss: 38Mb L: 13/33 MS: 3 ChangeBinInt-ChangeBinInt-ChangeBit-
-#4795	NEW    cov: 837 ft: 1986 corp: 57/689b lim: 33 exec/s: 4795 rss: 38Mb L: 12/33 MS: 1 PersAutoDict- DE: "\377\377\377\377\377\377\377\377"-
-#4800	NEW    cov: 846 ft: 2194 corp: 58/706b lim: 33 exec/s: 4800 rss: 38Mb L: 17/33 MS: 5 CopyPart-CopyPart-ChangeBinInt-ChangeBit-InsertRepeatedBytes-
-#4801	NEW    cov: 847 ft: 2198 corp: 59/721b lim: 33 exec/s: 4801 rss: 38Mb L: 15/33 MS: 1 CMP- DE: "\001\000\000\000"-
-#4803	NEW    cov: 847 ft: 2200 corp: 60/734b lim: 33 exec/s: 4803 rss: 38Mb L: 13/33 MS: 2 CMP-ChangeByte- DE: "\001\000\000\000\000\000\000("-
-#4810	NEW    cov: 847 ft: 2401 corp: 61/758b lim: 33 exec/s: 4810 rss: 38Mb L: 24/33 MS: 2 CrossOver-InsertByte-
-#4816	NEW    cov: 848 ft: 2402 corp: 62/764b lim: 33 exec/s: 4816 rss: 38Mb L: 6/33 MS: 1 CrossOver-
-#4824	NEW    cov: 848 ft: 2403 corp: 63/779b lim: 33 exec/s: 4824 rss: 38Mb L: 15/33 MS: 3 ShuffleBytes-ShuffleBytes-InsertRepeatedBytes-
-#5334	NEW    cov: 848 ft: 2441 corp: 64/816b lim: 38 exec/s: 5334 rss: 38Mb L: 37/37 MS: 5 ChangeBit-InsertRepeatedBytes-CopyPart-InsertByte-InsertRepeatedBytes-
-#5343	NEW    cov: 848 ft: 2442 corp: 65/850b lim: 38 exec/s: 5343 rss: 38Mb L: 34/37 MS: 4 ChangeASCIIInt-ChangeBit-CrossOver-InsertByte-
-#5363	NEW    cov: 848 ft: 2443 corp: 66/886b lim: 38 exec/s: 5363 rss: 38Mb L: 36/37 MS: 5 InsertRepeatedBytes-ChangeBit-EraseBytes-CrossOver-InsertRepeatedBytes-
-#5400	NEW    cov: 848 ft: 2444 corp: 67/924b lim: 38 exec/s: 5400 rss: 38Mb L: 38/38 MS: 2 ChangeByte-InsertRepeatedBytes-
-#5531	NEW    cov: 848 ft: 2446 corp: 68/962b lim: 38 exec/s: 5531 rss: 38Mb L: 38/38 MS: 1 InsertRepeatedBytes-
-#5834	REDUCE cov: 848 ft: 2446 corp: 68/961b lim: 38 exec/s: 5834 rss: 38Mb L: 5/38 MS: 3 ChangeByte-ChangeByte-EraseBytes-
-#6005	REDUCE cov: 848 ft: 2446 corp: 68/960b lim: 38 exec/s: 6005 rss: 38Mb L: 4/38 MS: 1 EraseBytes-
-#6454	NEW    cov: 848 ft: 2460 corp: 69/973b lim: 38 exec/s: 6454 rss: 38Mb L: 13/38 MS: 4 ChangeBinInt-EraseBytes-CrossOver-ChangeBit-
-#6829	REDUCE cov: 848 ft: 2460 corp: 69/972b lim: 38 exec/s: 6829 rss: 38Mb L: 16/38 MS: 5 ChangeASCIIInt-ChangeBinInt-ChangeBit-ChangeBinInt-CrossOver-
-#7232	RELOAD cov: 848 ft: 2463 corp: 71/1052b lim: 38 exec/s: 3616 rss: 38Mb
-#8192	pulse  cov: 848 ft: 2463 corp: 71/1052b lim: 48 exec/s: 4096 rss: 38Mb
-#8360	REDUCE cov: 848 ft: 2463 corp: 71/1051b lim: 53 exec/s: 4180 rss: 38Mb L: 28/42 MS: 3 ChangeBit-ShuffleBytes-EraseBytes-
-#8928	REDUCE cov: 848 ft: 2463 corp: 71/1049b lim: 58 exec/s: 4464 rss: 38Mb L: 13/42 MS: 3 ChangeByte-EraseBytes-ChangeByte-
-#9148	NEW    cov: 848 ft: 2464 corp: 72/1106b lim: 58 exec/s: 4574 rss: 38Mb L: 57/57 MS: 5 InsertByte-PersAutoDict-CrossOver-InsertByte-CrossOver- DE: "\001\000\000\000\000\000\000("-
-#9567	NEW    cov: 848 ft: 2468 corp: 73/1157b lim: 58 exec/s: 4783 rss: 38Mb L: 51/57 MS: 4 ShuffleBytes-EraseBytes-EraseBytes-EraseBytes-
-#10129	NEW    cov: 848 ft: 2475 corp: 74/1217b lim: 63 exec/s: 3376 rss: 38Mb L: 60/60 MS: 2 ShuffleBytes-InsertRepeatedBytes-
-#10167	NEW    cov: 848 ft: 2476 corp: 75/1276b lim: 63 exec/s: 3389 rss: 38Mb L: 59/60 MS: 3 ChangeBit-CrossOver-InsertRepeatedBytes-
-#10410	NEW    cov: 848 ft: 2478 corp: 76/1339b lim: 63 exec/s: 3470 rss: 38Mb L: 63/63 MS: 3 ChangeBinInt-ChangeBinInt-InsertRepeatedBytes-
-#10498	RELOAD cov: 848 ft: 2484 corp: 82/1750b lim: 63 exec/s: 3499 rss: 38Mb
-#10847	REDUCE cov: 848 ft: 2484 corp: 82/1749b lim: 63 exec/s: 3615 rss: 38Mb L: 66/74 MS: 4 EraseBytes-ChangeBinInt-InsertByte-InsertByte-
-#11714	REDUCE cov: 848 ft: 2484 corp: 82/1745b lim: 68 exec/s: 3904 rss: 38Mb L: 70/73 MS: 2 ChangeBinInt-EraseBytes-
-#13280	REDUCE cov: 848 ft: 2484 corp: 82/1743b lim: 80 exec/s: 3320 rss: 38Mb L: 40/73 MS: 1 EraseBytes-
-#13731	REDUCE cov: 848 ft: 2484 corp: 82/1738b lim: 80 exec/s: 3432 rss: 38Mb L: 8/73 MS: 1 EraseBytes-
-#15136	REDUCE cov: 848 ft: 2484 corp: 82/1734b lim: 92 exec/s: 3784 rss: 38Mb L: 4/73 MS: 5 EraseBytes-EraseBytes-CopyPart-CopyPart-EraseBytes-
-#16384	pulse  cov: 848 ft: 2484 corp: 82/1734b lim: 104 exec/s: 3276 rss: 38Mb
-#16504	RELOAD cov: 848 ft: 2488 corp: 85/2112b lim: 104 exec/s: 3300 rss: 38Mb
-#16787	REDUCE cov: 848 ft: 2488 corp: 85/2111b lim: 104 exec/s: 3357 rss: 38Mb L: 12/128 MS: 3 InsertRepeatedBytes-InsertByte-EraseBytes-
-#17328	REDUCE cov: 848 ft: 2488 corp: 85/2110b lim: 104 exec/s: 3465 rss: 38Mb L: 37/128 MS: 1 EraseBytes-
-#18455	REDUCE cov: 848 ft: 2488 corp: 85/2109b lim: 110 exec/s: 3691 rss: 38Mb L: 18/128 MS: 2 ChangeBinInt-EraseBytes-
-#19569	RELOAD cov: 848 ft: 2493 corp: 90/2767b lim: 116 exec/s: 3261 rss: 38Mb
-#20165	REDUCE cov: 848 ft: 2493 corp: 90/2766b lim: 122 exec/s: 3360 rss: 38Mb L: 56/134 MS: 1 EraseBytes-
-#22058	REDUCE cov: 848 ft: 2493 corp: 90/2765b lim: 135 exec/s: 3676 rss: 38Mb L: 20/134 MS: 3 PersAutoDict-ChangeBit-EraseBytes- DE: "\001\000\000\000"-
-#22736	REDUCE cov: 848 ft: 2493 corp: 90/2764b lim: 135 exec/s: 3248 rss: 38Mb L: 36/134 MS: 3 ChangeBit-InsertByte-EraseBytes-
-#23997	REDUCE cov: 848 ft: 2493 corp: 90/2763b lim: 142 exec/s: 3428 rss: 38Mb L: 20/134 MS: 1 EraseBytes-
-#30841	REDUCE cov: 848 ft: 2493 corp: 90/2762b lim: 205 exec/s: 3426 rss: 38Mb L: 13/134 MS: 1 EraseBytes-
-#32075	RELOAD cov: 848 ft: 2502 corp: 98/4823b lim: 212 exec/s: 3207 rss: 38Mb
-#32768	pulse  cov: 848 ft: 2502 corp: 98/4823b lim: 219 exec/s: 3276 rss: 38Mb
-#43489	REDUCE cov: 848 ft: 2502 corp: 98/4822b lim: 325 exec/s: 3345 rss: 38Mb L: 16/262 MS: 1 EraseBytes-
-#45209	REDUCE cov: 848 ft: 2502 corp: 98/4820b lim: 341 exec/s: 3229 rss: 38Mb L: 38/262 MS: 1 EraseBytes-
-#53263	NEW    cov: 848 ft: 2503 corp: 99/4824b lim: 421 exec/s: 3133 rss: 38Mb L: 4/262 MS: 2 ShuffleBytes-ChangeByte-
-#53909	NEW    cov: 848 ft: 2665 corp: 100/4832b lim: 421 exec/s: 3171 rss: 38Mb L: 8/262 MS: 5 ChangeBinInt-InsertByte-InsertByte-CopyPart-EraseBytes-
-#53910	NEW    cov: 848 ft: 2666 corp: 101/4875b lim: 421 exec/s: 3171 rss: 38Mb L: 43/262 MS: 1 CrossOver-
-#54780	REDUCE cov: 848 ft: 2666 corp: 101/4871b lim: 429 exec/s: 3222 rss: 38Mb L: 69/262 MS: 5 CopyPart-ChangeByte-EraseBytes-InsertRepeatedBytes-EraseBytes-
-#56486	RELOAD cov: 848 ft: 2672 corp: 106/7476b lim: 445 exec/s: 3138 rss: 38Mb
-#59575	RELOAD cov: 848 ft: 2675 corp: 109/9008b lim: 469 exec/s: 3135 rss: 38Mb
-#64738	REDUCE cov: 848 ft: 2675 corp: 109/9004b lim: 526 exec/s: 3236 rss: 38Mb L: 522/524 MS: 3 CMP-EraseBytes-InsertRepeatedBytes- DE: "\220\001\000\000\000\000\000\000"-
-#65413	REDUCE cov: 848 ft: 2675 corp: 109/9000b lim: 526 exec/s: 3114 rss: 38Mb L: 517/524 MS: 5 InsertRepeatedBytes-PersAutoDict-ChangeByte-CrossOver-InsertRepeatedBytes- DE: "\377\377"-
-#65536	pulse  cov: 848 ft: 2675 corp: 109/9000b lim: 526 exec/s: 3120 rss: 38Mb
-#66417	NEW    cov: 848 ft: 2676 corp: 110/9017b lim: 535 exec/s: 3162 rss: 38Mb L: 17/524 MS: 2 ChangeBit-ChangeByte-
-#72927	NEW    cov: 848 ft: 2678 corp: 111/9034b lim: 598 exec/s: 2701 rss: 38Mb L: 17/524 MS: 1 PersAutoDict- DE: "\220\001\000\000\000\000\000\000"-
-#72935	NEW    cov: 848 ft: 2874 corp: 112/9621b lim: 598 exec/s: 2701 rss: 38Mb L: 587/587 MS: 3 CrossOver-PersAutoDict-CrossOver- DE: "\377\377\377\377\377\377\377\377"-
-#90056	NEW    cov: 848 ft: 2875 corp: 113/9674b lim: 760 exec/s: 2814 rss: 38Mb L: 53/587 MS: 3 EraseBytes-EraseBytes-EraseBytes-
-#100586	REDUCE cov: 848 ft: 2875 corp: 113/9673b lim: 859 exec/s: 2873 rss: 38Mb L: 12/587 MS: 5 CopyPart-ChangeByte-ChangeBinInt-PersAutoDict-EraseBytes- DE: "\001\000\000\000"-
-#106427	RELOAD cov: 848 ft: 2884 corp: 121/17Kb lim: 913 exec/s: 2876 rss: 38Mb
-#107441	REDUCE cov: 848 ft: 2884 corp: 121/17Kb lim: 922 exec/s: 2903 rss: 38Mb L: 1029/1039 MS: 4 EraseBytes-InsertByte-ChangeByte-InsertRepeatedBytes-
-#111519	REDUCE cov: 848 ft: 2884 corp: 121/17Kb lim: 958 exec/s: 2859 rss: 38Mb L: 37/1039 MS: 1 EraseBytes-
-#118939	REDUCE cov: 848 ft: 2884 corp: 121/17Kb lim: 1030 exec/s: 2900 rss: 38Mb L: 1027/1038 MS: 4 ShuffleBytes-EraseBytes-ChangeBit-InsertRepeatedBytes-
-#131072	pulse  cov: 848 ft: 2884 corp: 121/17Kb lim: 1150 exec/s: 2978 rss: 38Mb
-#178018	REDUCE cov: 848 ft: 2884 corp: 121/17Kb lim: 1610 exec/s: 2871 rss: 38Mb L: 516/1038 MS: 1 EraseBytes-
-#179560	REDUCE cov: 848 ft: 2884 corp: 121/17Kb lim: 1620 exec/s: 2850 rss: 38Mb L: 258/1038 MS: 2 EraseBytes-PersAutoDict- DE: "\220\001\000\000\000\000\000\000"-
-#181854	REDUCE cov: 848 ft: 2884 corp: 121/17Kb lim: 1640 exec/s: 2886 rss: 38Mb L: 1026/1038 MS: 5 InsertByte-ShuffleBytes-PersAutoDict-EraseBytes-PersAutoDict- DE: "\377\377"-"\001\000\000\000"-
-#200337	REDUCE cov: 848 ft: 2885 corp: 122/17Kb lim: 1820 exec/s: 2903 rss: 38Mb L: 103/1038 MS: 3 InsertRepeatedBytes-InsertByte-ShuffleBytes-
-#216403	RELOAD cov: 848 ft: 2893 corp: 129/31Kb lim: 1970 exec/s: 2924 rss: 38Mb
-#217369	NEW    cov: 848 ft: 2894 corp: 130/31Kb lim: 1980 exec/s: 2937 rss: 38Mb L: 37/2081 MS: 1 ShuffleBytes-
-#217371	NEW    cov: 848 ft: 2899 corp: 131/31Kb lim: 1980 exec/s: 2937 rss: 38Mb L: 34/2081 MS: 2 PersAutoDict-ChangeBit- DE: "\001\000"-
-#217392	REDUCE cov: 848 ft: 2900 corp: 132/31Kb lim: 1980 exec/s: 2937 rss: 38Mb L: 51/2081 MS: 1 InsertRepeatedBytes-
-#219708	RELOAD cov: 848 ft: 2901 corp: 133/33Kb lim: 2000 exec/s: 2929 rss: 38Mb
-#220033	REDUCE cov: 848 ft: 2901 corp: 133/33Kb lim: 2000 exec/s: 2933 rss: 38Mb L: 34/2081 MS: 5 EraseBytes-PersAutoDict-InsertByte-ShuffleBytes-InsertByte- DE: "\001\000"-
-#220181	REDUCE cov: 848 ft: 2901 corp: 133/33Kb lim: 2000 exec/s: 2935 rss: 38Mb L: 23/2081 MS: 3 PersAutoDict-EraseBytes-ChangeBinInt- DE: "\001\000"-
-#231117	REDUCE cov: 848 ft: 2901 corp: 133/33Kb lim: 2105 exec/s: 2963 rss: 38Mb L: 18/2081 MS: 4 InsertByte-CopyPart-EraseBytes-ChangeByte-
-#231362	REDUCE cov: 848 ft: 2901 corp: 133/33Kb lim: 2105 exec/s: 2966 rss: 38Mb L: 16/2081 MS: 5 CopyPart-ShuffleBytes-ChangeBit-ChangeBit-EraseBytes-
-#235211	REDUCE cov: 848 ft: 2901 corp: 133/33Kb lim: 2138 exec/s: 2940 rss: 38Mb L: 13/2081 MS: 5 CrossOver-EraseBytes-CopyPart-ChangeBinInt-EraseBytes-
-#236503	NEW    cov: 849 ft: 2906 corp: 134/33Kb lim: 2149 exec/s: 2956 rss: 38Mb L: 41/2081 MS: 5 CopyPart-ChangeBit-ChangeBit-InsertRepeatedBytes-ChangeBit-
-#243262	REDUCE cov: 849 ft: 2906 corp: 134/33Kb lim: 2215 exec/s: 2966 rss: 38Mb L: 8/2081 MS: 4 ShuffleBytes-CrossOver-EraseBytes-ChangeBinInt-
-#254586	REDUCE cov: 849 ft: 2914 corp: 135/33Kb lim: 2325 exec/s: 2960 rss: 38Mb L: 66/2081 MS: 1 CrossOver-
-#259551	REDUCE cov: 849 ft: 2914 corp: 135/33Kb lim: 2369 exec/s: 2983 rss: 38Mb L: 2061/2079 MS: 1 CrossOver-
-#262144	pulse  cov: 849 ft: 2914 corp: 135/33Kb lim: 2391 exec/s: 2978 rss: 38Mb
-#262967	REDUCE cov: 849 ft: 2914 corp: 135/33Kb lim: 2402 exec/s: 2988 rss: 38Mb L: 2051/2064 MS: 1 EraseBytes-
-#263571	REDUCE cov: 849 ft: 2914 corp: 135/33Kb lim: 2402 exec/s: 2995 rss: 38Mb L: 6/2064 MS: 4 ChangeBit-ChangeByte-EraseBytes-ChangeByte-
-#272904	REDUCE cov: 849 ft: 2914 corp: 135/33Kb lim: 2490 exec/s: 2998 rss: 38Mb L: 5/2064 MS: 4 ShuffleBytes-EraseBytes-ChangeBit-InsertByte-
-#281845	REDUCE cov: 849 ft: 2914 corp: 135/33Kb lim: 2578 exec/s: 2905 rss: 38Mb L: 4/2064 MS: 2 EraseBytes-ShuffleBytes-
-#323419	REDUCE cov: 849 ft: 2914 corp: 135/33Kb lim: 2985 exec/s: 2940 rss: 38Mb L: 2052/2061 MS: 1 EraseBytes-
-#399654	REDUCE cov: 849 ft: 2914 corp: 135/33Kb lim: 3744 exec/s: 2938 rss: 38Mb L: 515/2061 MS: 5 CMP-EraseBytes-InsertByte-ChangeByte-InsertRepeatedBytes- DE: "\001\000\000\001\000\000\000\004"-
-#409088	REDUCE cov: 849 ft: 2914 corp: 135/33Kb lim: 3832 exec/s: 2943 rss: 38Mb L: 36/2061 MS: 5 EraseBytes-ChangeBit-ShuffleBytes-ChangeByte-InsertByte-
-#422564	REDUCE cov: 849 ft: 2914 corp: 135/33Kb lim: 3964 exec/s: 2954 rss: 38Mb L: 12/2061 MS: 5 PersAutoDict-PersAutoDict-ChangeBinInt-EraseBytes-CopyPart- DE: "\377\377"-"\001\000"-
-#428682	RELOAD cov: 849 ft: 2917 corp: 137/41Kb lim: 4019 exec/s: 2956 rss: 38Mb
-#438820	RELOAD cov: 849 ft: 2918 corp: 138/45Kb lim: 4096 exec/s: 2965 rss: 38Mb
-#508262	REDUCE cov: 849 ft: 2918 corp: 138/45Kb lim: 4096 exec/s: 2955 rss: 38Mb L: 37/4096 MS: 1 EraseBytes-
-#524288	pulse  cov: 849 ft: 2918 corp: 138/45Kb lim: 4096 exec/s: 2978 rss: 38Mb
-#565746	REDUCE cov: 849 ft: 2918 corp: 138/45Kb lim: 4096 exec/s: 3009 rss: 38Mb L: 40/4096 MS: 1 EraseBytes-
-#629902	REDUCE cov: 849 ft: 2918 corp: 138/45Kb lim: 4096 exec/s: 2985 rss: 38Mb L: 1034/4096 MS: 3 ChangeBinInt-ChangeBinInt-EraseBytes-
-#673959	REDUCE cov: 849 ft: 2918 corp: 138/45Kb lim: 4096 exec/s: 3008 rss: 38Mb L: 8/4096 MS: 2 EraseBytes-ChangeASCIIInt-
-#757871	REDUCE cov: 849 ft: 2918 corp: 138/45Kb lim: 4096 exec/s: 3007 rss: 38Mb L: 2054/4096 MS: 4 CopyPart-EraseBytes-ChangeByte-PersAutoDict- DE: "\001\000\000\000"-
-#784969	REDUCE cov: 849 ft: 2918 corp: 138/45Kb lim: 4096 exec/s: 3019 rss: 38Mb L: 2057/4096 MS: 1 EraseBytes-
-#861281	REDUCE cov: 849 ft: 2919 corp: 139/45Kb lim: 4096 exec/s: 3011 rss: 38Mb L: 41/4096 MS: 3 PersAutoDict-ChangeByte-CrossOver- DE: "\377\377"-
-#868923	NEW    cov: 849 ft: 2923 corp: 140/45Kb lim: 4096 exec/s: 3006 rss: 38Mb L: 28/4096 MS: 5 ChangeBinInt-EraseBytes-CopyPart-ChangeByte-ChangeBinInt-
-#1048576	pulse  cov: 849 ft: 2923 corp: 140/45Kb lim: 4096 exec/s: 2995 rss: 38Mb
-#1068626	NEW    cov: 849 ft: 2927 corp: 141/45Kb lim: 4096 exec/s: 3001 rss: 38Mb L: 20/4096 MS: 5 ChangeBinInt-CrossOver-ChangeASCIIInt-ChangeByte-ChangeByte-
-#1215096	REDUCE cov: 849 ft: 2927 corp: 141/45Kb lim: 4096 exec/s: 3015 rss: 38Mb L: 1030/4096 MS: 1 EraseBytes-
-#1273202	REDUCE cov: 849 ft: 2927 corp: 141/45Kb lim: 4096 exec/s: 3002 rss: 38Mb L: 2050/4096 MS: 2 EraseBytes-CopyPart-
-#1327256	REDUCE cov: 849 ft: 2927 corp: 141/45Kb lim: 4096 exec/s: 3016 rss: 38Mb L: 2053/4096 MS: 3 CrossOver-InsertByte-EraseBytes-
-#1636984	REDUCE cov: 849 ft: 2927 corp: 141/45Kb lim: 4096 exec/s: 3009 rss: 38Mb L: 5/4096 MS: 1 EraseBytes-
-#1651226	REDUCE cov: 849 ft: 2927 corp: 141/45Kb lim: 4096 exec/s: 3013 rss: 38Mb L: 518/4096 MS: 1 CrossOver-
-#2097152	pulse  cov: 849 ft: 2927 corp: 141/45Kb lim: 4096 exec/s: 3021 rss: 38Mb
-#2247107	REDUCE cov: 849 ft: 2927 corp: 141/45Kb lim: 4096 exec/s: 3012 rss: 38Mb L: 36/4096 MS: 2 ChangeByte-EraseBytes-
-#2665692	REDUCE cov: 849 ft: 2929 corp: 142/45Kb lim: 4096 exec/s: 3025 rss: 38Mb L: 10/4096 MS: 2 EraseBytes-PersAutoDict- DE: "\001\000\000\001\000\000\000\004"-
-==216627== libFuzzer: run interrupted; exiting
+INFO: seed corpus: files: 1472 min: 1b max: 4096b total: 300694b rss: 36Mb
+[1;31m[ 1][t 0][2026-03-20 07:25:08.361929367][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.363468375][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.363936580][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.364801891][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.365210475][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.365889573][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.366245741][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.366997625][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.367434199][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.368111268][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.368571274][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.369250564][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.369729860][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.370451916][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.370924062][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.371640807][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.372225405][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.372750320][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.373815820][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.374261149][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.374946820][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.375354187][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.376112492][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.376546576][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.377172002][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.377553616][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.378240408][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.379336530][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.379830416][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.380348397][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.381185384][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.381885628][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.383097440][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.383480857][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.383945023][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.385084310][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.385477385][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.386171361][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.386581902][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.387353065][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.388638358][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.389744138][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.390193091][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.390883190][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.391430341][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.391902748][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.392391377][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.392718618][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.393408324][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.394515745][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.394967080][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.395434455][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.395961335][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.396675512][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.397128298][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.397741484][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.398151844][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.398780510][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.399237065][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.399692331][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.400389021][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.401693863][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.402617136][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.403014223][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.403424944][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.403921067][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.404787153][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.405389342][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.406439028][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.407243942][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.407653536][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.408031390][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.408416187][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.408742283][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.409197449][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.409580713][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.409991678][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.410348080][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.410990154][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.412076177][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.412525149][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.413081560][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.413502110][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.414027854][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.415168800][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.415649431][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.416313056][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.416717880][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.417226023][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.418303443][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.418767789][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.419280575][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.419708221][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.420237229][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.420701044][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.421212017][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.422273342][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.422734406][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.423383576][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.423838545][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.424412593][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.424971646][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.425427408][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.425954874][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.426392448][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.426935099][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.427408120][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.428406271][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.428831510][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.429284639][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.429797975][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.430338912][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.430936820][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.431457830][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.431962897][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.433177784][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.433625719][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.434451292][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.434966873][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.436111183][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.436570191][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.437172914][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.437620885][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.438115537][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.439221632][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.440278783][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.440711091][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.441255374][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.441614788][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.442088836][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.442971334][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.443656464][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.444797312][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.445273425][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.445787717][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.446446184][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.447295255][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.447798312][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.448314741][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.449458942][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.450546020][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.450995948][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.451433784][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.451825515][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.452220528][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.452574307][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.452941700][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.453417733][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.453914153][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.454350014][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.454826587][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.455343386][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.456438011][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.456954233][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.457517362][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.457935567][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.458342718][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.458770527][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.459307460][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.459766036][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.460194872][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.460609299][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.460985233][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.461354547][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.461716369][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.462557162][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.462921111][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.463299335][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.463660705][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.464081318][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.464878964][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.465203365][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.465590858][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.466616449][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.467043247][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.467522174][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.468662435][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.469040001][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.469513941][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.469901037][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.470327728][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.470706051][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.471077800][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.471496573][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.471948196][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.472366239][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.472692894][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.473086825][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.474052496][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.474390576][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.474765373][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.475139575][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.475530206][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.475967554][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.476297067][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.476728221][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.477237698][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.477640133][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.477963983][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.478339204][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.478696580][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.479109240][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.479497382][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.479907697][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.480365578][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.480761611][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.481205298][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.482141953][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.482601096][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.483013116][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.483531285][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.484040699][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.484488327][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.485113142][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.485602727][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.486043899][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.486552835][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.487014918][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.487522321][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.488622221][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.489053177][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.489571040][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.490081301][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.490542374][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.491047054][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.491476116][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.491996855][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.492437973][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.492922076][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.493988067][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.495064505][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.495487624][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.496005740][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.496430780][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.496954720][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.497427344][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.497898652][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.498380924][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.498883133][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.499344693][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.499924223][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.500391690][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.500913339][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.501422095][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.501883051][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.502363700][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.503487081][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.504578631][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.505010904][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.505514627][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.506575421][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.507026719][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.507550578][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.508646358][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.509088332][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.509605600][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.510111542][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.510608512][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.511107800][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.511649423][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.512797871][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.513269016][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.513794706][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.514338529][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.515428953][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.515895706][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.516460106][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.516914038][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.517462595][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.517984155][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.518421936][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.518864614][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.519385419][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.519904634][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.520411270][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.521490017][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.521940179][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.522442208][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.522873551][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.523355841][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.523892541][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.524385624][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.524851431][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.525453992][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.525873850][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.526297673][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.527139729][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.527478241][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.527914751][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.528306221][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.528643822][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.529051748][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.529451225][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.529774534][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.530168601][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.530520251][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.530907041][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.531258871][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.531643416][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.531985850][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.532350629][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.532743893][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.533551927][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.533988095][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.534543974][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.535067689][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.535548779][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.536084469][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.536560519][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.537083711][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.537507706][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.537998166][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.539071240][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.539574206][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.540132773][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.541217975][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.541696000][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.542852934][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.543985152][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.544438732][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.544931761][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.545373736][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.545858794][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.546919263][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.547370723][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.547908108][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.548396575][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.548823771][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.549327945][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.550418279][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.550895610][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.551398197][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.551937386][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.552590271][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.553127800][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.554275257][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.555271325][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.555751470][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.556247331][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.556722082][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.557210144][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.557653651][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.558123110][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.558591622][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.559139205][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.559555670][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.559982081][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.560394263][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.560764417][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.561109926][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.561497699][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.562433469][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.563323271][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.563680764][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.564136985][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.564628680][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.565271178][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.565949563][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.566719437][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.567144018][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.567849310][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.568307353][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.568830464][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.569582966][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.570147808][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.570807032][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.572314917][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.572763096][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.573266333][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.573723447][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.574203564][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.574931219][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.576241165][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.576682022][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.577192166][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.577659253][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.578148784][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.579252760][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.579743842][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.580266024][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.580709982][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.581368819][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.581827169][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.582346618][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.582754689][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.583159558][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.583498611][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.583934256][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.584304201][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.584703498][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.585528169][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.585852668][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.586240152][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.586563263][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.586922767][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.587884011][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.588214507][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.588588943][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.588938636][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.589320936][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.589672108][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.590062540][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.590415435][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.590781079][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.591104578][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.591524668][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.591911945][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.592277057][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.592667219][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.593021187][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.593495668][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.593867715][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.594308671][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.594739185][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.595284982][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.595693025][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.596203819][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.597214963][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.598140779][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.598612005][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.599190959][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.599776550][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.600951662][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.602012410][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.602433041][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.602936341][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.603452572][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.603934159][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.604637224][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.605795502][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.606151688][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.606551994][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.606909181][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.607556412][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.607938928][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.608514149][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.608849865][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.609268269][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.610329820][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.610780378][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.611285455][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.611747285][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.612292975][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.613370702][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.614663163][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.615190530][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.615779926][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.617091945][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.617617599][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.618131702][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.618630890][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.619153387][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.620272476][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.620779437][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.621267057][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.621711998][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.622170645][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.622642963][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.623236966][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.624441564][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.624826163][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.625186478][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.625651916][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.626074296][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.626722573][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.627205522][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.627614025][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.628147550][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.628599020][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.629122591][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.629540372][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.630024980][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.631221761][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.631649777][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.632109921][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.632460417][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.632859226][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.633713500][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.634160209][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.634532030][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.634929262][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.635768017][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.636187377][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.636569622][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.636959676][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.637328909][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.638176069][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.638551921][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.638914364][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.639415924][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.639870225][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.640606050][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.641516672][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.642031387][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.642735670][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.643475950][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.644144245][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.645044687][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.645776445][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.646195290][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.646925831][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.647395452][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.647964857][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.649274622][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.649823233][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.650395803][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.651000645][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.651517200][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.652264901][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.652751294][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.653531952][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.654104053][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.654573142][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.655019445][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.655468597][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.656645278][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.657998587][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.658442347][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.659143835][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.659604286][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.660109056][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.660682202][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.661836386][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.662393735][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.663339596][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.663840136][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.664361795][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.664849261][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.665387278][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.666711151][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.667249107][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.667792624][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.668305130][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.668837348][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.669327357][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.669815202][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.670884083][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.671320945][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.671978456][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.672493046][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.673016752][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.673513848][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.674118834][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.674587337][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.675099014][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.675598410][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.676119168][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.676590890][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.677083018][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.677714464][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.678921867][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.679504671][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.680176411][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.680671028][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.681174138][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.681742758][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.682193813][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.682728574][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.683327104][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.683822722][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.684315075][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.684794714][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.685301288][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.685766418][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.686252838][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.686767761][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.687306535][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.687820205][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.688346120][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.688843802][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.689328825][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.690072806][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.690781823][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.691164735][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.691607584][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.692068982][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.692576791][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.693125321][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.693513761][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.693914500][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.694332777][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.694932047][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.695288341][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.695967235][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.696450058][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.696935296][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.697421166][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.697900724][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.698360273][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.698849173][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.699414818][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.700540471][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.701022725][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.701608379][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.702798320][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.703259285][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.703695254][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.704147652][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.704701358][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.705900032][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.706351664][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.706863603][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.707355397][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.707926758][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.708505347][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.709068340][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.709731510][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.710151339][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.710814449][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.711445207][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.711837145][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.712239381][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.712693673][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.713024719][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.713437577][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.713827181][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.714248470][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.715132347][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.716114348][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.716727667][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.717162770][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.717606738][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.718019920][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.718415772][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.718829848][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.719266286][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.719682724][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.720169803][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.720525348][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.720899388][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.721302922][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.721703977][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.722219685][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.722704707][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.723854463][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.724241361][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.724620396][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.724970838][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.725649521][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.726135950][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.726705021][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.727169466][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.727938970][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.729195408][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.729942973][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.730544425][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.731161340][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.731938239][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.733270394][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.733749510][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.734268788][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.734873450][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.735522286][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.736663585][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.737145758][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.737674765][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.738221654][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.738744972][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.739272050][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.739803547][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.740307731][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.740789083][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.741292807][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.741792230][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.742262410][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.742790237][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.743349966][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.744498595][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.744986521][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.745688883][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.746460371][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.747291255][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.748094455][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.748528738][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.749181335][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.749961136][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.750394310][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.751072678][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.751569180][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.752054256][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.752658800][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.753890414][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.754215391][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.754682929][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.755005698][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.755531423][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.755948033][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.756514714][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.757040692][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.757670259][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.757997518][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.758704217][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.759275281][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.759793649][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.760452061][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.761011114][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.761536849][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.762038869][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.762542088][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.763037273][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.763667840][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.764292782][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.765596731][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.766197028][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.766889084][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.768113439][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.768665071][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.769216865][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.769727956][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.770265557][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.770780417][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.771326576][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.771874980][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.772415638][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.772919488][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.774152950][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.774848973][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.775428134][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.776038910][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.777155510][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.777629955][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.778091795][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.778967277][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.779968656][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.780444706][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 1][t 0][2026-03-20 07:25:08.780947853][coro_task.h:429][!fuzz_pool.SimplexConsensus][&r.is_error()]	Detached task <UnknownTask> failed: [Error : 0 : mock][0m
+[1;31m[ 0][t 0][2026-03-20 07:25:08.781076672][pool.cpp:592][!fuzz_pool.SimplexPool][&validator != owning_bus()->local_id || tolerate_conflicts]	We produced conflicting votes! Conflict occured for NotarizeVote{id={0, AwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=, ?}}[0m
+==45217== ERROR: libFuzzer: deadly signal
+    #0 0x61f5078436c8 in __sanitizer_print_stack_trace (/home/a1oleg/tonGraph/build-fuzz2/test/consensus/fuzz_pool+0x1716c8) (BuildId: 4adde3c888ad5baff44472531974c4987c3ffcff)
+    #1 0x61f50783229c in fuzzer::PrintStackTrace() (/home/a1oleg/tonGraph/build-fuzz2/test/consensus/fuzz_pool+0x16029c) (BuildId: 4adde3c888ad5baff44472531974c4987c3ffcff)
+    #2 0x61f507819187 in fuzzer::Fuzzer::CrashCallback() (/home/a1oleg/tonGraph/build-fuzz2/test/consensus/fuzz_pool+0x147187) (BuildId: 4adde3c888ad5baff44472531974c4987c3ffcff)
+    #3 0x7139afa4532f  (/lib/x86_64-linux-gnu/libc.so.6+0x4532f) (BuildId: 8e9fd827446c24067541ac5390e6f527fb5947bb)
+    #4 0x7139afa9eb2b in pthread_kill (/lib/x86_64-linux-gnu/libc.so.6+0x9eb2b) (BuildId: 8e9fd827446c24067541ac5390e6f527fb5947bb)
+    #5 0x7139afa4527d in raise (/lib/x86_64-linux-gnu/libc.so.6+0x4527d) (BuildId: 8e9fd827446c24067541ac5390e6f527fb5947bb)
+    #6 0x7139afa288fe in abort (/lib/x86_64-linux-gnu/libc.so.6+0x288fe) (BuildId: 8e9fd827446c24067541ac5390e6f527fb5947bb)
+    #7 0x61f507ab2988 in td::process_fatal_error(td::CSlice) /home/a1oleg/tonGraph/tdutils/td/utils/logging.cpp:306:3
+    #8 0x61f507ab3975 in td::DefaultLog::append(td::CSlice, int) /home/a1oleg/tonGraph/tdutils/td/utils/logging.cpp:265:7
+    #9 0x61f507ab1e5f in td::Logger::~Logger() /home/a1oleg/tonGraph/tdutils/td/utils/logging.cpp:140:10
+    #10 0x61f507b769a0 in bool ton::validator::consensus::simplex::(anonymous namespace)::PoolImpl::handle_vote(ton::validator::consensus::PeerValidator const&, ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>, bool)::'lambda'<typename $T>(ton::validator::consensus::simplex::Signed<$T>)::operator()<ton::validator::consensus::simplex::NotarizeVote>(ton::validator::consensus::simplex::Signed<$T>) const /home/a1oleg/tonGraph/validator/consensus/simplex/pool.cpp:592:9
+    #11 0x61f507b759b5 in auto auto ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>::consume_and_downcast<ton::validator::consensus::simplex::(anonymous namespace)::PoolImpl::handle_vote(ton::validator::consensus::PeerValidator const&, ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>, bool)::'lambda'<typename $T>(ton::validator::consensus::simplex::Signed<$T>)&>($T&&) && requires std::same_as<$T, ton::validator::consensus::simplex::Vote>::'lambda'<typename $T0>($T const&)::operator()<ton::validator::consensus::simplex::NotarizeVote>($T const&) const /home/a1oleg/tonGraph/validator/consensus/simplex/votes.h:111:60
+    #12 0x61f507b7594c in $T std::__invoke_impl<bool, auto ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>::consume_and_downcast<ton::validator::consensus::simplex::(anonymous namespace)::PoolImpl::handle_vote(ton::validator::consensus::PeerValidator const&, ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>, bool)::'lambda'<typename $T>(ton::validator::consensus::simplex::Signed<$T>)&>($T&&) && requires std::same_as<$T, ton::validator::consensus::simplex::Vote>::'lambda'<typename $T0>($T const&)&, ton::validator::consensus::simplex::NotarizeVote&>(std::__invoke_other, auto ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>::consume_and_downcast<ton::validator::consensus::simplex::(anonymous namespace)::PoolImpl::handle_vote(ton::validator::consensus::PeerValidator const&, ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>, bool)::'lambda'<typename $T>(ton::validator::consensus::simplex::Signed<$T>)&>($T&&) && requires std::same_as<$T, ton::validator::consensus::simplex::Vote>::'lambda'<typename $T0>($T const&)&, ton::validator::consensus::simplex::NotarizeVote&) /usr/bin/../lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/invoke.h:61:14
+    #13 0x61f507b758fc in std::__invoke_result<$T, ton::validator::consensus::simplex::NotarizeVote&>::type std::__invoke<auto ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>::consume_and_downcast<ton::validator::consensus::simplex::(anonymous namespace)::PoolImpl::handle_vote(ton::validator::consensus::PeerValidator const&, ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>, bool)::'lambda'<typename $T>(ton::validator::consensus::simplex::Signed<$T>)&>($T&&) && requires std::same_as<$T, ton::validator::consensus::simplex::Vote>::'lambda'<typename $T0>($T const&)&, ton::validator::consensus::simplex::NotarizeVote&>($T&&, ton::validator::consensus::simplex::NotarizeVote&) /usr/bin/../lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/invoke.h:96:14
+    #14 0x61f507b7584c in std::__detail::__variant::__gen_vtable_impl<std::__detail::__variant::_Multi_array<std::__detail::__variant::__deduce_visit_result<bool> (*)(auto ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>::consume_and_downcast<ton::validator::consensus::simplex::(anonymous namespace)::PoolImpl::handle_vote(ton::validator::consensus::PeerValidator const&, ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>, bool)::'lambda'<typename $T>(ton::validator::consensus::simplex::Signed<$T>)&>($T&&) && requires std::same_as<$T, ton::validator::consensus::simplex::Vote>::'lambda'<typename $T0>($T const&)&, std::variant<ton::validator::consensus::simplex::NotarizeVote, ton::validator::consensus::simplex::FinalizeVote, ton::validator::consensus::simplex::SkipVote>&)>, std::integer_sequence<unsigned long, 0ul>>::__visit_invoke(auto ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>::consume_and_downcast<ton::validator::consensus::simplex::(anonymous namespace)::PoolImpl::handle_vote(ton::validator::consensus::PeerValidator const&, ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>, bool)::'lambda'<typename $T>(ton::validator::consensus::simplex::Signed<$T>)&>($T&&) && requires std::same_as<$T, ton::validator::consensus::simplex::Vote>::'lambda'<typename $T0>($T const&)&, std::variant<ton::validator::consensus::simplex::NotarizeVote, ton::validator::consensus::simplex::FinalizeVote, ton::validator::consensus::simplex::SkipVote>&) /usr/bin/../lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/variant:1060:11
+    #15 0x61f507b757b3 in decltype(auto) std::__do_visit<std::__detail::__variant::__deduce_visit_result<bool>, auto ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>::consume_and_downcast<ton::validator::consensus::simplex::(anonymous namespace)::PoolImpl::handle_vote(ton::validator::consensus::PeerValidator const&, ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>, bool)::'lambda'<typename $T>(ton::validator::consensus::simplex::Signed<$T>)&>($T&&) && requires std::same_as<$T, ton::validator::consensus::simplex::Vote>::'lambda'<typename $T0>($T const&)&, std::variant<ton::validator::consensus::simplex::NotarizeVote, ton::validator::consensus::simplex::FinalizeVote, ton::validator::consensus::simplex::SkipVote>&>(auto ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>::consume_and_downcast<ton::validator::consensus::simplex::(anonymous namespace)::PoolImpl::handle_vote(ton::validator::consensus::PeerValidator const&, ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>, bool)::'lambda'<typename $T>(ton::validator::consensus::simplex::Signed<$T>)&>($T&&) && requires std::same_as<$T, ton::validator::consensus::simplex::Vote>::'lambda'<typename $T0>($T const&)&, std::variant<ton::validator::consensus::simplex::NotarizeVote, ton::validator::consensus::simplex::FinalizeVote, ton::validator::consensus::simplex::SkipVote>&) /usr/bin/../lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/variant:1815:5
+    #16 0x61f507b7572a in std::invoke_result<$T, std::__conditional<is_lvalue_reference_v<std::variant<ton::validator::consensus::simplex::NotarizeVote, ton::validator::consensus::simplex::FinalizeVote, ton::validator::consensus::simplex::SkipVote>&>>::type<std::variant_alternative<0ul, std::remove_reference<decltype(__variant::__as(std::declval<std::variant<ton::validator::consensus::simplex::NotarizeVote, ton::validator::consensus::simplex::FinalizeVote, ton::validator::consensus::simplex::SkipVote>&>()))>::type>::type&, std::variant_alternative<0ul, std::remove_reference<decltype(__variant::__as(std::declval<std::variant<ton::validator::consensus::simplex::NotarizeVote, ton::validator::consensus::simplex::FinalizeVote, ton::validator::consensus::simplex::SkipVote>&>()))>::type>::type&&>>::type std::visit<auto ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>::consume_and_downcast<ton::validator::consensus::simplex::(anonymous namespace)::PoolImpl::handle_vote(ton::validator::consensus::PeerValidator const&, ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>, bool)::'lambda'<typename $T>(ton::validator::consensus::simplex::Signed<$T>)&>($T&&) && requires std::same_as<$T, ton::validator::consensus::simplex::Vote>::'lambda'<typename $T0>($T const&)&, std::variant<ton::validator::consensus::simplex::NotarizeVote, ton::validator::consensus::simplex::FinalizeVote, ton::validator::consensus::simplex::SkipVote>&>($T&&, std::variant<ton::validator::consensus::simplex::NotarizeVote, ton::validator::consensus::simplex::FinalizeVote, ton::validator::consensus::simplex::SkipVote>&) /usr/bin/../lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/variant:1878:13
+    #17 0x61f507b756cc in auto ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>::consume_and_downcast<ton::validator::consensus::simplex::(anonymous namespace)::PoolImpl::handle_vote(ton::validator::consensus::PeerValidator const&, ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>, bool)::'lambda'<typename $T>(ton::validator::consensus::simplex::Signed<$T>)&>($T&&) && requires std::same_as<$T, ton::validator::consensus::simplex::Vote> /home/a1oleg/tonGraph/validator/consensus/simplex/votes.h:112:12
+    #18 0x61f507b705a6 in ton::validator::consensus::simplex::(anonymous namespace)::PoolImpl::handle_vote(ton::validator::consensus::PeerValidator const&, ton::validator::consensus::simplex::Signed<ton::validator::consensus::simplex::Vote>, bool) /home/a1oleg/tonGraph/validator/consensus/simplex/pool.cpp:627:28
+    #19 0x61f507bac19b in void ton::validator::consensus::simplex::(anonymous namespace)::PoolImpl::handle<ton::validator::consensus::simplex::Bus, ton::validator::consensus::IncomingProtocolMessage>(td::actor::detail::BusHandle<ton::validator::consensus::simplex::Bus>, std::shared_ptr<ton::validator::consensus::IncomingProtocolMessage const>) /home/a1oleg/tonGraph/validator/consensus/simplex/pool.cpp:405:7
+    #20 0x61f507baaac5 in void td::actor::detail::BusListeningActor::dispatch_event<ton::validator::consensus::simplex::(anonymous namespace)::PoolImpl, ton::validator::consensus::simplex::Bus, ton::validator::consensus::Bus, ton::validator::consensus::IncomingProtocolMessage>(td::actor::detail::BusHandle<ton::validator::consensus::Bus>, std::shared_ptr<ton::validator::consensus::IncomingProtocolMessage const>) /home/a1oleg/tonGraph/tdactor/td/actor/BusRuntime.h:364:39
+    #21 0x61f507874dd2 in auto td::detail::mem_call_tuple_impl<td::actor::detail::BusListeningActor, void (td::actor::detail::BusListeningActor::*)(td::actor::detail::BusHandle<ton::validator::consensus::Bus>, std::shared_ptr<ton::validator::consensus::IncomingProtocolMessage const>), td::actor::detail::BusHandle<ton::validator::consensus::Bus>, std::shared_ptr<ton::validator::consensus::IncomingProtocolMessage>, 1ul, 2ul>(td::actor::detail::BusListeningActor*, std::tuple<void (td::actor::detail::BusListeningActor::*)(td::actor::detail::BusHandle<ton::validator::consensus::Bus>, std::shared_ptr<ton::validator::consensus::IncomingProtocolMessage const>), td::actor::detail::BusHandle<ton::validator::consensus::Bus>, std::shared_ptr<ton::validator::consensus::IncomingProtocolMessage>>&&, td::detail::IntSeq<0ul, 1ul, 2ul>) /home/a1oleg/tonGraph/tdutils/td/utils/invoke.h:142:10
+    #22 0x61f507ac6aea in td::actor::core::ActorMessage::run() /home/a1oleg/tonGraph/tdactor/td/actor/core/ActorMessage.h:61:12
+    #23 0x61f507acdfd7 in td::actor::core::ActorExecutor::flush_one_message()::$_0::operator()() const /home/a1oleg/tonGraph/tdactor/td/actor/core/ActorExecutor.cpp:291:71
+    #24 0x61f507aca3dc in void td::actor::core::gdb::hook_message_run<td::actor::core::ActorExecutor::flush_one_message()::$_0>(td::actor::core::ActorMailbox&, td::actor::core::ActorMessage&, td::actor::core::ActorExecutor::flush_one_message()::$_0&&) /home/a1oleg/tonGraph/tdactor/td/actor/core/ActorExecutor.cpp:46:3
+    #25 0x61f507ac832f in td::actor::core::ActorExecutor::flush_one_message() /home/a1oleg/tonGraph/tdactor/td/actor/core/ActorExecutor.cpp:291:3
+    #26 0x61f507ac76c7 in td::actor::core::ActorExecutor::start() /home/a1oleg/tonGraph/tdactor/td/actor/core/ActorExecutor.cpp:151:10
+    #27 0x61f507ae680e in td::actor::core::ActorExecutor::ActorExecutor(td::actor::core::ActorInfo&, td::actor::core::SchedulerDispatcher&, td::actor::core::ActorExecutor::Options) /home/a1oleg/tonGraph/tdactor/td/actor/core/ActorExecutor.h:59:5
+    #28 0x61f507aea93b in td::actor::core::IoWorker::run_once(double, bool) /home/a1oleg/tonGraph/tdactor/td/actor/core/IoWorker.cpp:74:19
+    #29 0x61f507adbbe5 in td::actor::core::Scheduler::run(double)::$_0::operator()() const /home/a1oleg/tonGraph/tdactor/td/actor/core/Scheduler.cpp:107:25
+    #30 0x61f507ad4051 in auto td::actor::core::Scheduler::run_in_context_impl<td::actor::core::Scheduler::run(double)::$_0>(td::actor::core::WorkerInfo&, td::actor::core::Scheduler::run(double)::$_0&&) /home/a1oleg/tonGraph/tdactor/td/actor/core/Scheduler.h:271:12
+    #31 0x61f507ad3f0b in td::actor::core::Scheduler::run(double) /home/a1oleg/tonGraph/tdactor/td/actor/core/Scheduler.cpp:103:3
+    #32 0x61f5078468a0 in td::actor::Scheduler::run(double) /home/a1oleg/tonGraph/tdactor/td/actor/common.h:167:28
+    #33 0x61f5078468a0 in inject_vote(FuzzedDataProvider&) /home/a1oleg/tonGraph/test/consensus/fuzz_pool.cpp:650:55
+    #34 0x61f507845477 in LLVMFuzzerTestOneInput /home/a1oleg/tonGraph/test/consensus/fuzz_pool.cpp:690:40
+    #35 0x61f50781a754 in fuzzer::Fuzzer::ExecuteCallback(unsigned char const*, unsigned long) (/home/a1oleg/tonGraph/build-fuzz2/test/consensus/fuzz_pool+0x148754) (BuildId: 4adde3c888ad5baff44472531974c4987c3ffcff)
+    #36 0x61f507819e49 in fuzzer::Fuzzer::RunOne(unsigned char const*, unsigned long, bool, fuzzer::InputInfo*, bool, bool*) (/home/a1oleg/tonGraph/build-fuzz2/test/consensus/fuzz_pool+0x147e49) (BuildId: 4adde3c888ad5baff44472531974c4987c3ffcff)
+    #37 0x61f50781b806 in fuzzer::Fuzzer::ReadAndExecuteSeedCorpora(std::vector<fuzzer::SizedFile, std::allocator<fuzzer::SizedFile>>&) (/home/a1oleg/tonGraph/build-fuzz2/test/consensus/fuzz_pool+0x149806) (BuildId: 4adde3c888ad5baff44472531974c4987c3ffcff)
+    #38 0x61f50781bd17 in fuzzer::Fuzzer::Loop(std::vector<fuzzer::SizedFile, std::allocator<fuzzer::SizedFile>>&) (/home/a1oleg/tonGraph/build-fuzz2/test/consensus/fuzz_pool+0x149d17) (BuildId: 4adde3c888ad5baff44472531974c4987c3ffcff)
+    #39 0x61f5078095ef in fuzzer::FuzzerDriver(int*, char***, int (*)(unsigned char const*, unsigned long)) (/home/a1oleg/tonGraph/build-fuzz2/test/consensus/fuzz_pool+0x1375ef) (BuildId: 4adde3c888ad5baff44472531974c4987c3ffcff)
+    #40 0x61f507832a06 in main (/home/a1oleg/tonGraph/build-fuzz2/test/consensus/fuzz_pool+0x160a06) (BuildId: 4adde3c888ad5baff44472531974c4987c3ffcff)
+    #41 0x7139afa2a1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 8e9fd827446c24067541ac5390e6f527fb5947bb)
+    #42 0x7139afa2a28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 8e9fd827446c24067541ac5390e6f527fb5947bb)
+    #43 0x61f5077fe9d4 in _start (/home/a1oleg/tonGraph/build-fuzz2/test/consensus/fuzz_pool+0x12c9d4) (BuildId: 4adde3c888ad5baff44472531974c4987c3ffcff)
+
+NOTE: libFuzzer has rudimentary signal handlers.
+      Combine libFuzzer with AddressSanitizer or similar for better crash reports.
+SUMMARY: libFuzzer: deadly signal
+MS: 0 ; base unit: 0000000000000000000000000000000000000000
+0xd2,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0xf2,0x2c,0x6d,0xed,
+\322\000\000\000\000\000\000\000\362,m\355
+artifact_prefix='/home/a1oleg/tonGraph/simulation/crashes_p4a/'; Test unit written to /home/a1oleg/tonGraph/simulation/crashes_p4a/crash-df5abb8971035b1c52c45cce2cd83bc2ccb1a3f7
+Base64: 0gAAAAAAAADyLG3t

@@ -653,9 +653,24 @@ static void inject_vote(FuzzedDataProvider& fdp) {
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   if (size < 4) return 0;
 
-  // Reset state-vector counters for this run.
+  // Reset all per-run state so runs are independent.
+  // g_notar_by_slot / g_skip_by_slot accumulate across runs inside one process
+  // (libFuzzer calls LLVMFuzzerTestOneInput many times per process). Without
+  // this reset, state from run N contaminates run N+1 and can cause spurious
+  // __builtin_trap() when a later input triggers a SkipCert on a slot that was
+  // notarized by a completely different earlier run.
+  g_notar_by_slot.clear();
+  g_skip_by_slot.clear();
   std::memset(g_state_counters, 0, STATE_COUNTER_BYTES);
   g_post_crash_phase = false;
+
+  // Tear down the existing Pool/Runtime/Db and start fresh.
+  auto& S = *g_state;
+  S.scheduler->run_in_context([&] { S.bus.publish(std::make_shared<StopRequested>()); });
+  for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) S.scheduler->run(0);
+  S.bus = {};
+  S.runtime.reset();
+  configure_and_start_bus(S, std::make_unique<MockDb>());
 
   FuzzedDataProvider fdp(data, size);
 
