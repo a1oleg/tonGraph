@@ -377,11 +377,15 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
     auto hash = ev->certificate->vote.id.hash;
     // Safety: NotarCert + SkipCert on same slot
     if (g_skip_by_slot.count(slot)) {
+      fprintf(stderr, "[TRAP] NotarCert slot=%u already has SkipCert, post=%d\n",
+              slot, (int)g_post_crash_phase);
       __builtin_trap();
     }
     // Safety: two different NotarCerts on same slot
     auto [it, inserted] = g_notar_by_slot.emplace(slot, hash);
     if (!inserted && it->second != hash) {
+      fprintf(stderr, "[TRAP] Dual NotarCert slot=%u, post=%d\n",
+              slot, (int)g_post_crash_phase);
       __builtin_trap();
     }
 
@@ -416,6 +420,8 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
         slot_event(static_cast<int32_t>(slot), SE_CERT_SKIP);
         // Safety: SkipCert on a slot that already has a NotarCert → violation
         if (g_notar_by_slot.count(slot)) {
+          fprintf(stderr, "[TRAP] SkipCert slot=%u, g_notar_by_slot.count=%zu, post=%d\n",
+                  slot, g_notar_by_slot.size(), (int)g_post_crash_phase);
           __builtin_trap();
         }
       }
@@ -622,7 +628,11 @@ static void inject_vote(FuzzedDataProvider& fdp) {
   if (fdp.remaining_bytes() < 4) return;
   auto& S = *g_state;
 
-  auto src_idx   = fdp.ConsumeIntegralInRange<uint8_t>(0, N_VALIDATORS - 1);
+  // src=0 is the local validator — its votes arrive through ConsensusImpl via
+  // handle_our_vote(tolerate_conflicts=true). Injecting src=0 via IncomingProtocolMessage
+  // would conflict with ConsensusImpl's own votes and trigger LOG_FATAL in pool.cpp.
+  // Peers are validators 1..N_VALIDATORS-1.
+  auto src_idx   = fdp.ConsumeIntegralInRange<uint8_t>(1, N_VALIDATORS - 1);
   auto vote_type = fdp.ConsumeIntegralInRange<uint8_t>(0, 2);
   auto slot      = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_SLOT);
   auto cand_seed = fdp.ConsumeIntegralInRange<uint8_t>(0, N_CAND_SEEDS - 1);
@@ -653,23 +663,23 @@ static void inject_vote(FuzzedDataProvider& fdp) {
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   if (size < 4) return 0;
 
-  // Reset all per-run state so runs are independent.
-  // g_notar_by_slot / g_skip_by_slot accumulate across runs inside one process
-  // (libFuzzer calls LLVMFuzzerTestOneInput many times per process). Without
-  // this reset, state from run N contaminates run N+1 and can cause spurious
-  // __builtin_trap() when a later input triggers a SkipCert on a slot that was
-  // notarized by a completely different earlier run.
-  g_notar_by_slot.clear();
-  g_skip_by_slot.clear();
-  std::memset(g_state_counters, 0, STATE_COUNTER_BYTES);
-  g_post_crash_phase = false;
-
   // Tear down the existing Pool/Runtime/Db and start fresh.
+  // IMPORTANT: drain BEFORE clearing maps. Residual NotarizationObserved /
+  // OutgoingProtocolMessage events from the previous run may still be queued
+  // and get processed during drain. Clearing maps before drain would cause
+  // those events to re-populate them, defeating the cleanup.
   auto& S = *g_state;
   S.scheduler->run_in_context([&] { S.bus.publish(std::make_shared<StopRequested>()); });
   for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) S.scheduler->run(0);
   S.bus = {};
   S.runtime.reset();
+
+  // Now safe to clear: all residual events have been drained.
+  g_notar_by_slot.clear();
+  g_skip_by_slot.clear();
+  std::memset(g_state_counters, 0, STATE_COUNTER_BYTES);
+  g_post_crash_phase = false;
+
   configure_and_start_bus(S, std::make_unique<MockDb>());
 
   FuzzedDataProvider fdp(data, size);
