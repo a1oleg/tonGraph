@@ -352,8 +352,11 @@ class FuzzBus final : public Bus {
 
 // Invariant-tracking globals (written by FuzzObserver, checked inline).
 // Intentionally persist across crash+restart to catch cross-boundary violations.
-static std::map<td::uint32, td::Bits256> g_notar_by_slot;
-static std::map<td::uint32, td::Bits256> g_skip_by_slot;
+// Tagged with g_run_id so that drain-phase residual events from the previous run
+// do not falsely trigger the trap in the next run's reset drain.
+static uint64_t g_run_id = 0;
+static std::map<td::uint32, std::pair<uint64_t, td::Bits256>> g_notar_by_slot;
+static std::map<td::uint32, std::pair<uint64_t, td::Bits256>> g_skip_by_slot;
 
 // ── FuzzObserver ──────────────────────────────────────────────────────────────
 
@@ -375,19 +378,22 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
   void handle(FuzzBusHandle, std::shared_ptr<const NotarizationObserved> ev) {
     td::uint32 slot = ev->certificate->vote.id.slot;
     auto hash = ev->certificate->vote.id.hash;
-    // Safety: NotarCert + SkipCert on same slot
-    if (g_skip_by_slot.count(slot)) {
+    // Safety: NotarCert + SkipCert on same slot — only within the same run.
+    // (run_id guards against drain-phase residual events from a previous run.)
+    auto skip_it = g_skip_by_slot.find(slot);
+    if (skip_it != g_skip_by_slot.end() && skip_it->second.first == g_run_id) {
       fprintf(stderr, "[TRAP] NotarCert slot=%u already has SkipCert, post=%d\n",
               slot, (int)g_post_crash_phase);
       __builtin_trap();
     }
-    // Safety: two different NotarCerts on same slot
-    auto [it, inserted] = g_notar_by_slot.emplace(slot, hash);
-    if (!inserted && it->second != hash) {
+    // Safety: two different NotarCerts on same slot (within same run)
+    auto [it, inserted] = g_notar_by_slot.emplace(slot, std::make_pair(g_run_id, hash));
+    if (!inserted && it->second.first == g_run_id && it->second.second != hash) {
       fprintf(stderr, "[TRAP] Dual NotarCert slot=%u, post=%d\n",
               slot, (int)g_post_crash_phase);
       __builtin_trap();
     }
+    if (!inserted) it->second = {g_run_id, hash};  // update run_id for same-hash reuse
 
     // Step 4: state counter
     slot_event(static_cast<int32_t>(slot), SE_NOTAR_CERT);
@@ -416,10 +422,12 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
       if (uv && uv->get_id() == ton_api::consensus_simplex_skipVote::ID) {
         auto* sv = static_cast<ton_api::consensus_simplex_skipVote*>(uv);
         td::uint32 slot = static_cast<td::uint32>(sv->slot_);
-        g_skip_by_slot.emplace(slot, td::Bits256{});
+        g_skip_by_slot.emplace(slot, std::make_pair(g_run_id, td::Bits256{}));
         slot_event(static_cast<int32_t>(slot), SE_CERT_SKIP);
         // Safety: SkipCert on a slot that already has a NotarCert → violation
-        if (g_notar_by_slot.count(slot)) {
+        // Only fire within the same run (run_id guard).
+        auto notar_it = g_notar_by_slot.find(slot);
+        if (notar_it != g_notar_by_slot.end() && notar_it->second.first == g_run_id) {
           fprintf(stderr, "[TRAP] SkipCert slot=%u, g_notar_by_slot.count=%zu, post=%d\n",
                   slot, g_notar_by_slot.size(), (int)g_post_crash_phase);
           __builtin_trap();
@@ -674,9 +682,12 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   S.bus = {};
   S.runtime.reset();
 
-  // Now safe to clear: all residual events have been drained.
-  g_notar_by_slot.clear();
-  g_skip_by_slot.clear();
+  // Advance run counter and reset per-run state.
+  // g_run_id is used by FuzzObserver to tag events — only same-run events can
+  // trigger the safety traps. Incrementing here (after drain, before new run)
+  // ensures residual events from the drain above are tagged with the OLD run_id
+  // and are ignored by the trap checks in the new run.
+  ++g_run_id;
   std::memset(g_state_counters, 0, STATE_COUNTER_BYTES);
   g_post_crash_phase = false;
 
