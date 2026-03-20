@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: LGPL-2.0-or-later
  *
- * Phase 2 Steps 2–4 + Phase 3 Step 2 fuzzer: pool.cpp + ConsensusImpl.
+ * Phase 2 Steps 2–4 + Phase 3 Steps 2–3 + Phase 4 Step 0 fuzzer: pool.cpp + ConsensusImpl.
  *
  * Step 2: vote-accumulation, cert-creation, WAL (MockDb) paths.
  * Step 3: WAL crash injection (MockDb::crash_losing_last_n + restart).
@@ -627,13 +627,16 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 
   FuzzedDataProvider fdp(data, size);
 
-  // Fuzz input layout (Phase 3 Step 3):
-  //   n_pre    : uint8 (0..7)  — messages before crash
+  // Fuzz input layout (Phase 4 Step 0):
+  //   n_pre    : uint8 (0..15) — messages before crash
+  //             raised from 7: slots_per_leader_window=4 requires ≥12 pre-crash
+  //             votes (4 slots × 3 validators) to advance first_nonannounced_window
+  //             beyond 0, enabling ConsensusImpl::start_up() SkipVote broadcast.
   //   do_crash : bool
   //   n_lose   : uint8 (0..MAX_LOSE_WRITES)
   //   n_post   : uint8 (0..7)  — messages after crash (enables alarm-skip quorum)
   //   per message: src_idx, vote_type, slot, cand_seed
-  uint8_t n_pre    = fdp.ConsumeIntegralInRange<uint8_t>(0, 7);
+  uint8_t n_pre    = fdp.ConsumeIntegralInRange<uint8_t>(0, 15);
   bool    do_crash = fdp.ConsumeBool();
   uint8_t n_lose   = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_LOSE_WRITES);
   uint8_t n_post   = fdp.ConsumeIntegralInRange<uint8_t>(0, 7);
