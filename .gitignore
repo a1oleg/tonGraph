@@ -44,6 +44,15 @@ simulation/fuzz_s4c.log
 simulation/crashes_s4a/
 simulation/crashes_s4b/
 simulation/crashes_s4c/
+simulation/crashes_p4a/
+simulation/crashes_p4b/
+simulation/corpus_p4a_remote/
+simulation/corpus_p4b_remote/
+simulation/corpus_p4a_merged/
+simulation/corpus_p4b_merged/
+simulation/fuzz_p4a.log
+simulation/fuzz_p4b.log
+fuzz-*.log
 .DS_Store
 dev/
 
