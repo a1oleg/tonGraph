@@ -29,7 +29,7 @@ chmod 600 ~/.ssh/authorized_keys
 ## Проверка
 
 ```bash
-ssh user@<IP_машины1> "echo OK"
+ssh a1oleg@172.21.121.84 "echo OK"
 ```
 
 ---
@@ -37,8 +37,8 @@ ssh user@<IP_машины1> "echo OK"
 ## Переменные окружения (прописать в ~/.bashrc или tmux-команде)
 
 ```bash
-export MACHINE1=user@<IP_машины1>
-export MACHINE2=user@<IP_машины2>   # при необходимости
+export MACHINE1=a1oleg@172.21.121.84
+export MACHINE2=user@<IP_машины2>   # заполнить когда известен IP машины 2
 ```
 
 ---
@@ -47,7 +47,7 @@ export MACHINE2=user@<IP_машины2>   # при необходимости
 
 ```bash
 REPO=~/tonGraph
-MACHINE1=user@<IP_машины1>
+MACHINE1=a1oleg@172.21.121.84
 
 rsync -az $MACHINE1:$REPO/simulation/corpus_p4a/ \
          $REPO/simulation/corpus_p4a_remote/
