@@ -125,7 +125,7 @@ extern "C" void __sanitizer_cov_trace_cmp1(uint8_t arg1, uint8_t arg2);
 //
 // ref_pattern[i] uses indices relative to slot base (0..7):
 //   0=SE_NOTAR_VOTE 1=SE_SKIP_VOTE 2=SE_FINAL_VOTE 3=SE_NOTAR_CERT
-//   4=SE_POST_CRASH 5=SE_BOTH_NS   6=SE_CERT_SKIP  7=reserved
+//   4=SE_POST_CRASH 5=SE_BOTH_NS   6=SE_CERT_SKIP  7=SE_FINAL_CERT
 
 static const float REF_ALARM_SKIP[SE_STRIDE] = {
   255.f,  // SE_NOTAR_VOTE:  our node voted notarize (pre-crash)
@@ -156,8 +156,20 @@ static const float REF_DUAL_CERT[SE_STRIDE] = {
   255.f,  // SE_NOTAR_CERT:  notarize cert present
     0.f,  // SE_POST_CRASH
     0.f,  // SE_BOTH_NS
-  255.f,  // SE_CERT_SKIP:   skip cert also present → dual-cert
-    0.f,  // reserved
+  255.f,  // SE_CERT_SKIP:   skip cert also present → alarm-skip dual-cert
+    0.f,  // SE_FINAL_CERT
+};
+
+// State divergence: FinalCert issued on a skipped slot → SkipCert ∧ FinalCert ⇒ ⊥
+static const float REF_STATE_DIV[SE_STRIDE] = {
+    0.f,  // SE_NOTAR_VOTE
+    0.f,  // SE_SKIP_VOTE
+  255.f,  // SE_FINAL_VOTE:  finalize votes accumulating
+    0.f,  // SE_NOTAR_CERT
+    0.f,  // SE_POST_CRASH
+    0.f,  // SE_BOTH_NS
+  255.f,  // SE_CERT_SKIP:   skip cert present
+  255.f,  // SE_FINAL_CERT:  final cert present → violation
 };
 
 static float cosine_sim_slot(const float* ref, const uint8_t* counters_at_base) {
@@ -176,8 +188,8 @@ static float cosine_sim_slot(const float* ref, const uint8_t* counters_at_base) 
 // Emit similarity scores for all three reference vectors across all slots.
 // Channel byte: 0xE0 | (ref_idx << 4) | slot — unique per (ref, slot) pair.
 static void emit_vector_guidance() {
-  const float* refs[3] = {REF_ALARM_SKIP, REF_AMNESIA, REF_DUAL_CERT};
-  for (int r = 0; r < 3; r++) {
+  const float* refs[4] = {REF_ALARM_SKIP, REF_AMNESIA, REF_DUAL_CERT, REF_STATE_DIV};
+  for (int r = 0; r < 4; r++) {
     for (int slot = 0; slot < 16; slot++) {
       float sim = cosine_sim_slot(refs[r], &g_state_counters[slot * SE_STRIDE]);
       auto sim_byte = static_cast<uint8_t>(sim * 255.f);
@@ -192,10 +204,11 @@ enum SlotEvent : int {
   SE_NOTAR_VOTE = 0,
   SE_SKIP_VOTE  = 1,
   SE_FINAL_VOTE = 2,
-  SE_NOTAR_CERT = 3,
-  SE_POST_CRASH = 4,
-  SE_BOTH_NS    = 5,
-  SE_CERT_SKIP  = 6,
+  SE_NOTAR_CERT  = 3,
+  SE_POST_CRASH  = 4,
+  SE_BOTH_NS     = 5,
+  SE_CERT_SKIP   = 6,
+  SE_FINAL_CERT  = 7,
 };
 
 static bool g_post_crash_phase = false;
@@ -356,6 +369,7 @@ static uint64_t g_run_id = 0;
 static uint64_t g_invocation = 0;
 static std::map<td::uint32, std::pair<uint64_t, td::Bits256>> g_notar_by_slot;
 static std::map<td::uint32, std::pair<uint64_t, td::Bits256>> g_skip_by_slot;
+static std::map<td::uint32, std::pair<uint64_t, td::Bits256>> g_final_by_slot;
 // Safety traps are only active during the main test body, not during
 // start-of-run reset drains or end-of-run flush drains. This prevents the
 // scheduler's asynchronous certificate delivery from triggering a cross-run
@@ -405,7 +419,26 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
   }
 
   template <>
-  void handle(FuzzBusHandle, std::shared_ptr<const FinalizationObserved>) {}
+  void handle(FuzzBusHandle, std::shared_ptr<const FinalizationObserved> ev) {
+    td::uint32 slot = ev->id.slot;
+    auto hash = ev->id.hash;
+    if (g_safety_active) {
+      // Safety: FinalCert on a slot that already has a SkipCert → violation
+      auto skip_it = g_skip_by_slot.find(slot);
+      if (skip_it != g_skip_by_slot.end() && skip_it->second.first == g_run_id) {
+        __builtin_trap();
+      }
+      // Safety: two different FinalCerts on same slot
+      auto [it, inserted] = g_final_by_slot.emplace(slot, std::make_pair(g_run_id, hash));
+      if (!inserted && it->second.first == g_run_id && it->second.second != hash) {
+        __builtin_trap();
+      }
+      if (!inserted) it->second = {g_run_id, hash};
+    } else {
+      g_final_by_slot.emplace(slot, std::make_pair(g_run_id, hash));
+    }
+    slot_event(static_cast<int32_t>(slot), SE_FINAL_CERT);
+  }
 
   // Step 4: track window progression
   template <>
@@ -428,10 +461,14 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
         td::uint32 slot = static_cast<td::uint32>(sv->slot_);
         g_skip_by_slot.emplace(slot, std::make_pair(g_run_id, td::Bits256{}));
         slot_event(static_cast<int32_t>(slot), SE_CERT_SKIP);
-        // Safety: SkipCert on a slot that already has a NotarCert → violation
+        // Safety: SkipCert on a slot that already has a NotarCert or FinalCert → violation
         if (g_safety_active) {
           auto notar_it = g_notar_by_slot.find(slot);
           if (notar_it != g_notar_by_slot.end() && notar_it->second.first == g_run_id) {
+            __builtin_trap();
+          }
+          auto final_it = g_final_by_slot.find(slot);
+          if (final_it != g_final_by_slot.end() && final_it->second.first == g_run_id) {
             __builtin_trap();
           }
         }
