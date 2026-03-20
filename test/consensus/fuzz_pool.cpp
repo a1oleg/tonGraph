@@ -258,35 +258,50 @@ class MockDb final : public consensus::Db {
 
   td::actor::Task<> set(td::BufferSlice key, td::BufferSlice value) override {
     auto ks = key.as_slice().str();
-    if (!kv_.count(ks)) {
-      write_log_.push_back(ks);
-    }
+    // WAL semantics: log every write (including updates) with previous value so
+    // crash_losing_last_n can properly undo the exact writes that were in-flight.
+    // Previously, only new-key insertions were logged, so updates to pool_state
+    // (first_nonannounced_window) could not be "lost" — making the alarm-skip path
+    // unreachable because window 1 → first_nonannounced_window=2 persisted across crash.
+    auto it = kv_.find(ks);
+    write_log_.push_back({ks, it != kv_.end() ? std::make_optional(it->second.clone()) : std::nullopt});
     kv_[ks] = std::move(value);
     co_return {};
   }
 
-  // Discard the last `n` written keys (crash simulation).
+  // Discard the last `n` writes (crash simulation). Undoes updates by restoring
+  // previous values; undoes insertions by erasing the key entirely.
   void crash_losing_last_n(size_t n) {
     n = std::min(n, write_log_.size());
     for (size_t i = 0; i < n; i++) {
-      kv_.erase(write_log_.back());
+      auto& entry = write_log_.back();
+      if (entry.prev.has_value()) {
+        kv_[entry.key] = std::move(*entry.prev);
+      } else {
+        kv_.erase(entry.key);
+      }
       write_log_.pop_back();
     }
   }
 
   // Deep-copy the current (post-crash) DB state for the recovery bus.
+  // write_log_ is intentionally not copied: recovered DB starts a fresh log.
   std::unique_ptr<MockDb> clone() const {
     auto db = std::make_unique<MockDb>();
     for (const auto& [k, v] : kv_) {
       db->kv_[k] = v.clone();
-      db->write_log_.push_back(k);
     }
     return db;
   }
 
  private:
+  struct WriteEntry {
+    std::string key;
+    std::optional<td::BufferSlice> prev;  // nullopt = key was newly inserted
+  };
+
   std::map<std::string, td::BufferSlice> kv_;
-  std::vector<std::string> write_log_;
+  std::vector<WriteEntry> write_log_;
 };
 
 // ── MockKeyring ───────────────────────────────────────────────────────────────
@@ -326,6 +341,10 @@ class MockKeyring final : public keyring::Keyring {
 
 class FuzzBus final : public Bus {
  public:
+  // Required so the actor framework walks simplex::Bus → consensus::Bus in the
+  // bus-type inheritance chain when wire_bus() spawns Pool / Db / ConsensusImpl.
+  using Parent = Bus;
+
   void populate_collator_schedule() override {
     Bus::populate_collator_schedule();
   }
@@ -356,6 +375,7 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
   void handle(FuzzBusHandle, std::shared_ptr<const NotarizationObserved> ev) {
     td::uint32 slot = ev->certificate->vote.id.slot;
     auto hash = ev->certificate->vote.id.hash;
+    fprintf(stderr, "[DBG] NotarCert slot=%u post_crash=%d\n", slot, (int)g_post_crash_phase);
 
     // Safety: NotarCert + SkipCert on same slot
     if (g_skip_by_slot.count(slot)) {
@@ -385,6 +405,8 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
   // SkipCert detection enables alarm-skip-after-notarize safety check.
   template <>
   void handle(FuzzBusHandle, std::shared_ptr<const OutgoingProtocolMessage> msg) {
+    fprintf(stderr, "[DBG] OutgoingProtocolMessage len=%zu post=%d\n",
+            msg->message.data.size(), (int)g_post_crash_phase);
     // Try certificate first (certificate TL id != vote TL id).
     auto maybe_cert = fetch_tl_object<ton_api::consensus_simplex_certificate>(
         msg->message.data.clone(), true);
@@ -397,6 +419,8 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
         g_skip_by_slot.emplace(slot, td::Bits256{});
         slot_event(static_cast<int32_t>(slot), SE_CERT_SKIP);
         // Safety: SkipCert on a slot that already has a NotarCert → violation
+        fprintf(stderr, "[DBG] SkipCert slot=%u, g_notar_by_slot.count=%zu, post_crash=%d\n",
+                slot, g_notar_by_slot.count(slot), (int)g_post_crash_phase);
         if (g_notar_by_slot.count(slot)) {
           __builtin_trap();
         }
@@ -524,6 +548,17 @@ static void configure_and_start_bus(FuzzState& S, std::unique_ptr<MockDb> db) {
   for (int i = 0; i < DRAIN_ROUNDS; i++) {
     S.scheduler->run(0);
   }
+
+  // Publish Start so Pool sets is_started_=true.
+  // Without this, advance_present() returns immediately, first_nonannounced_window
+  // is never written to WAL, and ConsensusImpl::start_up() on restart cannot
+  // broadcast SkipVotes — the alarm-skip-after-notarize path is unreachable.
+  S.scheduler->run_in_context([&] {
+    S.bus.publish(std::make_shared<Start>(Start{ChainStateRef{}}));
+  });
+  for (int i = 0; i < DRAIN_ROUNDS; i++) {
+    S.scheduler->run(0);
+  }
 }
 
 // ── WAL crash-and-restart ─────────────────────────────────────────────────────
@@ -593,6 +628,8 @@ static void inject_vote(FuzzedDataProvider& fdp) {
   auto vote_type = fdp.ConsumeIntegralInRange<uint8_t>(0, 2);
   auto slot      = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_SLOT);
   auto cand_seed = fdp.ConsumeIntegralInRange<uint8_t>(0, N_CAND_SEEDS - 1);
+  fprintf(stderr, "[DBG] inject: src=%u vtype=%u slot=%u cand=%u post=%d\n",
+          src_idx, vote_type, slot, cand_seed, (int)g_post_crash_phase);
 
   tl_object_ptr<ton_api::consensus_simplex_UnsignedVote> vote_tl;
   if (vote_type == 0) {
@@ -640,6 +677,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   bool    do_crash = fdp.ConsumeBool();
   uint8_t n_lose   = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_LOSE_WRITES);
   uint8_t n_post   = fdp.ConsumeIntegralInRange<uint8_t>(0, 7);
+  fprintf(stderr, "[DBG] n_pre=%u do_crash=%d n_lose=%u n_post=%u remaining=%zu\n",
+          n_pre, (int)do_crash, n_lose, n_post, fdp.remaining_bytes());
 
   for (uint8_t m = 0; m < n_pre; m++)  inject_vote(fdp);
 
