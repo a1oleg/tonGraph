@@ -483,6 +483,20 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
     if (maybe_resolve_request(requests_.back())) {
       requests_.pop_back();
     }
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    else {
+      // Resource exhaustion trap: requests_ is an unbounded vector.
+      // A Byzantine collator floods WaitForParent by sending candidates for future slots
+      // (slot > finalized, parent not yet notarized). Each request stays pending until
+      // parent is notarized. maybe_resolve_requests() iterates ALL pending requests on
+      // every state update → O(N²) cost per message at N pending requests.
+      // Invariant: |requests_| = O(|Validators|)  [bounded queue, VULNERABILITIES.md §7].
+      static constexpr size_t kRequestsFloodThreshold = 4;
+      if (requests_.size() >= kRequestsFloodThreshold) {
+        __builtin_trap();
+      }
+    }
+#endif
     co_return co_await std::move(bridge);
   }
 

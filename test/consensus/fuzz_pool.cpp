@@ -710,15 +710,20 @@ static void inject_vote(FuzzedDataProvider& fdp) {
   auto slot      = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_SLOT);
   auto cand_seed = fdp.ConsumeIntegralInRange<uint8_t>(0, N_CAND_SEEDS - 1);
 
-  // vtype=3: Propose injection — publish CandidateReceived{slot=0, cand_seed} directly.
+  // vtype=3: Propose injection — publish CandidateReceived{slot, cand_seed} directly.
   // Triggers ConsensusImpl::try_notarize() → ResolveState (returns error) → aborts.
-  // slot is clamped to 0: Pool::maybe_resolve_request resolves WaitForParent immediately
-  // only when next_slot_after_parent == id.slot (i.e. parent=nullopt, slot=0 → 0==0).
-  // For slot>0 with parent_id=nullopt, WaitForParent suspends indefinitely → SEGV on crash.
+  // slot=0: parent=nullopt, WaitForParent resolves immediately (next_slot_after_parent==0==slot).
+  // slot>0: parent=CandidateId{slot-1, cand_seed}, WaitForParent stays pending until parent
+  //   is notarized → requests_ grows → #request-no-bound trap fires at size >= 4.
+  // Previously clamped to slot=0 to avoid SEGV; now safe because LLVMFuzzerTestOneInput
+  // publishes StopRequested before delete g_state → tear_down() resolves all pending requests.
   // src_idx is used as the leader (PeerValidatorId of the proposer).
   if (vote_type == 3) {
-    CandidateId cand_id{.slot = 0, .hash = S.cand_hashes[cand_seed]};
-    ParentId parent_id = std::nullopt;  // slot 0: no parent; WaitForParent resolves immediately
+    CandidateId cand_id{.slot = slot, .hash = S.cand_hashes[cand_seed]};
+    ParentId parent_id = slot > 0
+        ? std::make_optional(CandidateId{.slot = static_cast<td::uint32>(slot - 1),
+                                         .hash = S.cand_hashes[cand_seed]})
+        : std::nullopt;  // slot 0: no parent; resolves immediately
     BlockCandidate bc{};
     bc.id = BlockIdExt{BlockId{basechainId, shardIdAll, 0}};
     auto candidate = td::make_ref<Candidate>(
@@ -764,6 +769,19 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   // destroyed actors accumulate in the scheduler's queue. When new actors are
   // created with recycled IDs, stale messages can be misdelivered. Recreating
   // the scheduler gives a completely clean queue every run.
+  //
+  // Before deleting, publish StopRequested so PoolImpl::tear_down() resolves all
+  // pending WaitForParent promises via set_error(cancelled). Without this,
+  // slot>0 Propose injections leave suspended coroutines that cause SEGV in
+  // HazardPointers when the runtime is destroyed.
+  if (g_state && g_state->runtime) {
+    g_state->scheduler->run_in_context([&] {
+      g_state->bus.publish(std::make_shared<StopRequested>());
+    });
+    for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) {
+      g_state->scheduler->run(0);
+    }
+  }
   delete g_state;
   g_state = new FuzzState();
   auto& S = *g_state;
