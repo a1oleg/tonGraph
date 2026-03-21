@@ -25,7 +25,7 @@
  *   n_lose      : uint8  (0..MAX_LOSE_WRITES)
  *   per message:
  *     src_idx   : uint8  (0..N_VALIDATORS-1)
- *     vote_type : uint8  (0=notarize, 1=skip, 2=finalize, 3=propose/CandidateReceived, 4=raw/IncomingProtocolMessage)
+ *     vote_type : uint8  (0=notarize, 1=skip, 2=finalize, 3=propose/CandidateReceived, 4=raw/IncomingProtocolMessage, 5=BroadcastVote/handle_our_vote)
  *     slot      : uint8  (0..MAX_SLOT)
  *     cand_seed : uint8  (0..N_CAND_SEEDS-1)
  *
@@ -738,9 +738,25 @@ static void inject_vote(FuzzedDataProvider& fdp) {
   // would conflict with ConsensusImpl's own votes and trigger LOG_FATAL in pool.cpp.
   // Peers are validators 1..N_VALIDATORS-1.
   auto src_idx   = fdp.ConsumeIntegralInRange<uint8_t>(1, N_VALIDATORS - 1);
-  auto vote_type = fdp.ConsumeIntegralInRange<uint8_t>(0, 4);
+  auto vote_type = fdp.ConsumeIntegralInRange<uint8_t>(0, 5);
   auto slot      = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_SLOT);
   auto cand_seed = fdp.ConsumeIntegralInRange<uint8_t>(0, N_CAND_SEEDS - 1);
+
+  // vtype=5: BroadcastVote — injects Vote via handle_our_vote (local validator path).
+  // Unlike vtype=0,1,2 which inject peer votes via IncomingProtocolMessage, this goes
+  // through pool.cpp:484 → handle_our_vote → keyring sign → handle_vote(local_id).
+  // Covers tolerate_conflicts=false local vote path. slot%3 selects vote variant.
+  if (vote_type == 5) {
+    uint8_t sub = slot % 3;
+    CandidateId cid{.slot = slot, .hash = S.cand_hashes[cand_seed]};
+    Vote vote = (sub == 0) ? Vote{NotarizeVote{cid}}
+              : (sub == 1) ? Vote{SkipVote{.slot = slot}}
+                           : Vote{FinalizeVote{cid}};
+    auto ev = std::make_shared<BroadcastVote>(BroadcastVote{std::move(vote)});
+    S.scheduler->run_in_context([&] { S.bus.publish(ev); });
+    for (int i = 0; i < DRAIN_ROUNDS; i++) S.scheduler->run(0);
+    return;
+  }
 
   // vtype=4: Raw IncomingProtocolMessage — fuzz TL deserialization path directly.
   // Unlike vtype=0,1,2 which inject pre-serialized votes, this sends raw bytes through
