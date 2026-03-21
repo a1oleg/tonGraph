@@ -65,6 +65,7 @@
 #include "ton/ton-types.h"
 #include "validator/interfaces/validator-manager.h"
 
+#include "consensus/chain-state.h"
 #include "crypto/vm/boc.h"
 #include "crypto/vm/cells.h"
 #include "simulation/GraphLogger.h"
@@ -532,19 +533,20 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
   // Phase 3 Step 2: stub resolvers so Consensus coroutines abort gracefully
   // instead of hanging forever when StateResolver / CandidateResolver are absent.
   //
-  // Phase 4 Step 2 (amnesia): ResolveState and ValidationRequest now return success
-  // so that try_notarize() completes when vtype=3 (Propose) is injected.
+  // Phase 4 Step 2 (validation): ResolveState returns valid zerostate ChainStateRef,
+  // ValidationRequest returns CandidateAccept — together they allow try_notarize() to
+  // complete end-to-end (store_candidate + NotarizeVote emission) for vtype=3 Propose.
   // ResolveCandidate still returns error (candidate resolution not needed for voting).
   // OurLeaderWindowStarted is published but has no handler in harness → ignored safely.
 
   template <>
   td::actor::Task<ResolveState::Result> process(FuzzBusHandle, std::shared_ptr<ResolveState>) {
-    // Return error so start_generation() aborts gracefully. Null ChainStateRef causes
-    // SEGV in scheduler teardown via HazardPointers. ValidationRequest (CandidateAccept)
-    // is only reached via try_notarize() which calls ResolveState first — if ResolveState
-    // fails, try_notarize aborts before ValidationRequest, so Propose injection (vtype=3)
-    // only works in standalone test_amnesia_poc.cpp (which uses its own observer).
-    co_return td::Status::Error("mock");
+    // Return a valid zerostate so try_notarize() can reach ValidationRequest.
+    // Previously returned error, which caused try_notarize() to abort before
+    // ValidationRequest, leaving the candidate-finalization path uncovered.
+    auto zerostate_id = BlockIdExt{BlockId{ton::basechainId, ton::shardIdAll, 0}};
+    auto chain_state = ChainState::from_zerostate(zerostate_id, vm::CellBuilder().finalize(), zerostate_id);
+    co_return ResolveState::Result{.state = chain_state};
   }
 
   template <>
@@ -791,7 +793,8 @@ static void inject_vote(FuzzedDataProvider& fdp) {
   }
 
   // vtype=3: Propose injection — publish CandidateReceived{slot, cand_seed} directly.
-  // Triggers ConsensusImpl::try_notarize() → ResolveState (returns error) → aborts.
+  // Triggers ConsensusImpl::try_notarize() → ResolveState (returns valid zerostate)
+  //   → ValidationRequest (returns CandidateAccept) → store_candidate → NotarizeVote emitted.
   // slot=0: parent=nullopt, WaitForParent resolves immediately (next_slot_after_parent==0==slot).
   // slot>0: parent=CandidateId{slot-1, cand_seed}, WaitForParent stays pending until parent
   //   is notarized → requests_ grows → #request-no-bound trap fires at size >= 4.
