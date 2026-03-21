@@ -82,7 +82,7 @@ extern std::atomic<int> g_pending_requests_count;
 // ─────────────────────────────────────────────────────────────────────────────
 
 static constexpr size_t N_VALIDATORS = 4;
-static constexpr uint8_t MAX_SLOT = 15;
+static constexpr uint8_t MAX_SLOT = 255;
 static constexpr uint8_t N_CAND_SEEDS = 4;
 static constexpr uint8_t MAX_LOSE_WRITES = 8;
 static constexpr int DRAIN_ROUNDS = 20;
