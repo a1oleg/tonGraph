@@ -25,7 +25,7 @@
  *   n_lose      : uint8  (0..MAX_LOSE_WRITES)
  *   per message:
  *     src_idx   : uint8  (0..N_VALIDATORS-1)
- *     vote_type : uint8  (0=notarize, 1=skip, 2=finalize, 3=propose/CandidateReceived, 4=raw/IncomingProtocolMessage, 5=BroadcastVote/handle_our_vote)
+ *     vote_type : uint8  (0=notarize, 1=skip, 2=finalize, 3=propose/CandidateReceived, 4=raw/IncomingProtocolMessage, 5=BroadcastVote/handle_our_vote, 6=IncomingOverlayRequest/CandidateResolver)
  *     slot      : uint8  (0..MAX_SLOT)
  *     cand_seed : uint8  (0..N_CAND_SEEDS-1)
  *
@@ -546,16 +546,6 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
   }
 
   template <>
-  td::actor::Task<ResolveCandidate::Result> process(FuzzBusHandle, std::shared_ptr<ResolveCandidate>) {
-    co_return td::Status::Error("mock");
-  }
-
-  template <>
-  td::actor::Task<StoreCandidate::ReturnType> process(FuzzBusHandle, std::shared_ptr<StoreCandidate>) {
-    co_return td::Unit{};
-  }
-
-  template <>
   td::actor::Task<ValidateCandidateResult> process(FuzzBusHandle, std::shared_ptr<ValidationRequest>) {
     // Accept all candidates: allows ConsensusImpl to emit NotarizeVote via try_notarize().
     co_return CandidateAccept{0.0};
@@ -624,6 +614,7 @@ static void configure_and_start_bus(FuzzState& S, std::unique_ptr<MockDb> db) {
   Pool::register_in(*S.runtime);
   simplex::Db::register_in(*S.runtime);
   Consensus::register_in(*S.runtime);  // Phase 3 Step 2: enables alarm-skip path via start_up()
+  CandidateResolver::register_in(*S.runtime);  // enables IncomingOverlayRequest (vtype=6)
   S.runtime->register_actor<FuzzObserver>("FuzzObserver");
 
   S.scheduler->run_in_context([&] {
@@ -738,9 +729,25 @@ static void inject_vote(FuzzedDataProvider& fdp) {
   // would conflict with ConsensusImpl's own votes and trigger LOG_FATAL in pool.cpp.
   // Peers are validators 1..N_VALIDATORS-1.
   auto src_idx   = fdp.ConsumeIntegralInRange<uint8_t>(1, N_VALIDATORS - 1);
-  auto vote_type = fdp.ConsumeIntegralInRange<uint8_t>(0, 5);
+  auto vote_type = fdp.ConsumeIntegralInRange<uint8_t>(0, 6);
   auto slot      = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_SLOT);
   auto cand_seed = fdp.ConsumeIntegralInRange<uint8_t>(0, N_CAND_SEEDS - 1);
+
+  // vtype=6: IncomingOverlayRequest — fuzz CandidateResolver TL parsing path.
+  // Sends raw bytes as overlay request via CandidateResolver (candidate-resolver.cpp:131):
+  // fetch_tl_object<tl::requestCandidate> → candidate state lookup → response.
+  // CandidateResolver::register_in() enables this path; tear_down() via StopRequested
+  // resolves pending awaiters cleanly. slot byte reused as raw_len (0..15).
+  if (vote_type == 6) {
+    auto raw_len = static_cast<size_t>(slot);
+    auto raw_bytes = fdp.ConsumeBytes<uint8_t>(raw_len);
+    auto ev = std::make_shared<IncomingOverlayRequest>(
+        PeerValidatorId{src_idx},
+        ProtocolMessage{td::BufferSlice(reinterpret_cast<const char*>(raw_bytes.data()), raw_bytes.size())});
+    S.scheduler->run_in_context([&] { S.bus.publish(ev); });
+    for (int i = 0; i < DRAIN_ROUNDS; i++) S.scheduler->run(0);
+    return;
+  }
 
   // vtype=5: BroadcastVote — injects Vote via handle_our_vote (local validator path).
   // Unlike vtype=0,1,2 which inject peer votes via IncomingProtocolMessage, this goes
