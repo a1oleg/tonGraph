@@ -1,9 +1,5 @@
-#1015794: cov: 11703 ft: 9877 corp: 380 exec/s: 0 oom/timeout/crash: 0/0/197467 time: 6479s job: 197468 dft_time: 0
-==3245489== ERROR: libFuzzer: deadly signal
-==2438527== libFuzzer: run interrupted; exiting
-Starting fuzz_pool at Sat Mar 21 21:59:29 +04 2026
-INFO: Running with entropic power schedule (0xFF, 100).
-INFO: Seed: 301536950
-INFO: Loaded 1 modules   (8909 inline 8-bit counters): 8909 [0x59aa201f4628, 0x59aa201f68f5), 
-INFO: Loaded 1 PC tables (8909 PCs): 8909 [0x59aa201f68f8,0x59aa202195c8), 
-INFO: -fork=16: fuzzing in separate process(s)
+==4039421== ERROR: libFuzzer: deadly signal
+#968073: cov: 11739 ft: 9848 corp: 361 exec/s: 0 oom/timeout/crash: 0/0/191470 time: 6440s job: 191470 dft_time: 0
+==4039423== ERROR: libFuzzer: deadly signal
+#968078: cov: 11739 ft: 9848 corp: 361 exec/s: 0 oom/timeout/crash: 0/0/191471 time: 6440s job: 191472 dft_time: 0
+==4039437== ERROR: libFuzzer: deadly signal

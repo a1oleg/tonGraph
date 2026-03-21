@@ -84,3 +84,4 @@ CMakeLists.txt
 .claude/
 simulation/crashes_p5/
 simulation/crashes_p5_yoga/
+crash-*
