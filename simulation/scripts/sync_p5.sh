@@ -1,7 +1,11 @@
 #!/bin/bash
+# Usage: bash sync_p5.sh [PARITY]
+#   PARITY=1 (default) — sync on odd minutes  (машина 1)
+#   PARITY=0           — sync on even minutes (yoga1)
 set -e
 REPO=/home/a1oleg/tonGraph
 BRANCH=testnet
+PARITY=${1:-1}
 
 while true; do
   cd $REPO
@@ -33,5 +37,14 @@ while true; do
   fi
 
   echo "[$(date '+%H:%M:%S')] sync p5 done"
-  sleep 600
+
+  # Sleep until next minute with target parity (odd or even)
+  now=$(date +%s)
+  m=$(( now / 60 ))
+  if (( m % 2 == PARITY )); then
+    next=$(( (m + 2) * 60 ))
+  else
+    next=$(( (m + 1) * 60 ))
+  fi
+  sleep $(( next - now ))
 done
