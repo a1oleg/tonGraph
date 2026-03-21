@@ -189,6 +189,19 @@ void Scheduler::ContextImpl::add_token_to_cpu_queue(SchedulerToken token, Schedu
     }
     return;
   }
+  if (!info.cpu_queue) {
+    // No CPU threads (e.g., NodeInfo{{0}}): cpu_queue is null.
+    // Mirror do_stop() behaviour: if the token is a coroutine continuation
+    // (low bit set), destroy it without resuming — same as the drain loop in
+    // do_stop(). This prevents a null-pointer dereference via
+    // MpmcQueue::push → HazardPointers::get_hazard_ptr when
+    // ActorMessageCoroutineSafe::~dtor fires during actor teardown.
+    auto encoded = reinterpret_cast<uintptr_t>(token);
+    if (encoded & 1u) {
+      std::coroutine_handle<>::from_address(reinterpret_cast<void *>(encoded & ~uintptr_t(1))).destroy();
+    }
+    return;
+  }
   info.cpu_queue->push(token, get_thread_id());
   info.cpu_queue_waiter->notify();
 }
