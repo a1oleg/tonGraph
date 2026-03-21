@@ -83,4 +83,4 @@ CMakeLists.txt
 .claude/settings.local.json
 .claude/
 simulation/crashes_p5/
-simulation/corpus_p5/
+simulation/crashes_p5_yoga/
