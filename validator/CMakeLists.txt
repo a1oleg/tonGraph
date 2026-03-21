@@ -252,6 +252,10 @@ target_include_directories(full-node PUBLIC
   ${OPENSSL_INCLUDE_DIR}
   )
 
+if(FUZZING)
+  target_compile_definitions(validator PRIVATE FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
+endif()
+
 target_link_libraries(validator PRIVATE validator-db)
 
 target_link_libraries(validator-disk PRIVATE validator-db)

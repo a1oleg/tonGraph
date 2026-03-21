@@ -402,6 +402,18 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
           {"msgType",   std::string("vote")},
           {"sessionId", bus.session_id.to_hex()},
       });
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+      // [Row 7] Linear message flood trap: pool has no per-source rate limit.
+      // A Byzantine node can send the same vote indefinitely — pool processes every one
+      // (TL deserialization + add_vote lookup) with no bounds check.
+      // Invariant: msgs_received(honest, t) = O(1) per slot per source.
+      // Trap when any (source, slot) pair exceeds kMsgFloodThreshold.
+      static constexpr uint32_t kMsgFloodThreshold = 4;
+      auto flood_key = std::make_pair(message->source.value(), vote.vote.referenced_slot());
+      if (++msg_flood_counter_[flood_key] > kMsgFloodThreshold) {
+        __builtin_trap();
+      }
+#endif
       handle_vote(message->source.get_using(bus), std::move(vote));
     }
 
@@ -946,6 +958,10 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
   td::uint32 first_nonfinalized_slot_ = 0;
 
   std::vector<Request> requests_;
+
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+  std::map<std::pair<size_t, td::uint32>, td::uint32> msg_flood_counter_;
+#endif
 };
 
 }  // namespace
