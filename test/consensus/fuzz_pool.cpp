@@ -25,7 +25,7 @@
  *   n_lose      : uint8  (0..MAX_LOSE_WRITES)
  *   per message:
  *     src_idx   : uint8  (0..N_VALIDATORS-1)
- *     vote_type : uint8  (0=notarize, 1=skip, 2=finalize, 3=propose/CandidateReceived)
+ *     vote_type : uint8  (0=notarize, 1=skip, 2=finalize, 3=propose/CandidateReceived, 4=raw/IncomingProtocolMessage)
  *     slot      : uint8  (0..MAX_SLOT)
  *     cand_seed : uint8  (0..N_CAND_SEEDS-1)
  *
@@ -738,9 +738,25 @@ static void inject_vote(FuzzedDataProvider& fdp) {
   // would conflict with ConsensusImpl's own votes and trigger LOG_FATAL in pool.cpp.
   // Peers are validators 1..N_VALIDATORS-1.
   auto src_idx   = fdp.ConsumeIntegralInRange<uint8_t>(1, N_VALIDATORS - 1);
-  auto vote_type = fdp.ConsumeIntegralInRange<uint8_t>(0, 3);
+  auto vote_type = fdp.ConsumeIntegralInRange<uint8_t>(0, 4);
   auto slot      = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_SLOT);
   auto cand_seed = fdp.ConsumeIntegralInRange<uint8_t>(0, N_CAND_SEEDS - 1);
+
+  // vtype=4: Raw IncomingProtocolMessage — fuzz TL deserialization path directly.
+  // Unlike vtype=0,1,2 which inject pre-serialized votes, this sends raw bytes through
+  // pool.cpp:391 (fetch_tl_object<tl::vote> + fetch_tl_object<tl::certificate>).
+  // Covers the certificate handling path (pool.cpp:436+) unreachable via typed injection.
+  // slot byte is reused as raw_len (0..MAX_SLOT); cand_seed byte is the first raw byte.
+  if (vote_type == 4) {
+    auto raw_len = static_cast<size_t>(slot);  // reuse slot byte as length (0..15)
+    auto raw_bytes = fdp.ConsumeBytes<uint8_t>(raw_len);
+    auto msg = std::make_shared<IncomingProtocolMessage>(
+        PeerValidatorId{src_idx},
+        ProtocolMessage{td::BufferSlice(reinterpret_cast<const char*>(raw_bytes.data()), raw_bytes.size())});
+    S.scheduler->run_in_context([&] { S.bus.publish(msg); });
+    for (int i = 0; i < DRAIN_ROUNDS; i++) S.scheduler->run(0);
+    return;
+  }
 
   // vtype=3: Propose injection — publish CandidateReceived{slot, cand_seed} directly.
   // Triggers ConsensusImpl::try_notarize() → ResolveState (returns error) → aborts.
