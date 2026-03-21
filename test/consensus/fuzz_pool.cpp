@@ -65,6 +65,8 @@
 #include "ton/ton-types.h"
 #include "validator/interfaces/validator-manager.h"
 
+#include "crypto/vm/boc.h"
+#include "crypto/vm/cells.h"
 #include "simulation/GraphLogger.h"
 #include "td/utils/logging.h"
 
@@ -741,9 +743,13 @@ static void inject_vote(FuzzedDataProvider& fdp) {
   if (vote_type == 6) {
     auto raw_len = static_cast<size_t>(slot);
     auto raw_bytes = fdp.ConsumeBytes<uint8_t>(raw_len);
+    // Guard: empty vector.data() may be nullptr → td::Slice(nullptr,0) CHECK fails.
+    td::BufferSlice payload = raw_bytes.empty()
+        ? td::BufferSlice()
+        : td::BufferSlice(reinterpret_cast<const char*>(raw_bytes.data()), raw_bytes.size());
     auto ev = std::make_shared<IncomingOverlayRequest>(
         PeerValidatorId{src_idx},
-        ProtocolMessage{td::BufferSlice(reinterpret_cast<const char*>(raw_bytes.data()), raw_bytes.size())});
+        ProtocolMessage{std::move(payload)});
     S.scheduler->run_in_context([&] { S.bus.publish(ev); });
     for (int i = 0; i < DRAIN_ROUNDS; i++) S.scheduler->run(0);
     return;
@@ -773,9 +779,12 @@ static void inject_vote(FuzzedDataProvider& fdp) {
   if (vote_type == 4) {
     auto raw_len = static_cast<size_t>(slot);  // reuse slot byte as length (0..15)
     auto raw_bytes = fdp.ConsumeBytes<uint8_t>(raw_len);
+    td::BufferSlice payload4 = raw_bytes.empty()
+        ? td::BufferSlice()
+        : td::BufferSlice(reinterpret_cast<const char*>(raw_bytes.data()), raw_bytes.size());
     auto msg = std::make_shared<IncomingProtocolMessage>(
         PeerValidatorId{src_idx},
-        ProtocolMessage{td::BufferSlice(reinterpret_cast<const char*>(raw_bytes.data()), raw_bytes.size())});
+        ProtocolMessage{std::move(payload4)});
     S.scheduler->run_in_context([&] { S.bus.publish(msg); });
     for (int i = 0; i < DRAIN_ROUNDS; i++) S.scheduler->run(0);
     return;
@@ -797,6 +806,11 @@ static void inject_vote(FuzzedDataProvider& fdp) {
         : std::nullopt;  // slot 0: no parent; resolves immediately
     BlockCandidate bc{};
     bc.id = BlockIdExt{BlockId{basechainId, shardIdAll, 0}};
+    // Provide minimal valid BoC so CandidateResolver can serialize/store without crashing.
+    // Empty BlockCandidate.data triggers compress_candidate_data → boc.deserialize("") → error.
+    auto empty_cell = vm::CellBuilder().finalize();
+    bc.data = vm::std_boc_serialize(empty_cell, 31).move_as_ok();
+    bc.collated_data = vm::std_boc_serialize_multi({empty_cell}, 2).move_as_ok();
     auto candidate = td::make_ref<Candidate>(
         cand_id, parent_id, PeerValidatorId{src_idx},
         std::variant<BlockIdExt, BlockCandidate>(std::in_place_type<BlockCandidate>, std::move(bc)),
