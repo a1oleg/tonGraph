@@ -1,0 +1,8 @@
+From github.com:a1oleg/tonGraph
+ * branch              testnet    -> FETCH_HEAD
+   34c78f18..8d52f159  testnet    -> origin/testnet
+Updating 34c78f18..8d52f159
+Fast-forward
+ simulation/run_fuzz_p5_yoga.sh | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+Everything up-to-date
