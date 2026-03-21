@@ -15,6 +15,12 @@
 
 namespace ton::validator::consensus::simplex {
 
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+// Forward-declared here so PoolImpl (inside the anonymous namespace below) can
+// use it. Defined after the anonymous namespace closes.
+extern std::atomic<int> g_pending_requests_count;
+#endif
+
 namespace {
 
 template <typename T>
@@ -349,9 +355,19 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
   }
 
   void tear_down() override {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    // Invariant: counter must equal requests_.size() at teardown entry.
+    CHECK(g_pending_requests_count.load() == static_cast<int>(requests_.size()));
+#endif
     for (auto &r : requests_) {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+      --g_pending_requests_count;  // request resolved via cancellation
+#endif
       r.promise.set_error(td::Status::Error(ErrorCode::cancelled, "cancelled"));
     }
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    CHECK(g_pending_requests_count.load() == 0);
+#endif
   }
 
   template <>
@@ -482,9 +498,13 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
     });
     if (maybe_resolve_request(requests_.back())) {
       requests_.pop_back();
+      // Request resolved immediately — never went pending, no counter change.
     }
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     else {
+      // Request stays pending: parent not yet notarized.
+      ++g_pending_requests_count;  // request added to pending queue
+
       // Resource exhaustion trap: requests_ is an unbounded vector.
       // A Byzantine collator floods WaitForParent by sending candidates for future slots
       // (slot > finalized, parent not yet notarized). Each request stays pending until
@@ -813,16 +833,27 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
   }
 
   void maybe_resolve_requests() {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    // Invariant: counter must equal requests_.size() at entry.
+    CHECK(g_pending_requests_count.load() == static_cast<int>(requests_.size()));
+#endif
     for (size_t i = 0; i < requests_.size();) {
       if (maybe_resolve_request(requests_[i])) {
         if (i + 1 != requests_.size()) {
           std::swap(requests_[i], requests_.back());
         }
         requests_.pop_back();
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+        --g_pending_requests_count;  // request resolved via parent notarization
+#endif
       } else {
         ++i;
       }
     }
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    // Invariant: counter must equal requests_.size() at exit.
+    CHECK(g_pending_requests_count.load() == static_cast<int>(requests_.size()));
+#endif
   }
 
   // ===== Certificate handling =====
@@ -979,6 +1010,14 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
 };
 
 }  // namespace
+
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+// Tracks number of WaitForParent requests currently pending in PoolImpl::requests_.
+// Incremented when a request stays unresolved; decremented in maybe_resolve_requests()
+// and tear_down(). Readable from fuzz_pool.cpp via extern to drive crash_and_restart
+// drain: harness spins scheduler until this reaches 0 (all promises resolved).
+std::atomic<int> g_pending_requests_count{0};
+#endif
 
 void Pool::register_in(td::actor::Runtime &runtime) {
   runtime.register_actor<PoolImpl>("SimplexPool");

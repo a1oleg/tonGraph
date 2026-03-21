@@ -70,6 +70,15 @@
 
 #include <cmath>
 
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+// Defined in validator/consensus/simplex/pool.cpp.
+// Tracks number of WaitForParent requests currently pending in PoolImpl::requests_.
+// Used by crash_and_restart to drain until all coroutine promises are resolved.
+namespace ton::validator::consensus::simplex {
+extern std::atomic<int> g_pending_requests_count;
+}
+#endif
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 static constexpr size_t N_VALIDATORS = 4;
@@ -78,6 +87,9 @@ static constexpr uint8_t N_CAND_SEEDS = 4;
 static constexpr uint8_t MAX_LOSE_WRITES = 8;
 static constexpr int DRAIN_ROUNDS = 20;
 static constexpr int DRAIN_CRASH_ROUNDS = 200;
+// Extra scheduler rounds run AFTER g_pending_requests_count hits 0 to let
+// all WaitForParent coroutine continuations fully unwind before runtime.reset().
+static constexpr int EXTRA_DRAIN_AFTER_TEARDOWN = 20;
 
 // ── Step 4: State-vector counters ─────────────────────────────────────────────
 //
@@ -643,9 +655,29 @@ static void crash_and_restart(FuzzState& S, size_t n_lose) {
   S.scheduler->run_in_context([&] {
     S.bus.publish(std::make_shared<StopRequested>());
   });
+  // Drain scheduler until all pending WaitForParent promises are resolved
+  // (g_pending_requests_count == 0, set by PoolImpl::tear_down()), then run
+  // EXTRA_DRAIN_AFTER_TEARDOWN more rounds so WaitForParent coroutine
+  // continuations fully unwind before runtime.reset() — prevents SEGV in
+  // ActorMessageCoroutineSafe::~dtor → SchedulerExecutor::schedule.
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+  {
+    namespace simplex = ton::validator::consensus::simplex;
+    int extra = 0;
+    for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) {
+      S.scheduler->run(0);
+      if (simplex::g_pending_requests_count.load() == 0) {
+        if (++extra >= EXTRA_DRAIN_AFTER_TEARDOWN) break;
+      } else {
+        extra = 0;  // counter went back up (shouldn't happen, but reset if so)
+      }
+    }
+  }
+#else
   for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) {
     S.scheduler->run(0);
   }
+#endif
 
   S.bus = {};
   S.runtime.reset();
