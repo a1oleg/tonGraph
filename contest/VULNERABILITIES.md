@@ -258,20 +258,6 @@ per slot — commit [`f7be06af`](../../../commits/f7be06af).
 
 ---
 
-## Приоритет прогонов
-
-```
-1. [CRITICAL] State divergence         — нарушение safety, максимальный импакт
-2. [HIGH]     Equivocation             — уже воспроизведён в simulation
-3. [HIGH]     Byzantine leader         — уже воспроизведён в simulation
-4. [HIGH]     Resource exhaustion      — linear message flood, измеримо
-5. [MEDIUM]   Message withholding      — уже воспроизведён, liveness
-6. [MEDIUM]   Amnesia attack           — нужна модификация сценария
-7. [LOW]      Message reordering       — зависит от реализации буфера
-```
-
----
-
 ## Лимиты воспроизведения (из условий контеста)
 
 - Consensus bugs: **< 10 000 слотов**, **≤ 100 валидаторов**
