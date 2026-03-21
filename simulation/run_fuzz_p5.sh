@@ -10,7 +10,7 @@ mkdir -p "$CRASHES"
 echo "Starting fuzz_pool at $(date)" >> "$LOG"
 echo "Crashes → $CRASHES"
 
-$BINARY simulation/corpus_p4a simulation/corpus_p5 \
+nohup $BINARY simulation/corpus_p4a simulation/corpus_p5 \
   -fork=$(nproc) \
   -ignore_crashes=1 \
   -artifact_prefix="$CRASHES/" \
