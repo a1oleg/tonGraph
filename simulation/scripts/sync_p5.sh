@@ -37,5 +37,8 @@ while true; do
   git pull --rebase origin "$BRANCH" 2>/dev/null || git pull origin "$BRANCH"
   echo "[$(date '+%H:%M:%S')] sync done (corpus_p4a: $(ls simulation/corpus_p4a | wc -l) files)"
 
-  sleep 600
+  # Sleep until next 10-minute boundary (global clock: :00, :10, :20, ...)
+  now=$(date +%s)
+  next=$(( (now / 600 + 1) * 600 ))
+  sleep $(( next - now ))
 done
