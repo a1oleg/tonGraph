@@ -79,4 +79,28 @@ if(FUZZING)
       ${CMAKE_SOURCE_DIR}
       ${CMAKE_SOURCE_DIR}/simulation
   )
+  # ── fuzz_pool_ubsan — UBSan build for undefined behaviour detection ──────────
+  # Run corpus through this binary to find UB not caught by ASan alone.
+  # -fno-sanitize-recover=undefined: UB terminates the process (exit≠0).
+  # Build:  cmake --build build-fuzz2 --target fuzz_pool_ubsan
+  # Usage:  see simulation/scripts/run_ubsan.sh
+  add_executable(fuzz_pool_ubsan fuzz_pool.cpp)
+  target_compile_options(fuzz_pool_ubsan PRIVATE
+      -fsanitize=fuzzer,undefined
+      -fno-sanitize-recover=undefined
+      -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+      -g -O1
+  )
+  target_link_options(fuzz_pool_ubsan PRIVATE
+      -fsanitize=fuzzer,undefined
+  )
+  target_link_libraries(fuzz_pool_ubsan PRIVATE
+      tl_api tdutils tdactor tl-utils
+      validator ton_validator
+      keys adnl overlay keyring
+  )
+  target_include_directories(fuzz_pool_ubsan PRIVATE
+      ${CMAKE_SOURCE_DIR}
+      ${CMAKE_SOURCE_DIR}/simulation
+  )
 endif()
