@@ -9,7 +9,7 @@
  *   per message (4 bytes, from end toward start):
  *     src-1, vtype, slot, cand
  *
- * Mutations (chosen by rand):
+ * Mutations (chosen by rand, or vector-guided if g_last_sim threshold reached):
  *   0. FlipVtype      — change vtype of a random message (bias toward interesting pairs)
  *   1. FlipSlot       — change slot of a random message
  *   2. FlipCand       — change cand of a random message (amnesia trigger)
@@ -20,6 +20,14 @@
  *   7. DupWithDiffCand — duplicate a message with cand+1 (amnesia setup)
  *   8. MirrorPrePost  — copy a pre-crash message to post-crash with different cand
  *   9. SkipAfterNotar — append SkipVote×3 on same slot as the first Propose found
+ *
+ * Vector guidance: g_last_sim[4] is updated by emit_vector_guidance() after each
+ * TestOneInput call. When a reference vector's similarity exceeds SIM_THRESHOLD,
+ * the mutator promotes the ops most likely to increase that similarity further:
+ *   REF_ALARM_SKIP [0] → op 9 (SkipAfterNotar)
+ *   REF_AMNESIA    [1] → ops 7, 8 (DupWithDiffCand, MirrorPrePost)
+ *   REF_DUAL_CERT  [2] → ops 0 (FlipVtype toward notarize+skip pair), 7
+ *   REF_STATE_DIV  [3] → ops 0 (FlipVtype toward finalize), 9
  */
 
 #include <cstdint>
@@ -27,6 +35,13 @@
 #include <fuzzer/FuzzedDataProvider.h>
 
 extern "C" size_t LLVMFuzzerMutate(uint8_t* data, size_t size, size_t max_size);
+
+// Similarity scores from previous TestOneInput — set by emit_vector_guidance().
+// Indices: 0=ALARM_SKIP, 1=AMNESIA, 2=DUAL_CERT, 3=STATE_DIV.
+extern float g_last_sim[4];
+
+// When g_last_sim[r] exceeds this, the mutator promotes ops targeting ref r.
+static constexpr float SIM_THRESHOLD = 0.35f;
 
 static constexpr uint8_t MAX_SLOT         = 15;
 static constexpr uint8_t N_CAND_SEEDS     = 4;
@@ -116,12 +131,68 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size,
     return s ? s : size;
   }
 
-  int op = rand() % 10;
+  // Vector-guided op selection: if we're close to a danger pattern, promote
+  // the ops most likely to push the input further toward that pattern.
+  // With probability 0.5 we use the guided pick; otherwise fall back to random.
+  // This keeps exploration alive while biasing toward interesting states.
+  int op;
+  {
+    // Find the highest-similarity reference (if any crosses the threshold).
+    int best_ref = -1;
+    float best_sim = SIM_THRESHOLD;
+    for (int r = 0; r < 4; r++) {
+      if (g_last_sim[r] > best_sim) { best_sim = g_last_sim[r]; best_ref = r; }
+    }
+
+    bool use_guided = (best_ref >= 0) && ((rand() & 1) == 0);
+    if (!use_guided) {
+      op = rand() % 10;
+    } else {
+      // Pick an op that advances the highest-scoring reference pattern.
+      switch (best_ref) {
+        case 0:  // ALARM_SKIP: need SkipVotes after NotarCert → op 9
+          op = 9;
+          break;
+        case 1:  // AMNESIA: need pre-crash notar + post-crash with diff cand
+          op = (rand() & 1) ? 7 : 8;  // DupWithDiffCand or MirrorPrePost
+          break;
+        case 2:  // DUAL_CERT: need NotarCert and SkipCert on same slot
+          // Either create another notar vote (FlipVtype→0/notarize) or dup with diff cand.
+          if (rand() & 1) {
+            op = 0;  // FlipVtype — will be steered toward vtype=0 below
+          } else {
+            op = 7;  // DupWithDiffCand
+          }
+          break;
+        case 3:  // STATE_DIV: need FinalVotes + SkipCert on same slot
+          op = (rand() & 1) ? 9 : 0;  // SkipAfterNotar or FlipVtype→finalize
+          break;
+        default:
+          op = rand() % 10;
+          break;
+      }
+    }
+  }
   switch (op) {
     case 0: {  // FlipVtype — bias toward interesting vtypes
       int i = rand() % inp.n_msgs;
-      static const uint8_t interesting[] = {0, 1, 2, 3, 7};
-      inp.msgs[i].vtype = interesting[rand() % 5];
+      // Default interesting set; guided refinement below.
+      static const uint8_t interesting_all[]    = {0, 1, 2, 3, 7};
+      static const uint8_t interesting_notar[]  = {0, 0, 0, 3};   // DUAL_CERT: push notarize
+      static const uint8_t interesting_final[]  = {2, 2, 2, 1};   // STATE_DIV: push finalize
+      // Find best_ref by reading g_last_sim directly (already computed above).
+      int best_ref = -1;
+      float best_sim = SIM_THRESHOLD;
+      for (int r = 0; r < 4; r++) {
+        if (g_last_sim[r] > best_sim) { best_sim = g_last_sim[r]; best_ref = r; }
+      }
+      if (best_ref == 2) {
+        inp.msgs[i].vtype = interesting_notar[rand() % 4];
+      } else if (best_ref == 3) {
+        inp.msgs[i].vtype = interesting_final[rand() % 4];
+      } else {
+        inp.msgs[i].vtype = interesting_all[rand() % 5];
+      }
       break;
     }
     case 1: {  // FlipSlot

@@ -200,18 +200,26 @@ static float cosine_sim_slot(const float* ref, const uint8_t* counters_at_base) 
   return dot / std::sqrt(na * nb);
 }
 
-// Emit similarity scores for all three reference vectors across all slots.
-// Channel byte: 0xE0 | (ref_idx << 4) | slot — unique per (ref, slot) pair.
+// Shared with fuzz_pool_mutator.cpp — mutator reads these to bias op selection.
+// g_last_sim[r] = max cosine similarity with refs[r] across all 16 slots,
+// computed at the end of the previous TestOneInput call.
+float g_last_sim[4] = {};
+
+// Emit similarity scores for all four reference vectors across all slots.
+// Channel byte: 0xA0 + r*0x10 + slot — unique per (ref, slot) pair.
+// Also updates g_last_sim[r] = max(sim) across slots, for the mutator.
 static void emit_vector_guidance() {
   const float* refs[4] = {REF_ALARM_SKIP, REF_AMNESIA, REF_DUAL_CERT, REF_STATE_DIV};
   for (int r = 0; r < 4; r++) {
+    float max_sim = 0.f;
     for (int slot = 0; slot < 16; slot++) {
       float sim = cosine_sim_slot(refs[r], &g_state_counters[slot * SE_STRIDE]);
+      if (sim > max_sim) max_sim = sim;
       auto sim_byte = static_cast<uint8_t>(sim * 255.f);
-      // Channel: 0xA0 = alarm-skip family, 0xB0 = amnesia family, 0xC0 = dual-cert
       auto channel  = static_cast<uint8_t>(0xA0 + r * 0x10 + slot);
       __sanitizer_cov_trace_cmp1(channel, sim_byte);
     }
+    g_last_sim[r] = max_sim;
   }
 }
 
