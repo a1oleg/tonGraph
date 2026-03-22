@@ -662,6 +662,7 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
               {"pendingRequests",       static_cast<int64_t>(requests_.size())},
               {"sessionId",             owning_bus()->session_id.to_hex()},
           });
+<<<<<<< Updated upstream
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
           // Resource exhaustion trap: notarize_weight[slot] grew to ≥3 distinct candidateIds.
           // Legitimate operation: at most 1 candidateId per slot (single leader proposal).
@@ -670,6 +671,10 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
           // notarize_weight flood finding documented: trap removed for coverage growth.
           (void)(slot->state->notarize_weight.size() >= 3);
 #endif
+=======
+          // Resource exhaustion finding documented: Byzantine flooding ≥3 distinct candidateIds
+          // → cert_creation_cost = O(|Validators| × K). Trap removed to allow coverage growth.
+>>>>>>> Stashed changes
         }
         return true;
       }
