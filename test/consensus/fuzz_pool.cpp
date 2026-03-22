@@ -60,6 +60,7 @@
 #include "td/actor/BusRuntime.h"
 #include "td/actor/actor.h"
 #include "td/actor/common.h"
+#include "td/actor/core/SchedulerContext.h"
 #include "td/actor/coro_utils.h"
 #include "tl-utils/common-utils.hpp"
 #include "ton/ton-types.h"
@@ -894,6 +895,14 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     g_state->bus = {};
     g_state->runtime.reset();
     for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) g_state->scheduler->run(0);
+    // Diagnose: log any actors still alive after teardown (only on 2nd invocation
+    // to avoid noise from first-run initialization). ensure_empty() calls
+    // LOG(ERROR) << actor_info.get_name() for each live actor in the pool.
+    if (g_invocation == 2) {
+      g_state->scheduler->run_in_context([] {
+        td::actor::core::SchedulerContext::get().get_actor_info_creator().ensure_empty();
+      });
+    }
   }
   // Reinitialize state in-place (reuse scheduler, create new keyring+runtime+bus).
   if (!g_state) g_state = new FuzzState();
