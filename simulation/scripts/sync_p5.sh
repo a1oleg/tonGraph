@@ -76,7 +76,7 @@ while true; do
       simulation/corpus_p5_merged/ \
       simulation/corpus_p5/ \
       simulation/corpus_p4a/ \
-      2>/dev/null
+      2>/dev/null || true
     if [ "$(ls -A simulation/corpus_p5_merged)" ]; then
       mv simulation/corpus_p5_merged/* simulation/corpus_p5/
     fi
