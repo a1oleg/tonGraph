@@ -16,6 +16,24 @@ else
   FUZZ_LOG=$REPO/simulation/fuzz_p5.log
 fi
 
+# Функция: sleep до :00 следующей минуты с нужной чётностью
+wait_for_slot() {
+  local now m next
+  now=$(date +%s)
+  m=$(( now / 60 ))
+  if (( m % 2 == PARITY && now % 60 < 30 )); then
+    return  # уже в своём окне (:00-:29 нужной минуты)
+  elif (( m % 2 == PARITY )); then
+    next=$(( (m + 2) * 60 ))  # прошли :30 своей минуты — ждём через одну
+  else
+    next=$(( (m + 1) * 60 ))  # не своя минута — ждём следующую свою
+  fi
+  sleep $(( next - now ))
+}
+
+# Начальный wait — первый запуск тоже попадает в своё окно
+wait_for_slot
+
 while true; do
   cd $REPO
 
@@ -64,13 +82,6 @@ while true; do
 
   echo "[$(date '+%H:%M:%S')] sync p5 done ($MACHINE cov=${COV:-?})"
 
-  # Sleep until next minute with target parity (odd or even)
-  now=$(date +%s)
-  m=$(( now / 60 ))
-  if (( m % 2 == PARITY )); then
-    next=$(( (m + 2) * 60 ))
-  else
-    next=$(( (m + 1) * 60 ))
-  fi
-  sleep $(( next - now ))
+  # Sleep до следующего своего окна
+  wait_for_slot
 done
