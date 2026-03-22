@@ -31,6 +31,9 @@
 
 third_party/** linguist-vendored
 
+# Append-only sync log — union merge keeps all lines from both sides, no conflicts
+contest/setups/sync_report.md merge=union
+
 *.a binary
 *.jar binary
 *.tlo binary
