@@ -37,7 +37,7 @@ if(FUZZING)
   target_link_libraries(fuzz_tl PRIVATE tl_api tdutils tl-utils)
 
   # ── fuzz_pool — Phase 2 Step 2+3: pool.cpp via BusRuntime + MockDb + crash ───
-  add_executable(fuzz_pool fuzz_pool.cpp)
+  add_executable(fuzz_pool fuzz_pool.cpp fuzz_pool_mutator.cpp)
   target_compile_options(fuzz_pool PRIVATE
       -fsanitize=fuzzer
       -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION

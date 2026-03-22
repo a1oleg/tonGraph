@@ -61,7 +61,10 @@ while true; do
   fi
 
   # Забрать corpus машины 1 (до push — чтобы избежать rejected)
+  # Stash tracked unstaged changes (e.g. .drawio) чтобы rebase не падал
+  git stash push -q 2>/dev/null || true
   git pull --rebase origin $BRANCH 2>/dev/null || git pull origin $BRANCH
+  git stash pop -q 2>/dev/null || true
 
   # Теперь push поверх актуального remote
   git push origin $BRANCH
