@@ -53,3 +53,6 @@ simulation/scripts/sync_p5_rsync.sh: line 80: 92285 Killed                  ./bu
 [17:41:01] sync rsync done (gigabyte1 cov=13310 p5=2505)
 [testnet e45ad13f] sync report 17:41
  1 file changed, 1 insertion(+)
+[17:43:52] sync rsync done (gigabyte1 cov=13136 p5=438)
+[testnet 82bbe46a] sync report 17:43
+ 1 file changed, 1 insertion(+)
