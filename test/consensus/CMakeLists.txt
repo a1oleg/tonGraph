@@ -103,4 +103,28 @@ if(FUZZING)
       ${CMAKE_SOURCE_DIR}
       ${CMAKE_SOURCE_DIR}/simulation
   )
+  # ── fuzz_pool_msan — MemorySanitizer build for uninitialised-memory detection ──
+  # Requires full MSan instrumentation of all deps (false positives otherwise).
+  # Build:  cmake --build build-fuzz2 --target fuzz_pool_msan
+  # Usage:  see simulation/scripts/run_msan.sh
+  add_executable(fuzz_pool_msan fuzz_pool.cpp fuzz_pool_mutator.cpp)
+  target_compile_options(fuzz_pool_msan PRIVATE
+      -fsanitize=fuzzer,memory
+      -fsanitize-memory-track-origins=2
+      -fno-sanitize-recover=memory
+      -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+      -g -O1
+  )
+  target_link_options(fuzz_pool_msan PRIVATE
+      -fsanitize=fuzzer,memory
+  )
+  target_link_libraries(fuzz_pool_msan PRIVATE
+      tl_api tdutils tdactor tl-utils
+      validator ton_validator
+      keys adnl overlay keyring
+  )
+  target_include_directories(fuzz_pool_msan PRIVATE
+      ${CMAKE_SOURCE_DIR}
+      ${CMAKE_SOURCE_DIR}/simulation
+  )
 endif()
