@@ -71,8 +71,13 @@ while true; do
   git pull --rebase origin $BRANCH 2>/dev/null || git pull origin $BRANCH
   git stash pop -q 2>/dev/null || true
 
-  # Теперь push поверх актуального remote
-  git push origin $BRANCH
+  # Push с retry: если rejected (другая машина успела), тянем и пробуем ещё раз
+  for _retry in 1 2 3; do
+    git push origin $BRANCH && break
+    git stash push -q 2>/dev/null || true
+    git pull --rebase origin $BRANCH 2>/dev/null || git pull origin $BRANCH
+    git stash pop -q 2>/dev/null || true
+  done
 
   # Merge corpus p4a в p5
   if [ -d simulation/corpus_p4a ] && [ "$(ls -A simulation/corpus_p4a)" ]; then
