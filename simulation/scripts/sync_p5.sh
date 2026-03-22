@@ -56,6 +56,8 @@ while true; do
   echo "[$(date '+%Y-%m-%d %H:%M')] $MACHINE: cov=${COV:-?} corp=${CORP:-?} p5=$CORPUS_P5 p4a=$CORPUS_P4A crashes=${CRASHES:-?} | build=$BUILD_COMMIT $BUILD_DATE vtype_max=${MAX_VTYPE:-?} forks=$FORKS" >> "$REPORT"
 
   # Запушить corpus + отчёт + любые изменения в коде (fuzz_pool.cpp, mutator, etc.)
+  # git add -u: все tracked файлы с изменениями (не оставляет modified unstaged)
+  git add -u 2>/dev/null
   git add simulation/corpus_p5/ contest/setups/sync_report.md \
     test/consensus/ validator/consensus/ simulation/scripts/ \
     minimized-from-* 2>/dev/null
