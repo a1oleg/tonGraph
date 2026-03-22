@@ -886,23 +886,23 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
         }
       }
     }
-    // Clear keyring BEFORE bus/runtime so its destroy message is processed
-    // during the drain below — prevents ActorOwn zombie accumulation across
-    // TestOneInput calls that caused OOM in fork-mode workers.
+    // Release keyring and bus handles so their actors receive stop()/destroy.
     g_state->scheduler->run_in_context([&] {
       g_state->keyring = {};
     });
     g_state->bus = {};
+    for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) g_state->scheduler->run(0);
+    // Force-clear the actor pool: BusListeningActors hold
+    // shared_ptr<BusTreeNode>→shared_ptr<Runtime>, so runtime.reset() alone
+    // cannot drop the ref count to 0 and no destroy messages are ever sent.
+    // ActorInfoCreator::clear() calls dec_ref() on every live ActorInfo,
+    // breaking the ref cycle — slots return to free_queue, stopping linear
+    // RSS growth (~65 KB/iter) that caused OOM in fork-mode workers.
+    g_state->scheduler->run_in_context([] {
+      td::actor::core::SchedulerContext::get().get_actor_info_creator().clear();
+    });
     g_state->runtime.reset();
     for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) g_state->scheduler->run(0);
-    // Diagnose: log any actors still alive after teardown (only on 2nd invocation
-    // to avoid noise from first-run initialization). ensure_empty() calls
-    // LOG(ERROR) << actor_info.get_name() for each live actor in the pool.
-    if (g_invocation == 2) {
-      g_state->scheduler->run_in_context([] {
-        td::actor::core::SchedulerContext::get().get_actor_info_creator().ensure_empty();
-      });
-    }
   }
   // Reinitialize state in-place (reuse scheduler, create new keyring+runtime+bus).
   if (!g_state) g_state = new FuzzState();
