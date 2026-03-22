@@ -55,8 +55,9 @@ while true; do
   # Дописать отчёт
   echo "[$(date '+%Y-%m-%d %H:%M')] $MACHINE: cov=${COV:-?} corp=${CORP:-?} p5=$CORPUS_P5 p4a=$CORPUS_P4A crashes=${CRASHES:-?} | build=$BUILD_COMMIT $BUILD_DATE vtype_max=${MAX_VTYPE:-?} forks=$FORKS" >> "$REPORT"
 
-  # Запушить corpus + отчёт
-  git add simulation/corpus_p5/ contest/setups/sync_report.md 2>/dev/null
+  # Запушить corpus + отчёт + любые изменения в коде (fuzz_pool.cpp, mutator, etc.)
+  git add simulation/corpus_p5/ contest/setups/sync_report.md \
+    test/consensus/ validator/consensus/ simulation/scripts/ 2>/dev/null
   if ! git diff --cached --quiet; then
     git commit -m "corpus p5 sync $(date '+%H:%M')"
   fi
