@@ -87,3 +87,4 @@ simulation/crashes_p5_yoga/
 crash-*
 simulation/fuzz_p5.log
 simulation/sync_p5.log
+simulation/fuzz_p5_yoga.log
