@@ -90,3 +90,8 @@ simulation/sync_p5.log
 simulation/fuzz_p5_yoga.log
 simulation/corpus_p4a/*.seeds
 simulation/sync_p5_yoga.log
+
+simulation/corpus.profraw
+simulation/corpus.profdata
+simulation/coverage_report/
+simulation/profraw_tmp/
