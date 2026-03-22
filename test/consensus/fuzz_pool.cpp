@@ -25,7 +25,7 @@
  *   n_lose      : uint8  (0..MAX_LOSE_WRITES)
  *   per message:
  *     src_idx   : uint8  (0..N_VALIDATORS-1)
- *     vote_type : uint8  (0=notarize, 1=skip, 2=finalize, 3=propose/CandidateReceived, 4=raw/IncomingProtocolMessage, 5=BroadcastVote/handle_our_vote, 6=IncomingOverlayRequest/CandidateResolver)
+ *     vote_type : uint8  (0=notarize, 1=skip, 2=finalize, 3=propose/CandidateReceived, 4=raw/IncomingProtocolMessage, 5=BroadcastVote/handle_our_vote, 6=IncomingOverlayRequest/CandidateResolver, 7=NotarizationObserved/ConsensusImpl::try_vote_final)
  *     slot      : uint8  (0..MAX_SLOT)
  *     cand_seed : uint8  (0..N_CAND_SEEDS-1)
  *
@@ -733,7 +733,7 @@ static void inject_vote(FuzzedDataProvider& fdp) {
   // would conflict with ConsensusImpl's own votes and trigger LOG_FATAL in pool.cpp.
   // Peers are validators 1..N_VALIDATORS-1.
   auto src_idx   = fdp.ConsumeIntegralInRange<uint8_t>(1, N_VALIDATORS - 1);
-  auto vote_type = fdp.ConsumeIntegralInRange<uint8_t>(0, 6);
+  auto vote_type = fdp.ConsumeIntegralInRange<uint8_t>(0, 7);
   auto slot      = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_SLOT);
   auto cand_seed = fdp.ConsumeIntegralInRange<uint8_t>(0, N_CAND_SEEDS - 1);
 
@@ -819,6 +819,29 @@ static void inject_vote(FuzzedDataProvider& fdp) {
         std::variant<BlockIdExt, BlockCandidate>(std::in_place_type<BlockCandidate>, std::move(bc)),
         td::BufferSlice(64));
     auto ev = std::make_shared<CandidateReceived>(CandidateReceived{std::move(candidate)});
+    S.scheduler->run_in_context([&] { S.bus.publish(ev); });
+    for (int i = 0; i < DRAIN_ROUNDS; i++) S.scheduler->run(0);
+    return;
+  }
+
+  // vtype=7: NotarizationObserved injection — publish NotarizationObserved directly into bus.
+  // ConsensusImpl::process_notarization_observed receives it → sets slot->state->notar_cert →
+  // calls try_vote_final: if voted_notar == notar_cert (ConsensusImpl already voted notarize
+  // on the same CandidateId), emits FinalizeVote via BroadcastVote.
+  // Most useful after vtype=3 Propose sequence that made ConsensusImpl emit NotarizeVote.
+  // Also covers: timeout_slot_ advancement, alarm_timestamp() update paths in ConsensusImpl.
+  // CandidateResolver::handle(NotarizationObserved) also fires — resolver cleanup path.
+  // src_idx reused as signature count (1..N_VALIDATORS-1) for the dummy NotarCert.
+  if (vote_type == 7) {
+    CandidateId cand_id{.slot = slot, .hash = S.cand_hashes[cand_seed]};
+    NotarizeVote notar_vote{cand_id};
+    std::vector<NotarCert::VoteSignature> sigs;
+    auto n_sigs = static_cast<uint8_t>(((src_idx - 1) % (N_VALIDATORS - 1)) + 1);
+    for (uint8_t i = 1; i <= n_sigs; i++) {
+      sigs.push_back(NotarCert::VoteSignature{PeerValidatorId{i}, td::BufferSlice(64)});
+    }
+    auto cert = td::make_ref<NotarCert>(notar_vote, std::move(sigs));
+    auto ev = std::make_shared<NotarizationObserved>(cand_id, std::move(cert));
     S.scheduler->run_in_context([&] { S.bus.publish(ev); });
     for (int i = 0; i < DRAIN_ROUNDS; i++) S.scheduler->run(0);
     return;
