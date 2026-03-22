@@ -30,8 +30,8 @@ while true; do
   # Билд: git commit fuzz_pool.cpp + дата бинаря + максимальный vtype + fork count
   BUILD_COMMIT=$(git log -1 --format="%h" -- test/consensus/fuzz_pool.cpp 2>/dev/null)
   BUILD_DATE=$(stat -c "%y" "$REPO/build-fuzz2/test/consensus/fuzz_pool" 2>/dev/null | cut -c1-16)
-  MAX_VTYPE=$(strings "$REPO/build-fuzz2/test/consensus/fuzz_pool" 2>/dev/null | grep -o 'vtype=[0-9]*' | sort -t= -k2 -n | tail -1 | grep -o '[0-9]*$' || true)
-  FORKS=$(pgrep -c -f "fuzz_pool.*-fork" 2>/dev/null || echo "?")
+  MAX_VTYPE=$(grep 'vote_type = fdp.ConsumeIntegralInRange' "$REPO/test/consensus/fuzz_pool.cpp" 2>/dev/null | grep -o '[0-9]*);' | tr -d ');' || true)
+  FORKS=$(pgrep -c fuzz_pool 2>/dev/null || echo "?")
 
   # Дописать отчёт
   echo "[$(date '+%Y-%m-%d %H:%M')] $MACHINE: cov=${COV:-?} corp=${CORP:-?} p5=$CORPUS_P5 p4a=$CORPUS_P4A crashes=${CRASHES:-?} | build=$BUILD_COMMIT $BUILD_DATE vtype_max=${MAX_VTYPE:-?} forks=$FORKS" >> "$REPORT"
