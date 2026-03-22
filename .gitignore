@@ -95,3 +95,4 @@ simulation/corpus.profraw
 simulation/corpus.profdata
 simulation/coverage_report/
 simulation/profraw_tmp/
+nohup.out
