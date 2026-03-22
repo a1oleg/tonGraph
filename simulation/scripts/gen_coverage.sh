@@ -29,16 +29,22 @@ if [ ! -f "$COV_BIN" ]; then
   exit 1
 fi
 
-echo "[1/4] Running corpus through fuzz_pool_cov..."
-rm -f "$PROFRAW"
-LLVM_PROFILE_FILE="$PROFRAW" "$COV_BIN" \
-  -runs=0 \
-  "$CORPUS_P5" "$CORPUS_P4A" \
-  2>/dev/null
-echo "      profraw: $(du -sh "$PROFRAW" | cut -f1)"
+echo "[1/4] Running corpus through fuzz_pool_cov (per-file, crash-safe)..."
+PROFRAW_DIR=$REPO/simulation/profraw_tmp
+rm -rf "$PROFRAW_DIR" && mkdir -p "$PROFRAW_DIR"
+
+i=0
+for f in "$CORPUS_P5"/* "$CORPUS_P4A"/*; do
+  [ -f "$f" ] || continue
+  LLVM_PROFILE_FILE="$PROFRAW_DIR/$i.profraw" \
+    "$COV_BIN" "$f" -runs=1 2>/dev/null || true
+  i=$((i+1))
+done
+echo "      processed $i files, profraw dir: $(du -sh "$PROFRAW_DIR" | cut -f1)"
 
 echo "[2/4] Merging profdata..."
-"$LLVM_PROFDATA" merge -sparse "$PROFRAW" -o "$PROFDATA"
+"$LLVM_PROFDATA" merge -sparse "$PROFRAW_DIR"/*.profraw -o "$PROFDATA"
+rm -rf "$PROFRAW_DIR"
 echo "      profdata: $(du -sh "$PROFDATA" | cut -f1)"
 
 echo "[3/4] Generating HTML report..."
