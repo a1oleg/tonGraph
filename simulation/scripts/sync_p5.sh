@@ -66,17 +66,22 @@ while true; do
   fi
 
   # Забрать corpus машины 1 (до push — чтобы избежать rejected)
-  # Stash tracked unstaged changes (e.g. .drawio) чтобы rebase не падал
+  # stash push/pop только для untracked-like изменений; при конфликте pop — дропаем стэш
+  # чтобы не накапливать conflict markers в tracked файлах.
   git stash push -q 2>/dev/null || true
   git pull --rebase origin $BRANCH 2>/dev/null || git pull origin $BRANCH
-  git stash pop -q 2>/dev/null || true
+  git stash pop -q 2>/dev/null || git stash drop -q 2>/dev/null || true
+  # Если после pop остались conflict markers — сбросить файл до HEAD
+  if git diff --name-only | xargs grep -l "^<<<<<<" 2>/dev/null | grep -q .; then
+    git diff --name-only | xargs grep -l "^<<<<<<" | xargs git checkout HEAD -- 2>/dev/null || true
+  fi
 
   # Push с retry: если rejected (другая машина успела), тянем и пробуем ещё раз
   for _retry in 1 2 3; do
     git push origin $BRANCH && break
     git stash push -q 2>/dev/null || true
     git pull --rebase origin $BRANCH 2>/dev/null || git pull origin $BRANCH
-    git stash pop -q 2>/dev/null || true
+    git stash pop -q 2>/dev/null || git stash drop -q 2>/dev/null || true
   done
 
   # Merge corpus p4a в p5
