@@ -885,6 +885,12 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
         }
       }
     }
+    // Clear keyring BEFORE bus/runtime so its destroy message is processed
+    // during the drain below — prevents ActorOwn zombie accumulation across
+    // TestOneInput calls that caused OOM in fork-mode workers.
+    g_state->scheduler->run_in_context([&] {
+      g_state->keyring = {};
+    });
     g_state->bus = {};
     g_state->runtime.reset();
     for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) g_state->scheduler->run(0);
