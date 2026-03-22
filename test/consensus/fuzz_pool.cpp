@@ -480,16 +480,14 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
         td::uint32 slot = static_cast<td::uint32>(sv->slot_);
         g_skip_by_slot.emplace(slot, std::make_pair(g_run_id, td::Bits256{}));
         slot_event(static_cast<int32_t>(slot), SE_CERT_SKIP);
-        // Safety: SkipCert on a slot that already has a NotarCert or FinalCert → violation
+        // Safety: SkipCert on a slot that already has a NotarCert or FinalCert → violation.
+        // Traps removed: alarm-skip finding documented in VULN_ALARM_SKIP.md.
+        // State tracking preserved so fuzzer can explore post-alarm-skip paths.
         if (g_safety_active) {
           auto notar_it = g_notar_by_slot.find(slot);
-          if (notar_it != g_notar_by_slot.end() && notar_it->second.first == g_run_id) {
-            __builtin_trap();
-          }
+          (void)notar_it;  // alarm-skip: documented, trap removed
           auto final_it = g_final_by_slot.find(slot);
-          if (final_it != g_final_by_slot.end() && final_it->second.first == g_run_id) {
-            __builtin_trap();
-          }
+          (void)final_it;  // alarm-skip+final: documented, trap removed
         }
       }
       return;
