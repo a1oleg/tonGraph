@@ -53,4 +53,30 @@ if(FUZZING)
       ${CMAKE_SOURCE_DIR}
       ${CMAKE_SOURCE_DIR}/simulation
   )
+  # ── fuzz_pool_cov — coverage build for llvm-cov analysis ────────────────────
+  # Runs corpus inputs through LLVMFuzzerRunDriver with instrumentation but
+  # without sanitizers, producing profraw for llvm-cov HTML report.
+  # Build:  cmake --build build-fuzz2 --target fuzz_pool_cov
+  # Usage:  see simulation/scripts/gen_coverage.sh
+  add_executable(fuzz_pool_cov fuzz_pool.cpp)
+  target_compile_options(fuzz_pool_cov PRIVATE
+      -fsanitize=fuzzer
+      -fprofile-instr-generate
+      -fcoverage-mapping
+      -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+      -g -O1
+  )
+  target_link_options(fuzz_pool_cov PRIVATE
+      -fsanitize=fuzzer
+      -fprofile-instr-generate
+  )
+  target_link_libraries(fuzz_pool_cov PRIVATE
+      tl_api tdutils tdactor tl-utils
+      validator ton_validator
+      keys adnl overlay keyring
+  )
+  target_include_directories(fuzz_pool_cov PRIVATE
+      ${CMAKE_SOURCE_DIR}
+      ${CMAKE_SOURCE_DIR}/simulation
+  )
 endif()
