@@ -57,7 +57,8 @@ while true; do
 
   # Запушить corpus + отчёт + любые изменения в коде (fuzz_pool.cpp, mutator, etc.)
   git add simulation/corpus_p5/ contest/setups/sync_report.md \
-    test/consensus/ validator/consensus/ simulation/scripts/ 2>/dev/null
+    test/consensus/ validator/consensus/ simulation/scripts/ \
+    minimized-from-* 2>/dev/null
   if ! git diff --cached --quiet; then
     git commit -m "corpus p5 sync $(date '+%H:%M')"
   fi
