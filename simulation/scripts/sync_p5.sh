@@ -2,7 +2,6 @@
 # Usage: bash sync_p5.sh [PARITY]
 #   PARITY=1 (default) — sync on odd minutes  (машина 1)
 #   PARITY=0           — sync on even minutes (yoga1)
-set -e
 REPO=/home/a1oleg/tonGraph
 BRANCH=testnet
 PARITY=${1:-1}
