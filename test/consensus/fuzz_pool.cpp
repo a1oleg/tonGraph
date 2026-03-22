@@ -862,9 +862,20 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     g_state->scheduler->run_in_context([&] {
       g_state->bus.publish(std::make_shared<StopRequested>());
     });
-    for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) {
-      g_state->scheduler->run(0);
+    {
+      int extra = 0;
+      for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) {
+        g_state->scheduler->run(0);
+        if (simplex::g_pending_requests_count.load() == 0) {
+          if (++extra >= EXTRA_DRAIN_AFTER_TEARDOWN) break;
+        } else {
+          extra = 0;
+        }
+      }
     }
+    g_state->bus = {};
+    g_state->runtime.reset();
+    for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) g_state->scheduler->run(0);
   }
   delete g_state;
   g_state = new FuzzState();

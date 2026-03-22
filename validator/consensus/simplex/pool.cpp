@@ -423,12 +423,10 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
       // A Byzantine node can send the same vote indefinitely — pool processes every one
       // (TL deserialization + add_vote lookup) with no bounds check.
       // Invariant: msgs_received(honest, t) = O(1) per slot per source.
-      // Trap when any (source, slot) pair exceeds kMsgFloodThreshold.
+      // msg flood finding documented (VULNERABILITIES.md §6): trap removed for coverage growth.
       static constexpr uint32_t kMsgFloodThreshold = 4;
       auto flood_key = std::make_pair(message->source.value(), vote.vote.referenced_slot());
-      if (++msg_flood_counter_[flood_key] > kMsgFloodThreshold) {
-        __builtin_trap();
-      }
+      (void)(++msg_flood_counter_[flood_key] > kMsgFloodThreshold);
 #endif
       handle_vote(message->source.get_using(bus), std::move(vote));
     }
@@ -511,10 +509,9 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
       // parent is notarized. maybe_resolve_requests() iterates ALL pending requests on
       // every state update → O(N²) cost per message at N pending requests.
       // Invariant: |requests_| = O(|Validators|)  [bounded queue, VULNERABILITIES.md §7].
+      // requests flood finding documented (VULNERABILITIES.md §7): trap removed for coverage growth.
       static constexpr size_t kRequestsFloodThreshold = 4;
-      if (requests_.size() >= kRequestsFloodThreshold) {
-        __builtin_trap();
-      }
+      (void)(requests_.size() >= kRequestsFloodThreshold);
     }
 #endif
     co_return co_await std::move(bridge);
@@ -670,9 +667,8 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
           // Legitimate operation: at most 1 candidateId per slot (single leader proposal).
           // ≥3 entries = Byzantine validators flooding different candidateIds →
           // cert_creation_cost = O(|Validators| × K) instead of O(|Validators|).
-          if (slot->state->notarize_weight.size() >= 3) {
-            __builtin_trap();
-          }
+          // notarize_weight flood finding documented: trap removed for coverage growth.
+          (void)(slot->state->notarize_weight.size() >= 3);
 #endif
         }
         return true;
