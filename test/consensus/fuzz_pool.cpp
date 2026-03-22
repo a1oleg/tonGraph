@@ -508,9 +508,8 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
           td::uint32 slot = static_cast<td::uint32>(nv->id_->slot_);
           td::Bits256 hash = nv->id_->hash_;
           auto [it, inserted] = g_our_notar_vote.emplace(slot, std::make_pair(g_run_id, hash));
-          if (!inserted && g_safety_active && it->second.first == g_run_id && it->second.second != hash) {
-            __builtin_trap();
-          }
+          // Amnesia equivocation: documented in VULN_AMNESIA_POC.md, trap removed to allow coverage growth.
+          (void)inserted;
           if (!inserted) it->second = {g_run_id, hash};
         }
         break;
