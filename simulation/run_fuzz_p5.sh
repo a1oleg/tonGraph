@@ -10,7 +10,8 @@ mkdir -p "$CRASHES"
 echo "Starting fuzz_pool at $(date)" >> "$LOG"
 echo "Crashes → $CRASHES"
 
-nohup $BINARY simulation/corpus_p4a simulation/corpus_p5 \
+# corpus_p4a excluded: sync_p5.sh merges it into corpus_p5 each cycle.
+nohup $BINARY simulation/corpus_p5 \
   -fork=$(nproc) \
   -ignore_crashes=1 \
   -artifact_prefix="$CRASHES/" \
