@@ -16,16 +16,18 @@ else
 fi
 
 # Функция: sleep до :00 следующей минуты с нужной чётностью
+# $1=0: начальный вызов (можно войти в текущее окно)
+# $1=1: после цикла (всегда идём на следующую свою минуту)
 wait_for_slot() {
-  local now m next
+  local now m next after_cycle=${1:-0}
   now=$(date +%s)
   m=$(( now / 60 ))
-  if (( m % 2 == PARITY && now % 60 < 30 )); then
-    return  # уже в своём окне (:00-:29 нужной минуты)
+  if (( after_cycle == 0 && m % 2 == PARITY && now % 60 < 30 )); then
+    return  # начальный запуск — уже в своём окне
   elif (( m % 2 == PARITY )); then
-    next=$(( (m + 2) * 60 ))  # прошли :30 своей минуты — ждём через одну
+    next=$(( (m + 2) * 60 ))  # текущая минута своя — берём следующую через одну
   else
-    next=$(( (m + 1) * 60 ))  # не своя минута — ждём следующую свою
+    next=$(( (m + 1) * 60 ))  # не своя — берём ближайшую свою
   fi
   sleep $(( next - now ))
 }
@@ -85,5 +87,5 @@ while true; do
   echo "[$(date '+%H:%M:%S')] sync p5 done ($MACHINE cov=${COV:-?})"
 
   # Sleep до следующего своего окна
-  wait_for_slot
+  wait_for_slot 1
 done
