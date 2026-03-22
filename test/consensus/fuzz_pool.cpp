@@ -858,6 +858,10 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   // pending WaitForParent promises via set_error(cancelled). Without this,
   // slot>0 Propose injections leave suspended coroutines that cause SEGV in
   // HazardPointers when the runtime is destroyed.
+  // Teardown: stop current bus, drain, then restart cleanly WITHOUT deleting
+  // the scheduler — destroying the scheduler while actors are alive triggers
+  // SharedObjectPool LOG_CHECK. Instead, reuse the existing scheduler and
+  // create a fresh bus/runtime/db on top of it (mirrors crash_and_restart).
   if (g_state && g_state->runtime) {
     g_state->scheduler->run_in_context([&] {
       g_state->bus.publish(std::make_shared<StopRequested>());
@@ -877,8 +881,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     g_state->runtime.reset();
     for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) g_state->scheduler->run(0);
   }
-  delete g_state;
-  g_state = new FuzzState();
+  // Reinitialize state in-place (reuse scheduler, create new keyring+runtime+bus).
+  if (!g_state) g_state = new FuzzState();
   auto& S = *g_state;
 
   S.session_id = td::Bits256{};
@@ -887,8 +891,10 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     S.cand_hashes[i] = td::Bits256{};
     S.cand_hashes[i].as_array()[0] = static_cast<uint8_t>(i + 1);
   }
-  S.scheduler = std::make_unique<td::actor::Scheduler>(
-      std::vector<td::actor::Scheduler::NodeInfo>{{0}}, /*skip_timeouts=*/true);
+  if (!S.scheduler) {
+    S.scheduler = std::make_unique<td::actor::Scheduler>(
+        std::vector<td::actor::Scheduler::NodeInfo>{{0}}, /*skip_timeouts=*/true);
+  }
   S.scheduler->run_in_context([&] {
     S.keyring = td::actor::create_actor<MockKeyring>(
         td::actor::ActorOptions{}.with_name("MockKeyring"));
