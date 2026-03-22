@@ -891,7 +891,10 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
       g_state->keyring = {};
     });
     g_state->bus = {};
-    for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) g_state->scheduler->run(0);
+    for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) {
+      g_state->scheduler->run(0);
+      if (simplex::g_pending_requests_count.load() == 0) break;
+    }
     // Force-clear the actor pool: BusListeningActors hold
     // shared_ptr<BusTreeNode>→shared_ptr<Runtime>, so runtime.reset() alone
     // cannot drop the ref count to 0 and no destroy messages are ever sent.
@@ -902,7 +905,10 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
       td::actor::core::SchedulerContext::get().get_actor_info_creator().clear();
     });
     g_state->runtime.reset();
-    for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) g_state->scheduler->run(0);
+    for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) {
+      g_state->scheduler->run(0);
+      if (simplex::g_pending_requests_count.load() == 0) break;
+    }
   }
   // Reinitialize state in-place (reuse scheduler, create new keyring+runtime+bus).
   if (!g_state) g_state = new FuzzState();
