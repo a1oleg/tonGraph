@@ -45,9 +45,11 @@ if(FUZZING)
   )
   target_link_options(fuzz_pool PRIVATE -fsanitize=fuzzer)
   target_link_libraries(fuzz_pool PRIVATE
+      -Wl,--start-group
       tl_api tdutils tdactor tl-utils
       validator ton_validator
       keys adnl overlay keyring
+      -Wl,--end-group
   )
   target_include_directories(fuzz_pool PRIVATE
       ${CMAKE_SOURCE_DIR}
