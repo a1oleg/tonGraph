@@ -85,7 +85,11 @@ extern std::atomic<int> g_pending_requests_count;
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+#ifndef N_VALIDATORS_OVERRIDE
 static constexpr size_t N_VALIDATORS = 4;
+#else
+static constexpr size_t N_VALIDATORS = N_VALIDATORS_OVERRIDE;
+#endif
 static constexpr uint8_t MAX_SLOT = 15;
 static constexpr uint8_t N_CAND_SEEDS = 4;
 static constexpr uint8_t MAX_LOSE_WRITES = 8;
