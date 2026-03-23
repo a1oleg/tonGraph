@@ -680,6 +680,22 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
     if (!slot.state->will_be_notarized() && new_weight >= weight_threshold_) {
       handle_certificate(slot.state->create_cert(vote.vote)).start().detach();
     }
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    // Waypoint trap: 1 vote away from NotarCert quorum.
+    // Fires when near-quorum state is reached without yet crossing threshold.
+    // Crash-seed captures this state; fuzzer mutates by adding one more NotarizeVote
+    // → quorum → NotarCert → advance_present() → LeaderWindowObserved → alarm().
+    if (!slot.state->will_be_notarized() && new_weight == weight_threshold_ - 1) {
+      __builtin_trap();
+    }
+    // Waypoint trap: Byzantine equivocation — two distinct candidates for same slot.
+    // Fires when notarize_weight map grows to ≥2 entries (different candidateIds).
+    // Crash-seed carries the equivocating sequence; fuzzer explores cert_creation_cost
+    // O(N·K) path and handle_typed_saved_certificate with conflicting candidates.
+    if (slot.state->notarize_weight.size() >= 2) {
+      __builtin_trap();
+    }
+#endif
   }
 
   void handle_typed_vote(const PeerValidator &validator, Signed<SkipVote> vote, State::SlotRef &slot) {
@@ -687,6 +703,14 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
     if (!slot.state->will_be_skipped() && new_weight >= weight_threshold_) {
       handle_certificate(slot.state->create_cert(vote.vote)).start().detach();
     }
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    // Waypoint trap: 1 vote away from SkipCert quorum.
+    // Crash-seed carries near-quorum skip state; fuzzer adds one more SkipVote
+    // → SkipCert → advance_present() → LeaderWindowObserved → alarm().
+    if (!slot.state->will_be_skipped() && new_weight == weight_threshold_ - 1) {
+      __builtin_trap();
+    }
+#endif
   }
 
   void handle_typed_vote(const PeerValidator &validator, Signed<FinalizeVote> vote, State::SlotRef &slot) {
@@ -694,6 +718,14 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
     if (!slot.state->will_be_finalized() && new_weight >= weight_threshold_) {
       handle_certificate(slot.state->create_cert(vote.vote)).start().detach();
     }
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    // Waypoint trap: 1 vote away from FinalCert quorum.
+    // Crash-seed carries near-finalization state; fuzzer adds one more FinalizeVote
+    // → FinalCert → handle_typed_saved_certificate → FinalizationObserved path.
+    if (!slot.state->will_be_finalized() && new_weight == weight_threshold_ - 1) {
+      __builtin_trap();
+    }
+#endif
   }
 
   td::actor::Task<> handle_our_vote(Vote vote, bool tolerate_conflicts = false, bool suppress_vote_broadcast = false) {
