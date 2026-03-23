@@ -28,6 +28,7 @@
  *     vote_type : uint8  (0=notarize, 1=skip, 2=finalize, 3=propose/CandidateReceived, 4=raw/IncomingProtocolMessage, 5=BroadcastVote/handle_our_vote, 6=IncomingOverlayRequest/CandidateResolver, 7=NotarizationObserved/ConsensusImpl::try_vote_final)
  *     slot      : uint8  (0..MAX_SLOT)
  *     cand_seed : uint8  (0..N_CAND_SEEDS-1)
+ *   do_tick     : bool   — fire standstill alarm (advance virtual time via run(15.0))
  *
  * Build (FUZZING=ON cmake build):
  *   cmake --build build-fuzz2 --target fuzz_pool -- -j$(nproc)
@@ -293,8 +294,14 @@ class MockDb final : public consensus::Db {
     return it->second.clone();
   }
 
-  std::vector<std::pair<td::BufferSlice, td::BufferSlice>> get_by_prefix(td::uint32) const override {
-    return {};
+  std::vector<std::pair<td::BufferSlice, td::BufferSlice>> get_by_prefix(td::uint32 prefix) const override {
+    std::vector<std::pair<td::BufferSlice, td::BufferSlice>> result;
+    for (const auto& [k, v] : kv_) {
+      if (k.size() >= 4 && std::memcmp(k.data(), &prefix, 4) == 0) {
+        result.emplace_back(td::BufferSlice(k), v.clone());
+      }
+    }
+    return result;
   }
 
   td::actor::Task<> set(td::BufferSlice key, td::BufferSlice value) override {
@@ -952,6 +959,11 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   //   n_lose   : uint8 (0..MAX_LOSE_WRITES)
   //   n_post   : uint8 (0..7)  — messages after crash (enables alarm-skip quorum)
   //   per message: src_idx, vote_type, slot, cand_seed
+  //   do_tick  : bool — fire standstill alarm: run(15.0) with skip_timeouts=true
+  //              jumps Time::now() forward via Time::jump_in_future() so that
+  //              alarm_timestamp() set by reschedule_standstill_resolution() fires
+  //              on the next run(0) call. Covers pool.cpp::alarm() + serialize_to
+  //              methods + is_notarized/skipped/finalized on SlotVotes.
   uint8_t n_pre    = fdp.ConsumeIntegralInRange<uint8_t>(0, 15);
   bool    do_crash = fdp.ConsumeBool();
   uint8_t n_lose   = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_LOSE_WRITES);
@@ -962,10 +974,19 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 
   for (uint8_t m = 0; m < n_post; m++) inject_vote(fdp);
 
+  bool do_tick = fdp.ConsumeBool();
+
+  // Standstill tick: with skip_timeouts=true, run(15.0) triggers Time::jump_in_future()
+  // (IoWorker.cpp:95) so the next run(0) fires all pending alarm_timestamp() callbacks.
+  auto& S_final = *g_state;
+  if (do_tick) {
+    S_final.scheduler->run(15.0);
+    for (int i = 0; i < DRAIN_ROUNDS; i++) S_final.scheduler->run(0);
+  }
+
   // Final drain: flush all pending events (e.g. SkipCert from a just-reached
   // quorum). Safety checks remain active during this drain — if a violation
   // fires here, it genuinely belongs to this run.
-  auto& S_final = *g_state;
   for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) S_final.scheduler->run(0);
   g_safety_active = false;
 
