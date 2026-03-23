@@ -6,7 +6,7 @@
 REPO=/home/a1oleg/tonGraph
 GIGABYTE1_IP=192.168.10.101
 GIGABYTE1_SSH_PORT=2222
-GIGABYTE1_KEY=~/.ssh/machine3_key
+GIGABYTE1_KEY=~/.ssh/gigabyte1_key
 GIGABYTE1_PATH=/home/a1oleg/tonGraph
 FUZZ_LOG=$REPO/simulation/fuzz_p5_yoga.log
 REPORT=$REPO/contest/setups/sync_report.md
@@ -32,7 +32,16 @@ while true; do
     a1oleg@${GIGABYTE1_IP}:${GIGABYTE1_PATH}/simulation/corpus_p5/ \
     2>/dev/null
 
-  # 3. Merge corpus_p4a в corpus_p5
+  # 3. Sync с machine3
+  MACHINE3_IP=192.168.10.102
+  SSH_OPTS3="-p 22 -i ~/.ssh/yoga1_key -o StrictHostKeyChecking=no -o ConnectTimeout=5"
+
+  rsync -az -e "ssh $SSH_OPTS3" \
+    a1oleg@${MACHINE3_IP}:~/tonGraph/simulation/corpus_p5/ simulation/corpus_p5/ 2>/dev/null
+  rsync -az -e "ssh $SSH_OPTS3" \
+    simulation/corpus_p5/ a1oleg@${MACHINE3_IP}:~/tonGraph/simulation/corpus_p5/ 2>/dev/null
+
+  # 4. Merge corpus_p4a в corpus_p5
   if [ -d simulation/corpus_p4a ] && [ "$(ls -A simulation/corpus_p4a)" ]; then
     mkdir -p simulation/corpus_p5_merged
     ./build-fuzz2/test/consensus/fuzz_pool -merge=1 \
@@ -46,7 +55,7 @@ while true; do
     rmdir simulation/corpus_p5_merged 2>/dev/null || true
   fi
 
-  # 4. Статистика
+  # 5. Статистика
   FUZZ_STAT=$(grep -o 'cov: [0-9]* ft: [0-9]* corp: [0-9]*.*oom/timeout/crash: [0-9]*/[0-9]*/[0-9]*' "$FUZZ_LOG" 2>/dev/null | tail -1)
   COV=$(echo "$FUZZ_STAT" | grep -o 'cov: [0-9]*' | awk '{print $2}')
   CORP=$(echo "$FUZZ_STAT" | grep -o 'corp: [0-9]*' | awk '{print $2}')
@@ -61,7 +70,7 @@ while true; do
   echo "[$(date '+%Y-%m-%d %H:%M')] $MACHINE: cov=${COV:-?} corp=${CORP:-?} p5=$CORPUS_P5 p4a=$CORPUS_P4A crashes=${CRASHES:-?} | build=$BUILD_COMMIT $BUILD_DATE vtype_max=${MAX_VTYPE:-?} forks=$FORKS" >> "$REPORT"
   echo "[$(date '+%H:%M:%S')] sync rsync done ($MACHINE cov=${COV:-?} p5=$CORPUS_P5)"
 
-  # 5. Push report в git
+  # 6. Push report в git
   git add contest/setups/sync_report.md 2>/dev/null
   if ! git diff --cached --quiet; then
     git commit -m "sync report $(date '+%H:%M')" 2>/dev/null
