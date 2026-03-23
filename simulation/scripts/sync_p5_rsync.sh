@@ -33,7 +33,7 @@ while true; do
 
   # 3. Sync с machine3
   MACHINE3_IP=192.168.10.102
-  SSH_OPTS3="-p 22 -i ~/.ssh/yoga1_key -o StrictHostKeyChecking=no -o ConnectTimeout=5"
+  SSH_OPTS3="-p 2222 -i ~/.ssh/yoga1_key -o StrictHostKeyChecking=no -o ConnectTimeout=5"
   rsync -az -e "ssh $SSH_OPTS3" \
     a1oleg@${MACHINE3_IP}:~/tonGraph/simulation/corpus_p5/ simulation/corpus_p5/ 2>/dev/null
   rsync -az -e "ssh $SSH_OPTS3" \
