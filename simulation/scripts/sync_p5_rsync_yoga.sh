@@ -6,7 +6,7 @@
 REPO=/home/a1oleg/tonGraph
 GIGABYTE1_IP=192.168.10.101
 GIGABYTE1_SSH_PORT=2222
-GIGABYTE1_KEY=~/.ssh/gigabyte1_key
+GIGABYTE1_KEY=~/.ssh/machine3_key
 GIGABYTE1_PATH=/home/a1oleg/tonGraph
 FUZZ_LOG=$REPO/simulation/fuzz_p5_yoga.log
 REPORT=$REPO/contest/setups/sync_report.md
