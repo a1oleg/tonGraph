@@ -96,3 +96,6 @@ simulation/corpus.profdata
 simulation/coverage_report/
 simulation/profraw_tmp/
 nohup.out
+simulation/sync_p5_rsync.log
+simulation/sync_p5_rsync_yoga.log
+simulation/findings_state_div/
