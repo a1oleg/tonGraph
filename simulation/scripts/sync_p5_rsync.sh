@@ -5,7 +5,7 @@
 
 REPO=/home/a1oleg/tonGraph
 YOGA1_IP=192.168.10.105
-YOGA1_SSH_PORT=22
+YOGA1_SSH_PORT=2223
 YOGA1_KEY=~/.ssh/yoga1_key
 YOGA1_PATH=/home/a1oleg/tonGraph
 FUZZ_LOG=$REPO/simulation/fuzz_p5.log
