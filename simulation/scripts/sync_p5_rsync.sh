@@ -53,6 +53,34 @@ while true; do
     rmdir simulation/corpus_p5_merged 2>/dev/null || true
   fi
 
+  # 6. Merge crash-seeds (waypoint traps) → corpus
+  CRASH_DIR=$REPO/simulation/crashes_p5_gigabyte
+  CRASH_STAMP=$REPO/simulation/.crashes_merged_stamp
+  if [ -d "$CRASH_DIR" ] && [ "$(ls -A $CRASH_DIR 2>/dev/null)" ]; then
+    mkdir -p simulation/corpus_p5_crash_merge
+    if [ -f "$CRASH_STAMP" ]; then
+      find "$CRASH_DIR" -newer "$CRASH_STAMP" -type f | head -200 | \
+        xargs -I{} cp {} simulation/corpus_p5_crash_merge/ 2>/dev/null
+    else
+      ls -t "$CRASH_DIR"/crash-* 2>/dev/null | head -200 | \
+        xargs -I{} cp {} simulation/corpus_p5_crash_merge/ 2>/dev/null
+    fi
+    if [ "$(ls -A simulation/corpus_p5_crash_merge 2>/dev/null)" ]; then
+      mkdir -p simulation/corpus_p5_merged
+      ./build-fuzz2/test/consensus/fuzz_pool -merge=1 \
+        simulation/corpus_p5_merged/ \
+        simulation/corpus_p5/ \
+        simulation/corpus_p5_crash_merge/ \
+        2>/dev/null || true
+      if [ "$(ls -A simulation/corpus_p5_merged 2>/dev/null)" ]; then
+        mv simulation/corpus_p5_merged/* simulation/corpus_p5/
+      fi
+      rmdir simulation/corpus_p5_merged 2>/dev/null || true
+      touch "$CRASH_STAMP"
+    fi
+    rm -rf simulation/corpus_p5_crash_merge
+  fi
+
   # 6. Статистика
   FUZZ_STAT=$(grep -o 'cov: [0-9]* ft: [0-9]* corp: [0-9]*.*oom/timeout/crash: [0-9]*/[0-9]*/[0-9]*' "$FUZZ_LOG" 2>/dev/null | tail -1)
   COV=$(echo "$FUZZ_STAT" | grep -o 'cov: [0-9]*' | awk '{print $2}')
