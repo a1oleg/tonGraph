@@ -13,7 +13,7 @@
 set -e
 
 REPO=/home/a1oleg/tonGraph
-COV_BIN=$REPO/build-fuzz2/test/consensus/fuzz_pool_cov
+COV_BIN=$REPO/build-cov/test/consensus/fuzz_pool_cov
 CORPUS_P5=$REPO/simulation/corpus_p5
 CORPUS_P4A=$REPO/simulation/corpus_p4a
 PROFRAW=$REPO/simulation/corpus.profraw
@@ -55,13 +55,13 @@ mkdir -p "$REPORT_DIR"
   -output-dir="$REPORT_DIR" \
   -show-branches=count \
   -show-line-counts-or-regions \
-  "$SOURCE"
+  "$SOURCE" validator/consensus/simplex/pool.cpp
 echo "      report: $REPORT_DIR/index.html"
 
 echo "[4/4] Text summary — uncovered regions in fuzz_pool.cpp:"
 "$LLVM_COV" report "$COV_BIN" \
   -instr-profile="$PROFDATA" \
-  "$SOURCE" \
+  "$SOURCE" validator/consensus/simplex/pool.cpp \
   | tee "$REPORT_DIR/coverage.txt"
 
 echo ""
@@ -69,6 +69,6 @@ echo "Uncovered lines (line# : source):"
 "$LLVM_COV" show "$COV_BIN" \
   -instr-profile="$PROFDATA" \
   -format=text \
-  "$SOURCE" \
+  "$SOURCE" validator/consensus/simplex/pool.cpp \
   | awk '/^\s+0\|/ {printf "  line %s\n", $0}' \
   | head -60

@@ -58,6 +58,21 @@ def append_rows(range_: str, values: list[list]) -> dict:
     return result
 
 
+def add_sheet(title: str) -> dict:
+    """Add a new sheet (tab) to the spreadsheet. Returns the new sheet's properties."""
+    svc = _get_service()
+    body = {"requests": [{"addSheet": {"properties": {"title": title}}}]}
+    result = svc.batchUpdate(spreadsheetId=SPREADSHEET_ID, body=body).execute()
+    return result["replies"][0]["addSheet"]["properties"]
+
+
+def list_sheets() -> list[str]:
+    """Return list of sheet (tab) titles in the spreadsheet."""
+    svc = _get_service()
+    meta = svc.get(spreadsheetId=SPREADSHEET_ID).execute()
+    return [s["properties"]["title"] for s in meta["sheets"]]
+
+
 def get_context() -> str:
     """Read entire sheet and return as formatted string for use as LLM context."""
     rows = read_sheet()

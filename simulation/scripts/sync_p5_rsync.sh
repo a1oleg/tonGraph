@@ -1,96 +1,99 @@
 #!/bin/bash
-# Corpus sync via rsync (bidirectional, no git conflicts)
-# Usage: bash sync_p5_rsync.sh
-# Runs on gigabyte1, syncs with yoga1 every 2 min
+# Corpus orchestrator — runs on gigabyte1 (hub)
+# Cycle every 2 min:
+#   1. pull raw corpus from yoga1 + machine3 into staging
+#   2. merge+minimize staging → corpus_p5
+#   3. merge crash-seeds from all 3 machines
+#   4. push enriched corpus_p5 back to yoga1 + machine3
 
 REPO=/home/a1oleg/tonGraph
-YOGA1_IP=192.168.10.105
-YOGA1_SSH_PORT=2223
-YOGA1_KEY=~/.ssh/yoga1_key
-YOGA1_PATH=/home/a1oleg/tonGraph
+FUZZ_POOL=$REPO/build-fuzz2/test/consensus/fuzz_pool
 FUZZ_LOG=$REPO/simulation/fuzz_p5.log
 MACHINE=$(hostname)
 
-SSH_CMD="ssh -p $YOGA1_SSH_PORT -i $YOGA1_KEY -o StrictHostKeyChecking=no -o ConnectTimeout=5"
-RSYNC_CMD="rsync -az -e \"$SSH_CMD\""
+YOGA1_IP=192.168.10.105
+YOGA1_PORT=2223
+YOGA1_KEY=~/.ssh/yoga1_key
+
+MACHINE3_IP=192.168.10.102
+MACHINE3_PORT=2222
+MACHINE3_KEY=~/.ssh/yoga1_key
+
+SSH_YOGA1="ssh -p $YOGA1_PORT -i $YOGA1_KEY -o StrictHostKeyChecking=no -o ConnectTimeout=5"
+SSH_M3="ssh -p $MACHINE3_PORT -i $MACHINE3_KEY -o StrictHostKeyChecking=no -o ConnectTimeout=5"
+
+merge_dir() {
+  local dst=$1; shift
+  local sources=("$@")
+  local tmp=$REPO/simulation/_merge_tmp
+  mkdir -p "$tmp"
+  "$FUZZ_POOL" -merge=1 "$tmp" "$dst" "${sources[@]}" 2>/dev/null || true
+  if [ "$(ls -A "$tmp" 2>/dev/null)" ]; then
+    mv "$tmp"/* "$dst"/
+  fi
+  rmdir "$tmp" 2>/dev/null || true
+}
 
 while true; do
-  cd $REPO
+  cd "$REPO"
 
-  # 1. Pull corpus от yoga1 → gigabyte1
-  eval rsync -az \
-    -e "\"$SSH_CMD\"" \
-    a1oleg@${YOGA1_IP}:${YOGA1_PATH}/simulation/corpus_p5/ \
-    simulation/corpus_p5/ \
-    2>/dev/null
+  STAGING=$REPO/simulation/_staging
+  mkdir -p "$STAGING"
 
-  # 2. Push corpus gigabyte1 → yoga1
-  eval rsync -az \
-    -e "\"$SSH_CMD\"" \
-    simulation/corpus_p5/ \
-    a1oleg@${YOGA1_IP}:${YOGA1_PATH}/simulation/corpus_p5/ \
-    2>/dev/null
+  # 1. Pull raw corpus from spokes into staging
+  rsync -az -e "$SSH_YOGA1" \
+    a1oleg@${YOGA1_IP}:/home/a1oleg/tonGraph/simulation/corpus_p5/ \
+    "$STAGING/" 2>/dev/null
 
-  # 3. Sync с machine3
-  MACHINE3_IP=192.168.10.102
-  SSH_OPTS3="-p 2222 -i ~/.ssh/yoga1_key -o StrictHostKeyChecking=no -o ConnectTimeout=5"
-  rsync -az -e "ssh $SSH_OPTS3" \
-    a1oleg@${MACHINE3_IP}:~/tonGraph/simulation/corpus_p5/ simulation/corpus_p5/ 2>/dev/null
-  rsync -az -e "ssh $SSH_OPTS3" \
-    simulation/corpus_p5/ a1oleg@${MACHINE3_IP}:~/tonGraph/simulation/corpus_p5/ 2>/dev/null
+  rsync -az -e "$SSH_M3" \
+    a1oleg@${MACHINE3_IP}:~/tonGraph/simulation/corpus_p5/ \
+    "$STAGING/" 2>/dev/null
 
-  # 5. Merge corpus_p4a в corpus_p5
-  if [ -d simulation/corpus_p4a ] && [ "$(ls -A simulation/corpus_p4a)" ]; then
-    mkdir -p simulation/corpus_p5_merged
-    ./build-fuzz2/test/consensus/fuzz_pool -merge=1 \
-      simulation/corpus_p5_merged/ \
-      simulation/corpus_p5/ \
-      simulation/corpus_p4a/ \
-      2>/dev/null || true
-    if [ "$(ls -A simulation/corpus_p5_merged 2>/dev/null)" ]; then
-      mv simulation/corpus_p5_merged/* simulation/corpus_p5/
-    fi
-    rmdir simulation/corpus_p5_merged 2>/dev/null || true
+  # 2. Merge+minimize staging → corpus_p5 (dedup, keep coverage-expanding only)
+  if [ "$(ls -A "$STAGING" 2>/dev/null)" ]; then
+    merge_dir simulation/corpus_p5 "$STAGING"
+    rm -rf "$STAGING"
   fi
 
-  # 6. Merge crash-seeds (waypoint traps) → corpus
-  CRASH_DIR=$REPO/simulation/crashes_p5_gigabyte
+  # 3. Merge crash-seeds (gigabyte1 only, max 100 new per cycle)
+  # Crashes from spokes have different edge spaces — not directly mergeable.
   CRASH_STAMP=$REPO/simulation/.crashes_merged_stamp
-  if [ -d "$CRASH_DIR" ] && [ "$(ls -A $CRASH_DIR 2>/dev/null)" ]; then
-    mkdir -p simulation/corpus_p5_crash_merge
-    if [ -f "$CRASH_STAMP" ]; then
-      find "$CRASH_DIR" -newer "$CRASH_STAMP" -type f | head -200 | \
-        xargs -I{} cp {} simulation/corpus_p5_crash_merge/ 2>/dev/null
-    else
-      ls -t "$CRASH_DIR"/crash-* 2>/dev/null | head -200 | \
-        xargs -I{} cp {} simulation/corpus_p5_crash_merge/ 2>/dev/null
-    fi
-    if [ "$(ls -A simulation/corpus_p5_crash_merge 2>/dev/null)" ]; then
-      mkdir -p simulation/corpus_p5_merged
-      ./build-fuzz2/test/consensus/fuzz_pool -merge=1 \
-        simulation/corpus_p5_merged/ \
-        simulation/corpus_p5/ \
-        simulation/corpus_p5_crash_merge/ \
-        2>/dev/null || true
-      if [ "$(ls -A simulation/corpus_p5_merged 2>/dev/null)" ]; then
-        mv simulation/corpus_p5_merged/* simulation/corpus_p5/
-      fi
-      rmdir simulation/corpus_p5_merged 2>/dev/null || true
-      touch "$CRASH_STAMP"
-    fi
-    rm -rf simulation/corpus_p5_crash_merge
+  CRASH_DIR=$REPO/simulation/crashes_p5_gigabyte
+  CRASH_TMP=$REPO/simulation/_crash_tmp
+  mkdir -p "$CRASH_TMP"
+
+  if [ -f "$CRASH_STAMP" ]; then
+    find "$CRASH_DIR" -newer "$CRASH_STAMP" -type f 2>/dev/null | \
+      head -100 | xargs -I{} cp {} "$CRASH_TMP/" 2>/dev/null
+  else
+    find "$CRASH_DIR" -type f 2>/dev/null | \
+      head -100 | xargs -I{} cp {} "$CRASH_TMP/" 2>/dev/null
   fi
 
-  # 6. Статистика
+  if [ "$(ls -A "$CRASH_TMP" 2>/dev/null)" ]; then
+    merge_dir simulation/corpus_p5 "$CRASH_TMP"
+    touch "$CRASH_STAMP"
+  fi
+  rm -rf "$CRASH_TMP"
+
+  # 4. Push enriched corpus back to spokes
+  rsync -az -e "$SSH_YOGA1" \
+    simulation/corpus_p5/ \
+    a1oleg@${YOGA1_IP}:/home/a1oleg/tonGraph/simulation/corpus_p5/ \
+    2>/dev/null
+
+  rsync -az -e "$SSH_M3" \
+    simulation/corpus_p5/ \
+    a1oleg@${MACHINE3_IP}:~/tonGraph/simulation/corpus_p5/ \
+    2>/dev/null
+
+  # 5. Статистика
   FUZZ_STAT=$(grep -o 'cov: [0-9]* ft: [0-9]* corp: [0-9]*.*oom/timeout/crash: [0-9]*/[0-9]*/[0-9]*' "$FUZZ_LOG" 2>/dev/null | tail -1)
   COV=$(echo "$FUZZ_STAT" | grep -o 'cov: [0-9]*' | awk '{print $2}')
-  CORP=$(echo "$FUZZ_STAT" | grep -o 'corp: [0-9]*' | awk '{print $2}')
-  CRASHES=$(echo "$FUZZ_STAT" | grep -o 'crash: [0-9]*' | awk '{print $2}')
   CORPUS_P5=$(ls "$REPO/simulation/corpus_p5/" 2>/dev/null | wc -l)
-  CORPUS_P4A=$(ls "$REPO/simulation/corpus_p4a/" 2>/dev/null | wc -l)
   FORKS=$(pgrep -c fuzz_pool 2>/dev/null || echo "?")
 
-  echo "[$(date '+%H:%M:%S')] sync rsync done ($MACHINE cov=${COV:-?} p5=$CORPUS_P5 forks=$FORKS)"
+  echo "[$(date '+%H:%M:%S')] orchestrate done ($MACHINE cov=${COV:-?} p5=$CORPUS_P5 forks=$FORKS)"
 
-  sleep 120
+  sleep 180
 done

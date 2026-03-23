@@ -73,9 +73,11 @@ if(FUZZING)
       -fprofile-instr-generate
   )
   target_link_libraries(fuzz_pool_cov PRIVATE
+      -Wl,--start-group
       tl_api tdutils tdactor tl-utils
       validator ton_validator
       keys adnl overlay keyring
+      -Wl,--end-group
   )
   target_include_directories(fuzz_pool_cov PRIVATE
       ${CMAKE_SOURCE_DIR}
