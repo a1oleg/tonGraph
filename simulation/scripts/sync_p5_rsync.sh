@@ -9,9 +9,7 @@ YOGA1_SSH_PORT=22
 YOGA1_KEY=~/.ssh/yoga1_key
 YOGA1_PATH=/home/a1oleg/tonGraph
 FUZZ_LOG=$REPO/simulation/fuzz_p5.log
-REPORT=$REPO/contest/setups/sync_report.md
 MACHINE=$(hostname)
-BRANCH=testnet
 
 SSH_CMD="ssh -p $YOGA1_SSH_PORT -i $YOGA1_KEY -o StrictHostKeyChecking=no -o ConnectTimeout=5"
 RSYNC_CMD="rsync -az -e \"$SSH_CMD\""
@@ -62,27 +60,9 @@ while true; do
   CRASHES=$(echo "$FUZZ_STAT" | grep -o 'crash: [0-9]*' | awk '{print $2}')
   CORPUS_P5=$(ls "$REPO/simulation/corpus_p5/" 2>/dev/null | wc -l)
   CORPUS_P4A=$(ls "$REPO/simulation/corpus_p4a/" 2>/dev/null | wc -l)
-  BUILD_COMMIT=$(git log -1 --format="%h" -- test/consensus/fuzz_pool.cpp 2>/dev/null)
-  BUILD_DATE=$(stat -c "%y" "$REPO/build-fuzz2/test/consensus/fuzz_pool" 2>/dev/null | cut -c1-16)
-  MAX_VTYPE=$(grep 'vote_type = fdp.ConsumeIntegralInRange' "$REPO/test/consensus/fuzz_pool.cpp" 2>/dev/null | grep -o '[0-9]*);' | tr -d ');' || true)
   FORKS=$(pgrep -c fuzz_pool 2>/dev/null || echo "?")
 
-  REPORT_LINE="[$(date '+%Y-%m-%d %H:%M')] $MACHINE: cov=${COV:-?} corp=${CORP:-?} p5=$CORPUS_P5 p4a=$CORPUS_P4A crashes=${CRASHES:-?} | build=$BUILD_COMMIT $BUILD_DATE vtype_max=${MAX_VTYPE:-?} forks=$FORKS"
-  echo "$REPORT_LINE" >> "$REPORT"
-  echo "[$(date '+%H:%M:%S')] sync rsync done ($MACHINE cov=${COV:-?} p5=$CORPUS_P5)"
-
-  # 7. Push только report в git (без corpus — он синкается через rsync)
-  git add contest/setups/sync_report.md 2>/dev/null
-  if ! git diff --cached --quiet; then
-    git commit -m "sync report $(date '+%H:%M')" 2>/dev/null
-    git stash push -q 2>/dev/null || true
-    git pull --rebase origin $BRANCH 2>/dev/null || true
-    git stash pop -q 2>/dev/null || true
-    for _r in 1 2 3; do
-      git push origin $BRANCH 2>/dev/null && break
-      git pull --rebase origin $BRANCH 2>/dev/null || true
-    done
-  fi
+  echo "[$(date '+%H:%M:%S')] sync rsync done ($MACHINE cov=${COV:-?} p5=$CORPUS_P5 forks=$FORKS)"
 
   sleep 120
 done
