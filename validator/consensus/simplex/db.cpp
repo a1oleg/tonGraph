@@ -107,6 +107,25 @@ class DbImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo<B
     auto value = create_serialize_tl_object<tl::db_cert>(std::move(cert));
     auto result = co_await owning_bus()->db->set(std::move(key), std::move(value)).wrap();
     CHECK(result.is_ok() || result.error().code() == cancelled);  // See above.
+
+#ifdef TON_PROBING_CRASH_AFTER_CERT_COUNT
+    // Count only NotarCerts: we want to crash after all 4 NotarCerts for window 0
+    // are written (slots 0-3), but BEFORE LeaderWindowObserved(slot=4) persists
+    // pool_state(window=2).  Counting all cert types (Notar+Final+Skip) would
+    // overshoot: the 4th cert could be a FinalCert, leaving window 0 incomplete.
+    const bool is_notar_cert =
+        std::holds_alternative<NotarizeVote>(event->cert->vote.vote);
+    if (result.is_ok() && is_notar_cert) {
+      ++cert_count_;
+      LOG(WARNING) << "TON_PROBING notar cert saved notar_cert_count=" << cert_count_
+                   << " threshold=" << TON_PROBING_CRASH_AFTER_CERT_COUNT;
+      if (cert_count_ >= TON_PROBING_CRASH_AFTER_CERT_COUNT) {
+        LOG(WARNING) << "TON_PROBING crashing after notar_cert_count=" << cert_count_;
+        _exit(0);
+      }
+    }
+#endif
+
     co_return result;
   }
 
@@ -175,6 +194,9 @@ class DbImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo<B
   std::set<Bits256> saved_votes;
   td::uint32 first_nonannounced_window_ = 0;
   td::int64 next_seqno_ = 0;
+#ifdef TON_PROBING_CRASH_AFTER_CERT_COUNT
+  int cert_count_ = 0;
+#endif
 };
 
 }  // namespace
