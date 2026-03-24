@@ -86,8 +86,11 @@ simulation/crashes_p5/
 simulation/crashes_p5_yoga/
 crash-*
 simulation/fuzz_p5.log
-simulation/sync_p5.log
+simulation/fuzz_p5_gigabyte.log
 simulation/fuzz_p5_yoga.log
+simulation/fuzz_p5_machine3.log
+simulation/fuzz_n7_yoga.log
+simulation/sync_p5.log
 simulation/corpus_p4a/*.seeds
 simulation/sync_p5_yoga.log
 
