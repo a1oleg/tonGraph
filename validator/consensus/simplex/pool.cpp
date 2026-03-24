@@ -19,6 +19,11 @@ namespace ton::validator::consensus::simplex {
 // Forward-declared here so PoolImpl (inside the anonymous namespace below) can
 // use it. Defined after the anonymous namespace closes.
 extern std::atomic<int> g_pending_requests_count;
+// Counts ConflictTolerated events during bootstrap replay (tolerate_conflicts=true).
+// Should always be 0 for an honest validator: conflicting local votes in DB means
+// the node voted twice on the same slot (amnesia / safety violation).
+// Reset to 0 at the start of each fuzz run. Readable from fuzz_pool.cpp via extern.
+extern std::atomic<int> g_conflict_tolerated_count;
 #endif
 
 namespace {
@@ -631,6 +636,9 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
               {"voteType",     std::string(g_vtype)},
               {"sessionId",    owning_bus()->session_id.to_hex()},
           });
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+          ++g_conflict_tolerated_count;  // #conflict-tolerated: local validator has conflicting DB votes
+#endif
         }
         LOG_CHECK(validator != owning_bus()->local_id || tolerate_conflicts)
             << "We produced conflicting votes! Conflict occured for " << vote.vote;
@@ -951,8 +959,22 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
         {"weight",      static_cast<int64_t>(cert->signatures.size())},
         {"sessionId",   owning_bus()->session_id.to_hex()},
     });
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    // Findings documented (VULN_STATE_DIVERGENCE.md §5.18):
+    //   skip-finalize conflict  (crash-4d339b): SkipCert + FinalCert same slot   → __builtin_trap()
+    //   notar-finalize mismatch (crash-a54ed333): NotarCert(A) + FinalCert(B ≠ A) → __builtin_trap()
+    // Traps kept as detection (not replaced by (void)) since root cause validated.
+    // To explore past these violations: change __builtin_trap() to (void) below.
+    if (slot.state->is_skipped()) {
+      __builtin_trap();  // #skip-finalize: FinalCert on already-SkipCert'd slot
+    }
+    if (slot.state->notarized_block().has_value() && slot.state->notarized_block().value() != id) {
+      __builtin_trap();  // #notar-finalize-mismatch: FinalCert for wrong block
+    }
+#else
     CHECK(!slot.state->is_skipped());
     CHECK(slot.state->notarized_block().value_or(id) == id);
+#endif
     if (!slot.state->is_notarized()) {
       next_nonskipped_slot_after(id.slot).state->add_available_base(id);
     }
@@ -1010,6 +1032,8 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
 // and tear_down(). Readable from fuzz_pool.cpp via extern to drive crash_and_restart
 // drain: harness spins scheduler until this reaches 0 (all promises resolved).
 std::atomic<int> g_pending_requests_count{0};
+// Counts ConflictTolerated events during bootstrap replay. Reset per fuzz run.
+std::atomic<int> g_conflict_tolerated_count{0};
 #endif
 
 void Pool::register_in(td::actor::Runtime &runtime) {

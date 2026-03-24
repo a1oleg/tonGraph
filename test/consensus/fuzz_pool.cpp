@@ -20,15 +20,22 @@
  * 64-byte signatures so bootstrap_votes can be re-signed after crash.
  *
  * Fuzz input layout (FuzzedDataProvider):
- *   n_messages  : uint8  (0..15)
- *   do_crash    : bool
- *   n_lose      : uint8  (0..MAX_LOSE_WRITES)
+ *   n_pre     : uint8  (0..15)  — messages before crash
+ *   do_perm   : bool            — shuffle pre-crash messages (Fisher-Yates)
+ *   perm_seed : uint8           — LCG seed for permutation (consumed only if do_perm)
+ *   do_crash  : bool
+ *   n_lose    : uint8  (0..MAX_LOSE_WRITES)
+ *   n_post    : uint8  (0..7)   — messages after crash
  *   per message:
  *     src_idx   : uint8  (0..N_VALIDATORS-1)
  *     vote_type : uint8  (0=notarize, 1=skip, 2=finalize, 3=propose/CandidateReceived, 4=raw/IncomingProtocolMessage, 5=BroadcastVote/handle_our_vote, 6=IncomingOverlayRequest/CandidateResolver, 7=NotarizationObserved/ConsensusImpl::try_vote_final)
  *     slot      : uint8  (0..MAX_SLOT)
  *     cand_seed : uint8  (0..N_CAND_SEEDS-1)
- *   do_tick     : bool   — fire standstill alarm (advance virtual time via run(15.0))
+ *   do_tick   : bool            — fire standstill alarm (advance virtual time via run(15.0))
+ *
+ * Permutation: when do_perm=true, all n_pre messages are read upfront and shuffled
+ * via Fisher-Yates before injection. Tests order-dependent state bugs, including
+ * ConflictTolerated during bootstrap replay (#conflict-tolerated detector).
  *
  * Build (FUZZING=ON cmake build):
  *   cmake --build build-fuzz2 --target fuzz_pool -- -j$(nproc)
@@ -79,8 +86,12 @@
 // Defined in validator/consensus/simplex/pool.cpp.
 // Tracks number of WaitForParent requests currently pending in PoolImpl::requests_.
 // Used by crash_and_restart to drain until all coroutine promises are resolved.
+// g_conflict_tolerated_count: incremented each time ConflictTolerated fires during
+// bootstrap replay (tolerate_conflicts=true). Nonzero after crash_and_restart means
+// the local validator had conflicting votes in DB — safety violation (#conflict-tolerated).
 namespace ton::validator::consensus::simplex {
 extern std::atomic<int> g_pending_requests_count;
+extern std::atomic<int> g_conflict_tolerated_count;
 }
 #endif
 
@@ -449,8 +460,24 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
   void handle(FuzzBusHandle, std::shared_ptr<const FinalizationObserved> ev) {
     td::uint32 slot = ev->id.slot;
     auto hash = ev->id.hash;
-    // Traps 448 (FinalCert+SkipCert) and 453 (double-FinalCert) removed:
-    // same reason as 423/428 — reachable only via vtype=7 direct injection.
+    // Phase 5.18: re-added traps for FinalCert conflicts (confirmed via vtype=0,1,2 + WAL crash).
+    // Earlier note "only via vtype=7" was incorrect — regular injection also triggers these.
+    // Findings documented in VULN_STATE_DIVERGENCE.md §5.18:
+    //   crash-4d339b (44б): SkipCert+FinalCert on same slot → pool.cpp:954 CHECK
+    //   crash-a54ed333 (44б): NotarCert(A)+FinalCert(B≠A) → pool.cpp:955 CHECK
+    if (g_safety_active) {
+      // skip-finalize conflict
+      auto skip_it = g_skip_by_slot.find(slot);
+      if (skip_it != g_skip_by_slot.end() && skip_it->second.first == g_run_id) {
+        __builtin_trap();  // #skip-finalize: FinalCert on SkipCert'd slot
+      }
+      // notar-finalize mismatch
+      auto notar_it = g_notar_by_slot.find(slot);
+      if (notar_it != g_notar_by_slot.end() && notar_it->second.first == g_run_id
+          && notar_it->second.second != hash) {
+        __builtin_trap();  // #notar-finalize-mismatch: FinalCert for wrong block
+      }
+    }
     g_final_by_slot.emplace(slot, std::make_pair(g_run_id, hash));
     slot_event(static_cast<int32_t>(slot), SE_FINAL_CERT);
   }
@@ -717,18 +744,44 @@ extern "C" int LLVMFuzzerInitialize(int*, char***) {
 // ── Per-iteration fuzzing ─────────────────────────────────────────────────────
 
 // Inject a single vote message into the bus and drain the scheduler.
-static void inject_vote(FuzzedDataProvider& fdp) {
-  if (fdp.remaining_bytes() < 4) return;
-  auto& S = *g_state;
+// ── Message buffering for permutation ────────────────────────────────────────
 
-  // src=0 is the local validator — its votes arrive through ConsensusImpl via
-  // handle_our_vote(tolerate_conflicts=true). Injecting src=0 via IncomingProtocolMessage
-  // would conflict with ConsensusImpl's own votes and trigger LOG_FATAL in pool.cpp.
-  // Peers are validators 1..N_VALIDATORS-1.
-  auto src_idx   = fdp.ConsumeIntegralInRange<uint8_t>(1, N_VALIDATORS - 1);
-  auto vote_type = fdp.ConsumeIntegralInRange<uint8_t>(0, 7);
-  auto slot      = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_SLOT);
-  auto cand_seed = fdp.ConsumeIntegralInRange<uint8_t>(0, N_CAND_SEEDS - 1);
+struct MsgSpec {
+  uint8_t src_idx;
+  uint8_t vote_type;
+  uint8_t slot;
+  uint8_t cand_seed;
+  std::vector<uint8_t> raw_bytes;  // used by vote_type 4 and 6 only
+};
+
+// Read one message spec from fdp without injecting it yet.
+static std::optional<MsgSpec> read_msg_spec(FuzzedDataProvider& fdp) {
+  if (fdp.remaining_bytes() < 4) return std::nullopt;
+  MsgSpec spec;
+  spec.src_idx   = fdp.ConsumeIntegralInRange<uint8_t>(1, N_VALIDATORS - 1);
+  spec.vote_type = fdp.ConsumeIntegralInRange<uint8_t>(0, 7);
+  spec.slot      = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_SLOT);
+  spec.cand_seed = fdp.ConsumeIntegralInRange<uint8_t>(0, N_CAND_SEEDS - 1);
+  if (spec.vote_type == 4 || spec.vote_type == 6) {
+    auto raw_len = static_cast<size_t>(spec.slot);
+    spec.raw_bytes = fdp.ConsumeBytes<uint8_t>(raw_len);
+  }
+  return spec;
+}
+
+// Inject a previously read MsgSpec into the bus.
+static void inject_from_spec(const MsgSpec& spec);
+
+static void inject_vote(FuzzedDataProvider& fdp) {
+  if (auto spec = read_msg_spec(fdp)) inject_from_spec(*spec);
+}
+
+static void inject_from_spec(const MsgSpec& spec) {
+  auto& S = *g_state;
+  auto src_idx   = spec.src_idx;
+  auto vote_type = spec.vote_type;
+  auto slot      = spec.slot;
+  auto cand_seed = spec.cand_seed;
 
   // vtype=6: IncomingOverlayRequest — fuzz CandidateResolver TL parsing path.
   // Sends raw bytes as overlay request via CandidateResolver (candidate-resolver.cpp:131):
@@ -736,8 +789,8 @@ static void inject_vote(FuzzedDataProvider& fdp) {
   // CandidateResolver::register_in() enables this path; tear_down() via StopRequested
   // resolves pending awaiters cleanly. slot byte reused as raw_len (0..15).
   if (vote_type == 6) {
-    auto raw_len = static_cast<size_t>(slot);
-    auto raw_bytes = fdp.ConsumeBytes<uint8_t>(raw_len);
+    // raw_bytes populated by read_msg_spec (or empty for legacy inject_vote path).
+    const auto& raw_bytes = spec.raw_bytes;
     // Guard: empty vector.data() may be nullptr → td::Slice(nullptr,0) CHECK fails.
     td::BufferSlice payload = raw_bytes.empty()
         ? td::BufferSlice()
@@ -772,8 +825,8 @@ static void inject_vote(FuzzedDataProvider& fdp) {
   // Covers the certificate handling path (pool.cpp:436+) unreachable via typed injection.
   // slot byte is reused as raw_len (0..MAX_SLOT); cand_seed byte is the first raw byte.
   if (vote_type == 4) {
-    auto raw_len = static_cast<size_t>(slot);  // reuse slot byte as length (0..15)
-    auto raw_bytes = fdp.ConsumeBytes<uint8_t>(raw_len);
+    // raw_bytes populated by read_msg_spec (or empty for legacy inject_vote path).
+    const auto& raw_bytes = spec.raw_bytes;
     td::BufferSlice payload4 = raw_bytes.empty()
         ? td::BufferSlice()
         : td::BufferSlice(reinterpret_cast<const char*>(raw_bytes.data()), raw_bytes.size());
@@ -944,33 +997,64 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   std::memset(g_state_counters, 0, STATE_COUNTER_BYTES);
   g_post_crash_phase = false;
   g_our_notar_vote.clear();
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+  ton::validator::consensus::simplex::g_conflict_tolerated_count.store(0);
+#endif
 
   configure_and_start_bus(S, std::make_unique<MockDb>());
 
   g_safety_active = true;
   FuzzedDataProvider fdp(data, size);
 
-  // Fuzz input layout (Phase 4 Step 0):
+  // Fuzz input layout (Phase 5 — permutation extension):
   //   n_pre    : uint8 (0..15) — messages before crash
-  //             raised from 7: slots_per_leader_window=4 requires ≥12 pre-crash
-  //             votes (4 slots × 3 validators) to advance first_nonannounced_window
-  //             beyond 0, enabling ConsensusImpl::start_up() SkipVote broadcast.
+  //   do_perm  : bool — if true, shuffle the n_pre messages before injection
+  //   perm_seed: uint8 (only consumed when do_perm=true) — LCG seed for Fisher-Yates
   //   do_crash : bool
   //   n_lose   : uint8 (0..MAX_LOSE_WRITES)
   //   n_post   : uint8 (0..7)  — messages after crash (enables alarm-skip quorum)
   //   per message: src_idx, vote_type, slot, cand_seed
   //   do_tick  : bool — fire standstill alarm: run(15.0) with skip_timeouts=true
-  //              jumps Time::now() forward via Time::jump_in_future() so that
-  //              alarm_timestamp() set by reschedule_standstill_resolution() fires
-  //              on the next run(0) call. Covers pool.cpp::alarm() + serialize_to
-  //              methods + is_notarized/skipped/finalized on SlotVotes.
-  uint8_t n_pre    = fdp.ConsumeIntegralInRange<uint8_t>(0, 15);
-  bool    do_crash = fdp.ConsumeBool();
-  uint8_t n_lose   = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_LOSE_WRITES);
-  uint8_t n_post   = fdp.ConsumeIntegralInRange<uint8_t>(0, 7);
-  for (uint8_t m = 0; m < n_pre; m++)  inject_vote(fdp);
+  //
+  // Permutation rationale: delivery order of consensus messages should not affect
+  // safety. Shuffling pre-crash messages tests order-dependent state bugs, including
+  // ConflictTolerated during bootstrap replay (#conflict-tolerated).
+  uint8_t n_pre     = fdp.ConsumeIntegralInRange<uint8_t>(0, 15);
+  bool    do_perm   = fdp.ConsumeBool();
+  uint32_t perm_lcg = do_perm ? fdp.ConsumeIntegral<uint8_t>() : 0u;
+  bool    do_crash  = fdp.ConsumeBool();
+  uint8_t n_lose    = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_LOSE_WRITES);
+  uint8_t n_post    = fdp.ConsumeIntegralInRange<uint8_t>(0, 7);
+
+  // Read all pre-crash messages upfront so we can permute them.
+  std::vector<MsgSpec> pre_msgs;
+  pre_msgs.reserve(n_pre);
+  for (uint8_t m = 0; m < n_pre; m++) {
+    if (auto spec = read_msg_spec(fdp)) pre_msgs.push_back(std::move(*spec));
+    else break;
+  }
+
+  // Optionally permute with Fisher-Yates (LCG PRNG seeded by perm_lcg).
+  if (do_perm && pre_msgs.size() > 1) {
+    for (size_t i = pre_msgs.size() - 1; i > 0; i--) {
+      perm_lcg = perm_lcg * 1664525u + 1013904223u;  // Numerical Recipes LCG
+      size_t j = perm_lcg % (i + 1);
+      std::swap(pre_msgs[i], pre_msgs[j]);
+    }
+  }
+
+  for (auto& spec : pre_msgs) inject_from_spec(spec);
 
   if (do_crash) crash_and_restart(*g_state, n_lose);
+
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+  // #conflict-tolerated: bootstrap replay found conflicting local votes in DB.
+  // This should NEVER happen for an honest validator — it means the node voted
+  // twice for the same slot (safety violation). Trap immediately after restart drain.
+  if (ton::validator::consensus::simplex::g_conflict_tolerated_count.load() > 0) {
+    __builtin_trap();  // #conflict-tolerated: local validator has conflicting DB votes after restart
+  }
+#endif
 
   for (uint8_t m = 0; m < n_post; m++) inject_vote(fdp);
 
