@@ -102,5 +102,5 @@ nohup.out
 simulation/sync_p5_rsync.log
 simulation/sync_p5_rsync_yoga.log
 simulation/findings_state_div/
-contest/setups/sync_report.md
+contest/
 simulation/corpus_p5/
