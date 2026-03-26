@@ -132,8 +132,9 @@ static constexpr int EXTRA_DRAIN_AFTER_TEARDOWN = 20;
 //   128  CRASHED          — crash+restart happened this run
 //   129  WINDOW_ADVANCED  — LeaderWindowObserved fired (window progressed)
 //   130  POST_CRASH_CERT  — notarize cert observed after crash (safety stress)
+//   131  LIVENESS_MISS    — do_tick fired + windows advanced but zero certs issued this run
 
-static constexpr int STATE_COUNTER_BYTES = 136;
+static constexpr int STATE_COUNTER_BYTES = 140;
 static constexpr int SE_STRIDE = 8;
 static uint8_t g_state_counters[STATE_COUNTER_BYTES] = {};
 
@@ -204,6 +205,19 @@ static const float REF_STATE_DIV[SE_STRIDE] = {
   255.f,  // SE_FINAL_CERT:  final cert present → violation
 };
 
+// Liveness: windows advance but no cert ever issues — protocol stuck under Byzantine pressure.
+// Target: many skip votes + windows advancing + no notarize/finalize cert.
+static const float REF_LIVENESS[SE_STRIDE] = {
+    0.f,  // SE_NOTAR_VOTE:  no notarize vote (Byzantine suppresses proposals)
+  255.f,  // SE_SKIP_VOTE:   skip votes accumulating (timeouts firing)
+    0.f,  // SE_FINAL_VOTE
+    0.f,  // SE_NOTAR_CERT:  no cert (that's the liveness failure)
+    0.f,  // SE_POST_CRASH
+    0.f,  // SE_BOTH_NS
+    0.f,  // SE_CERT_SKIP
+    0.f,  // SE_FINAL_CERT
+};
+
 static float cosine_sim_slot(const float* ref, const uint8_t* counters_at_base) {
   float dot = 0.f, na = 0.f, nb = 0.f;
   for (int i = 0; i < SE_STRIDE; i++) {
@@ -220,14 +234,14 @@ static float cosine_sim_slot(const float* ref, const uint8_t* counters_at_base) 
 // Shared with fuzz_pool_mutator.cpp — mutator reads these to bias op selection.
 // g_last_sim[r] = max cosine similarity with refs[r] across all 16 slots,
 // computed at the end of the previous TestOneInput call.
-float g_last_sim[4] = {};
+float g_last_sim[5] = {};
 
-// Emit similarity scores for all four reference vectors across all slots.
+// Emit similarity scores for all five reference vectors across all slots.
 // Channel byte: 0xA0 + r*0x10 + slot — unique per (ref, slot) pair.
 // Also updates g_last_sim[r] = max(sim) across slots, for the mutator.
 static void emit_vector_guidance() {
-  const float* refs[4] = {REF_ALARM_SKIP, REF_AMNESIA, REF_DUAL_CERT, REF_STATE_DIV};
-  for (int r = 0; r < 4; r++) {
+  const float* refs[5] = {REF_ALARM_SKIP, REF_AMNESIA, REF_DUAL_CERT, REF_STATE_DIV, REF_LIVENESS};
+  for (int r = 0; r < 5; r++) {
     float max_sim = 0.f;
     for (int slot = 0; slot < 16; slot++) {
       float sim = cosine_sim_slot(refs[r], &g_state_counters[slot * SE_STRIDE]);
@@ -446,9 +460,21 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
   void handle(FuzzBusHandle, std::shared_ptr<const NotarizationObserved> ev) {
     td::uint32 slot = ev->certificate->vote.id.slot;
     auto hash = ev->certificate->vote.id.hash;
-    // Traps 423 (NotarCert+SkipCert) and 428 (double-NotarCert) removed:
-    // triggered only via vtype=7 direct injection which bypasses signature checks —
-    // fuzz artifact, not an organic protocol violation. Coverage tracking still active.
+    if (g_safety_active) {
+      // #dual-notar-cert: two NotarCerts with different blocks on the same slot = safety violation.
+      // Re-added (previously removed as "vtype=7 only"): vtype=7 also tests a realistic
+      // Byzantine scenario where ConsensusImpl receives conflicting NotarizationObserved events.
+      auto it = g_notar_by_slot.find(slot);
+      if (it != g_notar_by_slot.end() && it->second.first == g_run_id
+          && it->second.second != hash) {
+        __builtin_trap();  // #dual-notar-cert: conflicting NotarCerts same slot
+      }
+      // #notar-skip-cert: NotarCert on a slot that already has a SkipCert = safety violation.
+      auto skip_it = g_skip_by_slot.find(slot);
+      if (skip_it != g_skip_by_slot.end() && skip_it->second.first == g_run_id) {
+        __builtin_trap();  // #notar-skip-cert: NotarCert on SkipCert'd slot
+      }
+    }
     g_notar_by_slot.emplace(slot, std::make_pair(g_run_id, hash));
 
     // Step 4: state counter
@@ -476,6 +502,14 @@ class FuzzObserver final : public td::actor::SpawnsWith<FuzzBus>,
       if (notar_it != g_notar_by_slot.end() && notar_it->second.first == g_run_id
           && notar_it->second.second != hash) {
         __builtin_trap();  // #notar-finalize-mismatch: FinalCert for wrong block
+      }
+    }
+    if (g_safety_active) {
+      // #dual-final-cert: two FinalCerts with different blocks on the same slot = safety violation.
+      auto final_it = g_final_by_slot.find(slot);
+      if (final_it != g_final_by_slot.end() && final_it->second.first == g_run_id
+          && final_it->second.second != hash) {
+        __builtin_trap();  // #dual-final-cert: conflicting FinalCerts same slot
       }
     }
     g_final_by_slot.emplace(slot, std::make_pair(g_run_id, hash));
@@ -1073,6 +1107,17 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   // fires here, it genuinely belongs to this run.
   for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) S_final.scheduler->run(0);
   g_safety_active = false;
+
+  // Liveness guidance: if do_tick fired + windows advanced but NO cert was issued
+  // this run → protocol made no progress under time pressure. Not a hard trap (too
+  // many legitimate reasons: not enough votes injected), but signals the fuzzer to
+  // explore this region more via vector guidance (REF_LIVENESS).
+  if (do_tick && g_state_counters[129] > 0) {
+    bool any_cert = false;
+    for (auto& [slot, pair] : g_notar_by_slot) { if (pair.first == g_run_id) { any_cert = true; break; } }
+    if (!any_cert) for (auto& [slot, pair] : g_final_by_slot) { if (pair.first == g_run_id) { any_cert = true; break; } }
+    if (!any_cert) g_state_counters[131] = std::min(255, (int)g_state_counters[131] + 1);
+  }
 
   // Phase 3 Step 3: emit cosine similarity scores toward reference danger states.
   emit_vector_guidance();
