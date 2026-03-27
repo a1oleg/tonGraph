@@ -19,19 +19,27 @@
  * PeerValidator::g_skip_signature_check.  MockKeyring returns dummy
  * 64-byte signatures so bootstrap_votes can be re-signed after crash.
  *
- * Fuzz input layout (FuzzedDataProvider):
- *   n_pre     : uint8  (0..15)  — messages before crash
- *   do_perm   : bool            — shuffle pre-crash messages (Fisher-Yates)
- *   perm_seed : uint8           — LCG seed for permutation (consumed only if do_perm)
- *   do_crash  : bool
- *   n_lose    : uint8  (0..MAX_LOSE_WRITES)
- *   n_post    : uint8  (0..7)   — messages after crash
+ * Fuzz input layout (FuzzedDataProvider — all fields consumed from back of buffer):
+ *   n_pre       : uint8  (0..15)  — messages before crash
+ *   do_perm     : bool            — shuffle pre-crash messages (Fisher-Yates)
+ *   perm_seed   : uint8           — LCG seed for permutation (consumed only if do_perm)
+ *   n_crashes   : uint8  (0..2)   — number of sequential crash+restart cycles
+ *   n_post      : uint8  (0..7)   — messages after last crash
+ *   n_ticks     : uint8  (0..3)   — times to fire standstill alarm (run(15.0))
+ *   n_post_tick : uint8  (0..4)   — messages after all ticks (post-alarm injection)
  *   per message:
- *     src_idx   : uint8  (0..N_VALIDATORS-1)
- *     vote_type : uint8  (0=notarize, 1=skip, 2=finalize, 3=propose/CandidateReceived, 4=raw/IncomingProtocolMessage, 5=BroadcastVote/handle_our_vote, 6=IncomingOverlayRequest/CandidateResolver, 7=NotarizationObserved/ConsensusImpl::try_vote_final)
+ *     src_idx   : uint8  (1..N_VALIDATORS-1)
+ *     vote_type : uint8  (0=notarize, 1=skip, 2=finalize, 3=propose/CandidateReceived,
+ *                          4=raw/IncomingProtocolMessage, 5=BroadcastVote/handle_our_vote,
+ *                          6=IncomingOverlayRequest/CandidateResolver,
+ *                          7=NotarizationObserved/ConsensusImpl::try_vote_final,
+ *                          8=FinalizationObserved/direct FinalCert inject,
+ *                          9=threshold-burst split: injects threshold-1 NotarizeVotes for
+ *                            cand_seed then 1 NotarizeVote for (cand_seed+1)%N_CAND_SEEDS)
  *     slot      : uint8  (0..MAX_SLOT)
  *     cand_seed : uint8  (0..N_CAND_SEEDS-1)
- *   do_tick   : bool            — fire standstill alarm (advance virtual time via run(15.0))
+ *   per crash (consumed inside crash loop, interleaved after pre-messages):
+ *     n_lose_i  : uint8  (0..MAX_LOSE_WRITES) — WAL writes lost in crash i
  *
  * Permutation: when do_perm=true, all n_pre messages are read upfront and shuffled
  * via Fisher-Yates before injection. Tests order-dependent state bugs, including
@@ -132,7 +140,10 @@ static constexpr int EXTRA_DRAIN_AFTER_TEARDOWN = 20;
 //   128  CRASHED          — crash+restart happened this run
 //   129  WINDOW_ADVANCED  — LeaderWindowObserved fired (window progressed)
 //   130  POST_CRASH_CERT  — notarize cert observed after crash (safety stress)
-//   131  LIVENESS_MISS    — do_tick fired + windows advanced but zero certs issued this run
+//   131  LIVENESS_MISS    — n_ticks>0 + windows advanced but zero certs issued this run
+//   132  MULTI_CRASHED    — n_crashes > 1 this run (WAL accumulation across restarts)
+//   133  POST_TICK_MSG    — message injected after alarm tick (post-alarm state probe)
+//   134  THRESHOLD_SPLIT  — vtype=9 injected (notarize_weight split below quorum)
 
 static constexpr int STATE_COUNTER_BYTES = 140;
 static constexpr int SE_STRIDE = 8;
@@ -793,7 +804,7 @@ static std::optional<MsgSpec> read_msg_spec(FuzzedDataProvider& fdp) {
   if (fdp.remaining_bytes() < 4) return std::nullopt;
   MsgSpec spec;
   spec.src_idx   = fdp.ConsumeIntegralInRange<uint8_t>(1, N_VALIDATORS - 1);
-  spec.vote_type = fdp.ConsumeIntegralInRange<uint8_t>(0, 7);
+  spec.vote_type = fdp.ConsumeIntegralInRange<uint8_t>(0, 9);
   spec.slot      = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_SLOT);
   spec.cand_seed = fdp.ConsumeIntegralInRange<uint8_t>(0, N_CAND_SEEDS - 1);
   if (spec.vote_type == 4 || spec.vote_type == 6) {
@@ -927,6 +938,64 @@ static void inject_from_spec(const MsgSpec& spec) {
     return;
   }
 
+  // vtype=8: FinalizationObserved injection — publish FinalizationObserved directly into bus.
+  // Symmetric counterpart of vtype=7 (NotarizationObserved). Directly injects FinalCert
+  // bypassing pool.cpp's quorum-building path. Tests ConsensusImpl finalization handling,
+  // FinalCert acceptance in pool.cpp, and cross-slot invariants when finalization arrives
+  // out of order or without a prior NotarCert.
+  // src_idx reused as signature count (1..N_VALIDATORS-1) for the dummy FinalCert.
+  if (vote_type == 8) {
+    CandidateId cand_id{.slot = slot, .hash = S.cand_hashes[cand_seed]};
+    FinalizeVote final_vote{cand_id};
+    std::vector<FinalCert::VoteSignature> sigs;
+    auto n_sigs = static_cast<uint8_t>(((src_idx - 1) % (N_VALIDATORS - 1)) + 1);
+    for (uint8_t i = 1; i <= n_sigs; i++) {
+      sigs.push_back(FinalCert::VoteSignature{PeerValidatorId{i}, td::BufferSlice(64)});
+    }
+    auto cert = td::make_ref<FinalCert>(final_vote, std::move(sigs));
+    auto ev = std::make_shared<FinalizationObserved>(FinalizationObserved{cand_id, std::move(cert)});
+    S.scheduler->run_in_context([&] { S.bus.publish(ev); });
+    for (int i = 0; i < DRAIN_ROUNDS; i++) S.scheduler->run(0);
+    return;
+  }
+
+  // vtype=9: Threshold-burst split — deterministically creates split notarize_weight state.
+  // Injects WEIGHT_THRESHOLD-1 NotarizeVotes for cand_seed (cand_a) from validators
+  // 1..threshold-1, then 1 NotarizeVote for (cand_seed+1)%N_CAND_SEEDS (cand_b) from
+  // validator threshold. Result: notarize_weight[cand_a]=threshold-1, notarize_weight[cand_b]=1,
+  // neither reaching quorum — tests Byzantine candidate flooding and notarize_weight map
+  // split state. src_idx unused (deterministic validator selection).
+  static constexpr size_t WEIGHT_THRESHOLD = (N_VALIDATORS * 2) / 3 + 1;
+  if (vote_type == 9) {
+    uint8_t cand_b = static_cast<uint8_t>((cand_seed + 1) % N_CAND_SEEDS);
+    // Inject threshold-1 votes for cand_a from validators 1..threshold-1
+    for (size_t v = 1; v < WEIGHT_THRESHOLD; v++) {
+      auto vtl_a = create_tl_object<ton_api::consensus_simplex_notarizeVote>(
+          create_tl_object<ton_api::consensus_candidateId>(
+              static_cast<int32_t>(slot), S.cand_hashes[cand_seed]));
+      auto svtl_a = create_tl_object<ton_api::consensus_simplex_vote>(
+          std::move(vtl_a), td::BufferSlice(64));
+      auto bytes_a = serialize_tl_object(svtl_a, true);
+      auto msg_a = std::make_shared<IncomingProtocolMessage>(
+          PeerValidatorId{static_cast<uint8_t>(v)}, ProtocolMessage{std::move(bytes_a)});
+      S.scheduler->run_in_context([&] { S.bus.publish(msg_a); });
+      for (int i = 0; i < DRAIN_ROUNDS; i++) S.scheduler->run(0);
+    }
+    // Inject 1 vote for cand_b from validator threshold (split below quorum)
+    auto vtl_b = create_tl_object<ton_api::consensus_simplex_notarizeVote>(
+        create_tl_object<ton_api::consensus_candidateId>(
+            static_cast<int32_t>(slot), S.cand_hashes[cand_b]));
+    auto svtl_b = create_tl_object<ton_api::consensus_simplex_vote>(
+        std::move(vtl_b), td::BufferSlice(64));
+    auto bytes_b = serialize_tl_object(svtl_b, true);
+    auto msg_b = std::make_shared<IncomingProtocolMessage>(
+        PeerValidatorId{static_cast<uint8_t>(WEIGHT_THRESHOLD)}, ProtocolMessage{std::move(bytes_b)});
+    S.scheduler->run_in_context([&] { S.bus.publish(msg_b); });
+    for (int i = 0; i < DRAIN_ROUNDS; i++) S.scheduler->run(0);
+    g_state_counters[134]++;  // GC_THRESHOLD_SPLIT
+    return;
+  }
+
   tl_object_ptr<ton_api::consensus_simplex_UnsignedVote> vote_tl;
   if (vote_type == 0) {
     vote_tl = create_tl_object<ton_api::consensus_simplex_notarizeVote>(
@@ -1040,25 +1109,27 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   g_safety_active = true;
   FuzzedDataProvider fdp(data, size);
 
-  // Fuzz input layout (Phase 5 — permutation extension):
-  //   n_pre    : uint8 (0..15) — messages before crash
-  //   do_perm  : bool — if true, shuffle the n_pre messages before injection
-  //   perm_seed: uint8 (only consumed when do_perm=true) — LCG seed for Fisher-Yates
-  //   do_crash : bool
-  //   n_lose   : uint8 (0..MAX_LOSE_WRITES)
-  //   n_post   : uint8 (0..7)  — messages after crash (enables alarm-skip quorum)
-  //   per message: src_idx, vote_type, slot, cand_seed
-  //   do_tick  : bool — fire standstill alarm: run(15.0) with skip_timeouts=true
+  // Fuzz input layout (Phase 6 — multi-crash, multi-tick, post-tick, new vtypes):
+  //   n_pre       : uint8 (0..15)  — messages before crashes
+  //   do_perm     : bool           — if true, shuffle n_pre messages before injection
+  //   perm_seed   : uint8          — LCG seed for Fisher-Yates (only if do_perm)
+  //   n_crashes   : uint8 (0..2)   — number of sequential crash+restart cycles
+  //   n_post      : uint8 (0..7)   — messages after last crash
+  //   n_ticks     : uint8 (0..3)   — alarm ticks (each fires run(15.0))
+  //   n_post_tick : uint8 (0..4)   — messages after all ticks (post-alarm injection)
+  //   per message: src_idx, vote_type (0..9), slot, cand_seed
+  //   per crash (consumed inside loop): n_lose_i : uint8 (0..MAX_LOSE_WRITES)
   //
   // Permutation rationale: delivery order of consensus messages should not affect
   // safety. Shuffling pre-crash messages tests order-dependent state bugs, including
   // ConflictTolerated during bootstrap replay (#conflict-tolerated).
-  uint8_t n_pre     = fdp.ConsumeIntegralInRange<uint8_t>(0, 15);
-  bool    do_perm   = fdp.ConsumeBool();
-  uint32_t perm_lcg = do_perm ? fdp.ConsumeIntegral<uint8_t>() : 0u;
-  bool    do_crash  = fdp.ConsumeBool();
-  uint8_t n_lose    = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_LOSE_WRITES);
-  uint8_t n_post    = fdp.ConsumeIntegralInRange<uint8_t>(0, 7);
+  uint8_t  n_pre      = fdp.ConsumeIntegralInRange<uint8_t>(0, 15);
+  bool     do_perm    = fdp.ConsumeBool();
+  uint32_t perm_lcg   = do_perm ? fdp.ConsumeIntegral<uint8_t>() : 0u;
+  uint8_t  n_crashes  = fdp.ConsumeIntegralInRange<uint8_t>(0, 2);
+  uint8_t  n_post     = fdp.ConsumeIntegralInRange<uint8_t>(0, 7);
+  uint8_t  n_ticks    = fdp.ConsumeIntegralInRange<uint8_t>(0, 3);
+  uint8_t  n_post_tick = fdp.ConsumeIntegralInRange<uint8_t>(0, 4);
 
   // Read all pre-crash messages upfront so we can permute them.
   std::vector<MsgSpec> pre_msgs;
@@ -1079,27 +1150,41 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 
   for (auto& spec : pre_msgs) inject_from_spec(spec);
 
-  if (do_crash) crash_and_restart(*g_state, n_lose);
-
+  // Sequential crash+restart cycles — each with its own n_lose consumed from fdp.
+  // Tests WAL corruption accumulation across multiple restarts (crash loop depth,
+  // Путь C bootstrap corruption building on itself).
+  for (uint8_t c = 0; c < n_crashes; c++) {
+    uint8_t n_lose_c = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_LOSE_WRITES);
+    crash_and_restart(*g_state, n_lose_c);
+    if (c > 0) g_state_counters[132]++;  // GC_MULTI_CRASHED
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-  // #conflict-tolerated: bootstrap replay found conflicting local votes in DB.
-  // This should NEVER happen for an honest validator — it means the node voted
-  // twice for the same slot (safety violation). Trap immediately after restart drain.
-  if (ton::validator::consensus::simplex::g_conflict_tolerated_count.load() > 0) {
-    __builtin_trap();  // #conflict-tolerated: local validator has conflicting DB votes after restart
-  }
+    // #conflict-tolerated: bootstrap replay found conflicting local votes in DB.
+    // This should NEVER happen for an honest validator — it means the node voted
+    // twice for the same slot (safety violation). Trap after each restart drain.
+    if (ton::validator::consensus::simplex::g_conflict_tolerated_count.load() > 0) {
+      __builtin_trap();  // #conflict-tolerated: local validator has conflicting DB votes after restart
+    }
 #endif
+  }
 
   for (uint8_t m = 0; m < n_post; m++) inject_vote(fdp);
 
-  bool do_tick = fdp.ConsumeBool();
-
-  // Standstill tick: with skip_timeouts=true, run(15.0) triggers Time::jump_in_future()
-  // (IoWorker.cpp:95) so the next run(0) fires all pending alarm_timestamp() callbacks.
+  // Multi-tick: fire standstill alarm n_ticks times. Each run(15.0) triggers
+  // Time::jump_in_future() so the next run(0) fires all pending alarm_timestamp()
+  // callbacks. Multiple ticks test repeated alarm() firings and slot advancement
+  // through cascading SkipVotes across windows.
   auto& S_final = *g_state;
-  if (do_tick) {
+  for (uint8_t t = 0; t < n_ticks; t++) {
     S_final.scheduler->run(15.0);
     for (int i = 0; i < DRAIN_ROUNDS; i++) S_final.scheduler->run(0);
+  }
+
+  // Post-tick message injection: votes arriving AFTER alarm has fired.
+  // Key scenario: NotarizeVote arrives after SkipVote was cast → conflict.
+  // Also: FinalizeVote on SkipCert'd slot, FinalizeVote without prior NotarCert.
+  for (uint8_t m = 0; m < n_post_tick; m++) {
+    inject_vote(fdp);
+    g_state_counters[133]++;  // GC_POST_TICK_MSG
   }
 
   // Final drain: flush all pending events (e.g. SkipCert from a just-reached
@@ -1108,11 +1193,11 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   for (int i = 0; i < DRAIN_CRASH_ROUNDS; i++) S_final.scheduler->run(0);
   g_safety_active = false;
 
-  // Liveness guidance: if do_tick fired + windows advanced but NO cert was issued
+  // Liveness guidance: if any ticks fired + windows advanced but NO cert was issued
   // this run → protocol made no progress under time pressure. Not a hard trap (too
   // many legitimate reasons: not enough votes injected), but signals the fuzzer to
   // explore this region more via vector guidance (REF_LIVENESS).
-  if (do_tick && g_state_counters[129] > 0) {
+  if (n_ticks > 0 && g_state_counters[129] > 0) {
     bool any_cert = false;
     for (auto& [slot, pair] : g_notar_by_slot) { if (pair.first == g_run_id) { any_cert = true; break; } }
     if (!any_cert) for (auto& [slot, pair] : g_final_by_slot) { if (pair.first == g_run_id) { any_cert = true; break; } }

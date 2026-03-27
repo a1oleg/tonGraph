@@ -226,6 +226,13 @@ class Tsentrizbirkom {
     if (finalize_.has_value() && skip_.has_value()) {
       return ConflictingVotes::create(finalize_->serialize_as_proof(), skip_->serialize_as_proof());
     }
+    // #notar-skip-equivocation: validator voted both NotarizeVote and SkipVote for the same slot.
+    // Triggered on restart when consensus.cpp start_up() window logic (L83-93) fires SkipVote for
+    // a slot where bootstrap_votes already contained NotarizeVote. The window logic checks !voted_final
+    // but not !voted_notar, causing equivocation after crash+restart.
+    if (notarize_.has_value() && skip_.has_value()) {
+      return ConflictingVotes::create(notarize_->serialize_as_proof(), skip_->serialize_as_proof());
+    }
     return std::nullopt;
   }
 
@@ -620,7 +627,7 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
 
       if (auto misbehavior = add_result.misbehavior) {
         // [Row 4] State divergence: log all invariant violations detected by check_invariants().
-        // Note: detects Notarize+Finalize(diffId) and Finalize+Skip; does NOT detect Notarize+Skip.
+        // Note: detects Notarize+Finalize(diffId), Finalize+Skip, and Notarize+Skip (#notar-skip-equivocation).
         simulation::GraphLogger::instance().emit("InvariantViolation", {
             {"validatorIdx", g_vidx},
             {"slot",         g_slot},

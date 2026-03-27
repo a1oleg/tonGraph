@@ -84,6 +84,18 @@ CMakeLists.txt
 .claude/
 simulation/crashes_p5/
 simulation/crashes_p5_yoga/
+simulation/crashes_p5_gigabyte/
+simulation/known_crashes/
+simulation/corpus_local_clean/
+simulation/_staging/
+simulation/_merge_tmp/
+simulation/_crash_tmp/
+simulation/*.log
+simulation/alarm_skip_seed_p4
+tmp/
+tmp_*.py
+third-party/
+workspace/
 crash-*
 simulation/fuzz_p5.log
 simulation/fuzz_p5_gigabyte.log
@@ -101,6 +113,8 @@ simulation/profraw_tmp/
 nohup.out
 simulation/sync_p5_rsync.log
 simulation/sync_p5_rsync_yoga.log
+simulation/fuzz_p5_sync.log
+simulation/fuzz_local_worker*.log
 simulation/findings_state_div/
 contest/
 simulation/corpus_p5/
