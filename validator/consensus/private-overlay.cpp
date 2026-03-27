@@ -4,11 +4,13 @@
  * SPDX-License-Identifier: LGPL-2.0-or-later
  */
 
+#include <cstdlib>
 #include <map>
 #include <vector>
 
 #include "adnl/adnl-node-id.hpp"
 #include "auto/tl/ton_api.h"
+#include "keys/keys.hpp"
 #include "overlay/overlays.h"
 #include "td/utils/Status.h"
 #include "td/utils/logging.h"
@@ -27,6 +29,22 @@ using RequestErrorRef = tl_object_ptr<requestError>;
 
 namespace {
 
+#ifdef TON_PROBING_SEND_UNKNOWN_BROADCAST_SRC
+std::vector<PublicKeyHash>& probing_unknown_src_registry() {
+  static std::vector<PublicKeyHash> registry;
+  return registry;
+}
+
+bool is_probing_unknown_src(const PublicKeyHash& src) {
+  for (const auto& known : probing_unknown_src_registry()) {
+    if (known == src) {
+      return true;
+    }
+  }
+  return false;
+}
+#endif
+
 class PrivateOverlayImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo<Bus> {
  public:
   TON_RUNTIME_DEFINE_EVENT_HANDLER();
@@ -36,6 +54,28 @@ class PrivateOverlayImpl : public td::actor::SpawnsWith<Bus>, public td::actor::
     overlays_ = bus.overlays;
     local_id_ = bus.local_id;
     adnl_sender_ = bus.adnl_sender;
+
+#ifdef TON_PROBING_SEND_UNKNOWN_BROADCAST_SRC
+    probing_unknown_broadcast_src_enabled_ = std::getenv("TON_PROBING_SEND_UNKNOWN_BROADCAST_SRC") != nullptr;
+    if (probing_unknown_broadcast_src_enabled_) {
+      PrivateKey evil_key{privkeys::Ed25519::random()};
+      probing_unknown_src_ = evil_key.compute_short_id();
+      probing_unknown_src_registry().push_back(probing_unknown_src_);
+      td::actor::send_closure(bus.keyring, &keyring::Keyring::add_key, std::move(evil_key), true,
+                              [](td::Result<td::Unit>) {});
+      LOG(WARNING) << "TON_PROBING unknown_broadcast_src enabled local=" << bus.local_id.short_id.bits256_value().to_hex()
+                   << " evil_src=" << probing_unknown_src_.bits256_value().to_hex();
+    }
+
+    probing_force_unknown_broadcast_src_enabled_ = std::getenv("TON_PROBING_FORCE_UNKNOWN_BROADCAST_SRC") != nullptr;
+    if (probing_force_unknown_broadcast_src_enabled_) {
+      PrivateKey forced_key{privkeys::Ed25519::random()};
+      probing_forced_unknown_src_ = forced_key.compute_short_id();
+      LOG(WARNING) << "TON_PROBING force_unknown_broadcast_src enabled local="
+                   << bus.local_id.short_id.bits256_value().to_hex()
+                   << " forced_src=" << probing_forced_unknown_src_.bits256_value().to_hex();
+    }
+#endif
 
     std::vector<adnl::AdnlNodeIdShort> overlay_nodes;
     std::vector<td::Bits256> overlay_nodes_tl;
@@ -94,6 +134,17 @@ class PrivateOverlayImpl : public td::actor::SpawnsWith<Bus>, public td::actor::
         send_to_peer(adnl_id);
       }
     }
+
+#ifdef TON_PROBING_SEND_UNKNOWN_BROADCAST_SRC
+    if (probing_unknown_broadcast_src_enabled_ && !probing_unknown_broadcast_sent_) {
+      probing_unknown_broadcast_sent_ = true;
+      LOG(WARNING) << "TON_PROBING send_unknown_broadcast_src local=" << local_id_.short_id.bits256_value().to_hex()
+                   << " evil_src=" << probing_unknown_src_.bits256_value().to_hex()
+                   << " payload_size=" << message->message.data.size();
+      td::actor::send_closure(overlays_, &overlay::Overlays::send_broadcast_fec_ex, local_id_.adnl_id, overlay_id_,
+                              probing_unknown_src_, 0, message->message.data.clone());
+    }
+#endif
   }
 
   template <>
@@ -160,6 +211,22 @@ class PrivateOverlayImpl : public td::actor::SpawnsWith<Bus>, public td::actor::
       return;
     }
 
+#ifdef TON_PROBING_SEND_UNKNOWN_BROADCAST_SRC
+    if (probing_unknown_broadcast_src_enabled_ && is_probing_unknown_src(src)) {
+      LOG(WARNING) << "TON_PROBING ignore_unknown_broadcast_src_self src=" << src.bits256_value().to_hex();
+      return;
+    }
+
+    if (probing_force_unknown_broadcast_src_enabled_ && !probing_force_unknown_broadcast_src_fired_) {
+      probing_force_unknown_broadcast_src_fired_ = true;
+      LOG(WARNING) << "TON_PROBING force_unknown_broadcast_src local="
+                   << local_id_.short_id.bits256_value().to_hex()
+                   << " original_src=" << src.bits256_value().to_hex()
+                   << " forced_src=" << probing_forced_unknown_src_.bits256_value().to_hex();
+      src = probing_forced_unknown_src_;
+    }
+#endif
+
     auto& bus = *owning_bus();
     auto peer = short_id_to_peer_.at(src);
     auto maybe_candidate = Candidate::deserialize(std::move(data), bus, peer.idx);
@@ -198,6 +265,14 @@ class PrivateOverlayImpl : public td::actor::SpawnsWith<Bus>, public td::actor::
   PeerValidator local_id_;
   std::map<adnl::AdnlNodeIdShort, PeerValidator> adnl_id_to_peer_;
   std::map<PublicKeyHash, PeerValidator> short_id_to_peer_;
+#ifdef TON_PROBING_SEND_UNKNOWN_BROADCAST_SRC
+  bool probing_unknown_broadcast_src_enabled_ = false;
+  bool probing_unknown_broadcast_sent_ = false;
+  PublicKeyHash probing_unknown_src_;
+  bool probing_force_unknown_broadcast_src_enabled_ = false;
+  bool probing_force_unknown_broadcast_src_fired_ = false;
+  PublicKeyHash probing_forced_unknown_src_;
+#endif
 };
 
 }  // namespace

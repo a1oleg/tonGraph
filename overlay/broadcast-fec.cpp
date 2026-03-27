@@ -17,6 +17,8 @@
     Copyright 2017-2020 Telegram Systems LLP
 */
 
+#include <cstdlib>
+
 #include "keys/encryptor.h"
 
 #include "broadcast-fec.hpp"
@@ -25,6 +27,13 @@
 namespace ton {
 
 namespace overlay {
+
+#ifdef TON_PROBING_FEC_PARTS_FLOOD
+bool probing_fec_parts_flood_enabled() {
+  static const bool enabled = std::getenv("TON_PROBING_FEC_PARTS_FLOOD") != nullptr;
+  return enabled;
+}
+#endif
 
 static Overlay::BroadcastHash compute_broadcast_id(PublicKeyHash source, const fec::FecType &fec_type,
                                                    Overlay::BroadcastDataHash data_hash, td::uint32 size,
@@ -78,6 +87,22 @@ class BroadcastFec : public td::ListNode {
     }
     parts_[seqno] = std::pair<td::BufferSlice, td::BufferSlice>(std::move(serialized_fec_part_short),
                                                                 std::move(serialized_fec_part));
+
+#ifdef TON_PROBING_FEC_PARTS_FLOOD
+    if (probing_fec_parts_flood_enabled() && !probing_flood_applied_) {
+      probing_flood_applied_ = true;
+      constexpr td::uint32 kSeqnoBase = 100000;
+      for (td::uint32 i = 1; i <= TON_PROBING_FEC_PARTS_FLOOD; ++i) {
+        td::uint32 fake_seqno = kSeqnoBase + i;
+        parts_[fake_seqno] = std::pair<td::BufferSlice, td::BufferSlice>(parts_[seqno].first.clone(),
+                                                                         parts_[seqno].second.clone());
+      }
+      LOG(WARNING) << "TON_PROBING fec_parts_flood: broadcast_hash=" << hash_
+                   << " base_seqno=" << seqno
+                   << " parts_.size()=" << parts_.size()
+                   << " injected=" << TON_PROBING_FEC_PARTS_FLOOD;
+    }
+#endif
 
     return td::Status::OK();
   }
@@ -192,6 +217,9 @@ class BroadcastFec : public td::ListNode {
   std::map<td::uint32, std::pair<td::BufferSlice, td::BufferSlice>> parts_;
   adnl::AdnlNodeIdShort src_peer_id_ = adnl::AdnlNodeIdShort::zero();
   td::BufferSlice data_;
+#ifdef TON_PROBING_FEC_PARTS_FLOOD
+  bool probing_flood_applied_ = false;
+#endif
 };
 
 td::Status BroadcastFec::run_checks() {

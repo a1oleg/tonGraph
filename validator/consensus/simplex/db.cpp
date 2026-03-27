@@ -7,6 +7,8 @@
 #include "bus.h"
 #include "GraphLogger.h"
 
+#include "td/utils/port/sleep.h"
+
 namespace ton::validator::consensus::simplex {
 
 namespace tl {
@@ -68,6 +70,21 @@ class DbImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo<B
 
     auto key = create_serialize_tl_object<tl::db_key_vote>(hash);
     auto value = create_serialize_tl_object<tl::db_ourVote>(std::move(vote), next_seqno_++);
+
+#ifdef TON_PROBING_CRASH_BEFORE_VOTE_PERSIST
+    const bool is_notar_vote = std::holds_alternative<NotarizeVote>(event->vote.vote);
+    if (is_notar_vote && g_slot == 0) {
+      static int crash_count = 0;
+      ++crash_count;
+      if (crash_count >= TON_PROBING_CRASH_BEFORE_VOTE_PERSIST) {
+        LOG(WARNING) << "TON_PROBING amnesia: NotarizeVote for slot " << g_slot
+                     << " broadcast but NOT persisted (count=" << crash_count
+                     << ") - crashing to simulate WAL gap";
+        td::usleep_for(10000);
+        _exit(1);
+      }
+    }
+#endif
 
     auto result = co_await owning_bus()->db->set(std::move(key), std::move(value)).wrap();
     // We explicitly do not handle write failures here. Handling them will require an already very

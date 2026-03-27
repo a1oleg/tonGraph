@@ -968,6 +968,35 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
       next_slot.state->add_available_base(*base);
     }
 
+#ifdef TON_PROBING_INJECT_FINALIZE_AFTER_SKIP
+    // Probing: immediately inject a quorum of synthetic FinalizeVote messages on a slot that
+    // already has SkipCert. This exercises handle_typed_vote<FinalizeVote>() which accumulates
+    // finalize_weight without checking is_skipped(). Once the synthetic weight reaches quorum,
+    // handle_saved_certificate<FinalizeVote>() hits CHECK(!slot.state->is_skipped()) and crashes.
+    {
+      LOG(WARNING) << "TON_PROBING inject_finalize_after_skip: slot=" << i
+                   << " is_skipped=" << slot.state->is_skipped();
+      CandidateId synthetic_id;
+      synthetic_id.slot = i;
+      FinalizeVote synthetic_vote{synthetic_id};
+      auto &vset = owning_bus()->validator_set;
+      ValidatorWeight injected_weight = 0;
+      size_t injected = 0;
+      for (size_t v = 0; v < vset.size() && injected_weight < weight_threshold_; ++v) {
+        Signed<FinalizeVote> sv{vset[v].idx, synthetic_vote, td::BufferSlice(64)};
+        injected_weight += vset[v].weight;
+        ++injected;
+        LOG(WARNING) << "TON_PROBING inject_finalize_after_skip: validator=" << v
+                     << " weight=" << vset[v].weight << " slot=" << i;
+        handle_typed_vote(vset[v], std::move(sv), slot);
+      }
+      LOG(WARNING) << "TON_PROBING inject_finalize_after_skip: done slot=" << i
+                   << " injected=" << injected
+                   << " injected_weight=" << injected_weight
+                   << " is_skipped=" << slot.state->is_skipped();
+    }
+#endif
+
 #ifdef TON_PROBING_INJECT_NOTARIZE_AFTER_SKIP
     // Probing: directly call handle_typed_vote<NotarizeVote> for each validator with a
     // synthetic candidate ID.  This tests pool.cpp handle_typed_vote<NotarizeVote> (L693)
