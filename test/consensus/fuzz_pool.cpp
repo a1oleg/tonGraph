@@ -20,13 +20,16 @@
  * 64-byte signatures so bootstrap_votes can be re-signed after crash.
  *
  * Fuzz input layout (FuzzedDataProvider — all fields consumed from back of buffer):
- *   n_pre       : uint8  (0..15)  — messages before crash
- *   do_perm     : bool            — shuffle pre-crash messages (Fisher-Yates)
- *   perm_seed   : uint8           — LCG seed for permutation (consumed only if do_perm)
- *   n_crashes   : uint8  (0..2)   — number of sequential crash+restart cycles
- *   n_post      : uint8  (0..7)   — messages after last crash
- *   n_ticks     : uint8  (0..3)   — times to fire standstill alarm (run(15.0))
- *   n_post_tick : uint8  (0..4)   — messages after all ticks (post-alarm injection)
+ *   n_pre        : uint8  (0..15)  — messages before crash
+ *   do_perm      : bool            — shuffle pre-crash messages (Fisher-Yates)
+ *   perm_seed    : uint8           — LCG seed for permutation (consumed only if do_perm)
+ *   n_crashes    : uint8  (0..2)   — number of sequential crash+restart cycles
+ *   n_mid_ticks  : uint8  (0..2)   — alarm ticks fired between pre-msgs and crash loop
+ *   n_post       : uint8  (0..7)   — messages after last crash
+ *   do_perm_post : bool            — shuffle post-crash messages (Fisher-Yates)
+ *   perm_post_seed : uint8         — LCG seed for post permutation (only if do_perm_post)
+ *   n_ticks      : uint8  (0..3)   — times to fire standstill alarm (run(15.0))
+ *   n_post_tick  : uint8  (0..4)   — messages after all ticks (post-alarm injection)
  *   per message:
  *     src_idx   : uint8  (1..N_VALIDATORS-1)
  *     vote_type : uint8  (0=notarize, 1=skip, 2=finalize, 3=propose/CandidateReceived,
@@ -35,11 +38,25 @@
  *                          7=NotarizationObserved/ConsensusImpl::try_vote_final,
  *                          8=FinalizationObserved/direct FinalCert inject,
  *                          9=threshold-burst split: injects threshold-1 NotarizeVotes for
- *                            cand_seed then 1 NotarizeVote for (cand_seed+1)%N_CAND_SEEDS)
+ *                            cand_seed then 1 NotarizeVote for (cand_seed+1)%N_CAND_SEEDS,
+ *                         10=SkipVote flood: injects threshold SkipVotes → deterministic SkipCert,
+ *                         11=multi-slot chain: sub-threshold NotarVotes[s] + 1 SkipVote[s+1]
+ *                            + 1 NotarVote[s+2]; tests cross-slot state interactions,
+ *                         12=FinalizeVote flood: injects threshold FinalizeVotes → FinalCert,
+ *                         13=Byzantine double-vote: same validator casts NotarizeVote+SkipVote,
+ *                         14=LeaderWindowObserved inject: direct window-advance event,
+ *                         15=window-spanning skip: SkipVote flood for all slots in window
+ *                            containing slot → forces LeaderWindowObserved naturally)
  *     slot      : uint8  (0..MAX_SLOT)
  *     cand_seed : uint8  (0..N_CAND_SEEDS-1)
- *   per crash (consumed inside crash loop, interleaved after pre-messages):
- *     n_lose_i  : uint8  (0..MAX_LOSE_WRITES) — WAL writes lost in crash i
+ *   n_windows       : uint8  (0..2)   — complete windows to skip before crash loop
+ *   per crash (consumed inside crash loop):
+ *     n_lose_i        : uint8  (0..MAX_LOSE_WRITES)
+ *     lose_mode       : uint8  (0..4) — 0=last N, 1=first N, 2..4=stride
+ *     n_inter_i       : uint8  (0..4) — inter-crash messages
+ *     n_inter_ticks_i : uint8  (0..2) — alarm ticks after inter-crash messages
+ *   n_post_crashes  : uint8  (0..1)   — extra crash after post-msgs (before n_ticks)
+ *   per post-crash: n_lose_pc, lose_mode_pc(0..4)
  *
  * Permutation: when do_perm=true, all n_pre messages are read upfront and shuffled
  * via Fisher-Yates before injection. Tests order-dependent state bugs, including
@@ -111,6 +128,8 @@ static constexpr size_t N_VALIDATORS = 4;
 static constexpr size_t N_VALIDATORS = N_VALIDATORS_OVERRIDE;
 #endif
 static constexpr uint8_t MAX_SLOT = 15;
+static constexpr size_t  SLOTS_PER_WINDOW  = 4;  // must match simplex_config.slots_per_leader_window
+static constexpr size_t  WEIGHT_THRESHOLD  = (N_VALIDATORS * 2) / 3 + 1;
 static constexpr uint8_t N_CAND_SEEDS = 4;
 static constexpr uint8_t MAX_LOSE_WRITES = 8;
 static constexpr int DRAIN_ROUNDS = 20;
@@ -145,7 +164,7 @@ static constexpr int EXTRA_DRAIN_AFTER_TEARDOWN = 20;
 //   133  POST_TICK_MSG    — message injected after alarm tick (post-alarm state probe)
 //   134  THRESHOLD_SPLIT  — vtype=9 injected (notarize_weight split below quorum)
 
-static constexpr int STATE_COUNTER_BYTES = 140;
+static constexpr int STATE_COUNTER_BYTES = 149;
 static constexpr int SE_STRIDE = 8;
 static uint8_t g_state_counters[STATE_COUNTER_BYTES] = {};
 
@@ -366,6 +385,44 @@ class MockDb final : public consensus::Db {
       }
       write_log_.pop_back();
     }
+  }
+
+  // Discard every stride-th write from the back, up to n total losses.
+  // stride=1 is identical to crash_losing_last_n. stride=2 removes alternating
+  // entries (leaves gaps in the WAL), stride=3 removes every third, etc.
+  // Models selective media corruption or partial-flush scenarios where not all
+  // in-flight pages are lost — only a subset spread across the write sequence.
+  void crash_losing_stride_n(size_t n, size_t stride) {
+    if (stride <= 1) { crash_losing_last_n(n); return; }
+    n = std::min(n, (write_log_.size() + stride - 1) / stride);
+    size_t removed = 0;
+    for (ptrdiff_t i = static_cast<ptrdiff_t>(write_log_.size()) - 1;
+         i >= 0 && removed < n; i -= static_cast<ptrdiff_t>(stride)) {
+      auto& entry = write_log_[static_cast<size_t>(i)];
+      if (entry.prev.has_value()) {
+        kv_[entry.key] = std::move(*entry.prev);
+      } else {
+        kv_.erase(entry.key);
+      }
+      write_log_.erase(write_log_.begin() + i);
+      ++removed;
+    }
+  }
+
+  // Discard the first `n` writes (crash simulation — earliest entries in WAL).
+  // Simulates corruption of the oldest records (e.g. early-session cert loss)
+  // rather than the most-recent in-flight writes. Complements crash_losing_last_n.
+  void crash_losing_first_n(size_t n) {
+    n = std::min(n, write_log_.size());
+    for (size_t i = 0; i < n; i++) {
+      auto& entry = write_log_[i];
+      if (entry.prev.has_value()) {
+        kv_[entry.key] = std::move(*entry.prev);
+      } else {
+        kv_.erase(entry.key);
+      }
+    }
+    write_log_.erase(write_log_.begin(), write_log_.begin() + static_cast<ptrdiff_t>(n));
   }
 
   // Deep-copy the current (post-crash) DB state for the recovery bus.
@@ -708,8 +765,14 @@ static void configure_and_start_bus(FuzzState& S, std::unique_ptr<MockDb> db) {
 
 // ── WAL crash-and-restart ─────────────────────────────────────────────────────
 
-static void crash_and_restart(FuzzState& S, size_t n_lose) {
-  S.db_raw->crash_losing_last_n(n_lose);
+// lose_mode: 0=last N, 1=first N, 2+=stride (2→stride 2, 3→stride 3, 4→stride 4)
+static void crash_and_restart(FuzzState& S, size_t n_lose, uint8_t lose_mode = 0) {
+  if (lose_mode == 1)
+    S.db_raw->crash_losing_first_n(n_lose);
+  else if (lose_mode >= 2)
+    S.db_raw->crash_losing_stride_n(n_lose, lose_mode);
+  else
+    S.db_raw->crash_losing_last_n(n_lose);
   auto recovered_db = S.db_raw->clone();
 
   S.scheduler->run_in_context([&] {
@@ -799,12 +862,27 @@ struct MsgSpec {
   std::vector<uint8_t> raw_bytes;  // used by vote_type 4 and 6 only
 };
 
+// Flood WEIGHT_THRESHOLD SkipVotes for `slot` — helper for vtype=10, vtype=15, n_windows.
+// Forms a SkipCert deterministically; also drains the scheduler after each vote.
+static void skip_flood_slot(uint8_t slot) {
+  auto& S = *g_state;
+  for (size_t v = 1; v <= WEIGHT_THRESHOLD; v++) {
+    auto vtl = create_tl_object<ton_api::consensus_simplex_skipVote>(static_cast<int32_t>(slot));
+    auto svtl = create_tl_object<ton_api::consensus_simplex_vote>(std::move(vtl), td::BufferSlice(64));
+    auto bytes = serialize_tl_object(svtl, true);
+    auto msg = std::make_shared<IncomingProtocolMessage>(
+        PeerValidatorId{static_cast<uint8_t>(v)}, ProtocolMessage{std::move(bytes)});
+    S.scheduler->run_in_context([&] { S.bus.publish(msg); });
+    for (int i = 0; i < DRAIN_ROUNDS; i++) S.scheduler->run(0);
+  }
+}
+
 // Read one message spec from fdp without injecting it yet.
 static std::optional<MsgSpec> read_msg_spec(FuzzedDataProvider& fdp) {
   if (fdp.remaining_bytes() < 4) return std::nullopt;
   MsgSpec spec;
   spec.src_idx   = fdp.ConsumeIntegralInRange<uint8_t>(1, N_VALIDATORS - 1);
-  spec.vote_type = fdp.ConsumeIntegralInRange<uint8_t>(0, 9);
+  spec.vote_type = fdp.ConsumeIntegralInRange<uint8_t>(0, 14);
   spec.slot      = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_SLOT);
   spec.cand_seed = fdp.ConsumeIntegralInRange<uint8_t>(0, N_CAND_SEEDS - 1);
   if (spec.vote_type == 4 || spec.vote_type == 6) {
@@ -965,7 +1043,6 @@ static void inject_from_spec(const MsgSpec& spec) {
   // validator threshold. Result: notarize_weight[cand_a]=threshold-1, notarize_weight[cand_b]=1,
   // neither reaching quorum — tests Byzantine candidate flooding and notarize_weight map
   // split state. src_idx unused (deterministic validator selection).
-  static constexpr size_t WEIGHT_THRESHOLD = (N_VALIDATORS * 2) / 3 + 1;
   if (vote_type == 9) {
     uint8_t cand_b = static_cast<uint8_t>((cand_seed + 1) % N_CAND_SEEDS);
     // Inject threshold-1 votes for cand_a from validators 1..threshold-1
@@ -993,6 +1070,153 @@ static void inject_from_spec(const MsgSpec& spec) {
     S.scheduler->run_in_context([&] { S.bus.publish(msg_b); });
     for (int i = 0; i < DRAIN_ROUNDS; i++) S.scheduler->run(0);
     g_state_counters[134]++;  // GC_THRESHOLD_SPLIT
+    return;
+  }
+
+  // vtype=10: SkipVote flood — deterministic SkipCert formation for single slot.
+  // Symmetric to vtype=9 (NotarizeVote threshold-burst) but for SkipVotes: ensures
+  // skip_weight[slot] reaches quorum, forming a SkipCert unconditionally.
+  // Tests is_skipped() state and cross-cert invariants (NotarCert ∧ SkipCert ⇒ ⊥).
+  if (vote_type == 10) {
+    skip_flood_slot(slot);
+    g_state_counters[135]++;  // GC_SKIP_FLOOD
+    return;
+  }
+
+  // vtype=15: Window-spanning skip — skips all slots in the window containing `slot`.
+  // Computes window start = (slot / SLOTS_PER_WINDOW) * SLOTS_PER_WINDOW, then calls
+  // skip_flood_slot for each slot in [window_start, window_start + SLOTS_PER_WINDOW).
+  // All slots in the window get SkipCerts → pool calls advance_present() for each →
+  // LeaderWindowObserved fires, triggering ConsensusImpl::start_generation() for the
+  // next window. Tests window-transition code paths not reachable by single-slot floods.
+  if (vote_type == 15) {
+    uint8_t window_start = static_cast<uint8_t>((slot / SLOTS_PER_WINDOW) * SLOTS_PER_WINDOW);
+    for (uint8_t s = window_start;
+         s < window_start + static_cast<uint8_t>(SLOTS_PER_WINDOW) && s <= MAX_SLOT; s++) {
+      skip_flood_slot(s);
+    }
+    g_state_counters[146]++;  // GC_WINDOW_SPANNING_SKIP
+    return;
+  }
+
+  // vtype=11: Multi-slot chain attack — structured sequence across adjacent slots.
+  // For slot s:   injects WEIGHT_THRESHOLD-1 NotarizeVotes (sub-threshold, no cert formed).
+  // For slot s+1: injects 1 SkipVote from src_idx.
+  // For slot s+2: injects 1 NotarizeVote for cand_seed from src_idx.
+  // Simulates a real scenario: slot s borderline, s+1 skipped, s+2 starts notarize.
+  // Tests cross-slot invariants and vote-weight split interactions.
+  if (vote_type == 11) {
+    // Slot s: sub-threshold NotarizeVotes from validators 1..threshold-1
+    for (size_t v = 1; v < WEIGHT_THRESHOLD; v++) {
+      auto vtl = create_tl_object<ton_api::consensus_simplex_notarizeVote>(
+          create_tl_object<ton_api::consensus_candidateId>(
+              static_cast<int32_t>(slot), S.cand_hashes[cand_seed]));
+      auto svtl = create_tl_object<ton_api::consensus_simplex_vote>(
+          std::move(vtl), td::BufferSlice(64));
+      auto bytes = serialize_tl_object(svtl, true);
+      auto msg = std::make_shared<IncomingProtocolMessage>(
+          PeerValidatorId{static_cast<uint8_t>(v)}, ProtocolMessage{std::move(bytes)});
+      S.scheduler->run_in_context([&] { S.bus.publish(msg); });
+      for (int i = 0; i < DRAIN_ROUNDS; i++) S.scheduler->run(0);
+    }
+    // Slot s+1: single SkipVote from src_idx
+    if (slot + 1 <= MAX_SLOT) {
+      auto vtl1 = create_tl_object<ton_api::consensus_simplex_skipVote>(
+          static_cast<int32_t>(slot + 1));
+      auto svtl1 = create_tl_object<ton_api::consensus_simplex_vote>(
+          std::move(vtl1), td::BufferSlice(64));
+      auto bytes1 = serialize_tl_object(svtl1, true);
+      auto msg1 = std::make_shared<IncomingProtocolMessage>(
+          PeerValidatorId{src_idx}, ProtocolMessage{std::move(bytes1)});
+      S.scheduler->run_in_context([&] { S.bus.publish(msg1); });
+      for (int i = 0; i < DRAIN_ROUNDS; i++) S.scheduler->run(0);
+    }
+    // Slot s+2: single NotarizeVote from src_idx
+    if (slot + 2 <= MAX_SLOT) {
+      auto vtl2 = create_tl_object<ton_api::consensus_simplex_notarizeVote>(
+          create_tl_object<ton_api::consensus_candidateId>(
+              static_cast<int32_t>(slot + 2), S.cand_hashes[cand_seed]));
+      auto svtl2 = create_tl_object<ton_api::consensus_simplex_vote>(
+          std::move(vtl2), td::BufferSlice(64));
+      auto bytes2 = serialize_tl_object(svtl2, true);
+      auto msg2 = std::make_shared<IncomingProtocolMessage>(
+          PeerValidatorId{src_idx}, ProtocolMessage{std::move(bytes2)});
+      S.scheduler->run_in_context([&] { S.bus.publish(msg2); });
+      for (int i = 0; i < DRAIN_ROUNDS; i++) S.scheduler->run(0);
+    }
+    g_state_counters[136]++;  // GC_MULTI_SLOT
+    return;
+  }
+
+  // vtype=12: FinalizeVote flood — deterministic FinalCert formation.
+  // Injects WEIGHT_THRESHOLD FinalizeVotes for `slot` from validators 1..WEIGHT_THRESHOLD.
+  // Symmetric to vtype=10 (SkipVote flood) but for FinalizeVotes: ensures finalize_weight
+  // reaches quorum, forming a FinalCert unconditionally. Tests #skip-finalize
+  // (FinalCert on SkipCert'd slot) and cross-cert invariants.
+  if (vote_type == 12) {
+    for (size_t v = 1; v <= WEIGHT_THRESHOLD; v++) {
+      auto vtl = create_tl_object<ton_api::consensus_simplex_finalizeVote>(
+          create_tl_object<ton_api::consensus_candidateId>(
+              static_cast<int32_t>(slot), S.cand_hashes[cand_seed]));
+      auto svtl = create_tl_object<ton_api::consensus_simplex_vote>(
+          std::move(vtl), td::BufferSlice(64));
+      auto bytes = serialize_tl_object(svtl, true);
+      auto msg = std::make_shared<IncomingProtocolMessage>(
+          PeerValidatorId{static_cast<uint8_t>(v)}, ProtocolMessage{std::move(bytes)});
+      S.scheduler->run_in_context([&] { S.bus.publish(msg); });
+      for (int i = 0; i < DRAIN_ROUNDS; i++) S.scheduler->run(0);
+    }
+    g_state_counters[141]++;  // GC_FINALIZE_FLOOD
+    return;
+  }
+
+  // vtype=13: Byzantine double-vote — same validator casts conflicting votes for same slot.
+  // Injects NotarizeVote{slot, cand_seed} then SkipVote{slot} from the same src_idx.
+  // Tests MisbehaviorReport detection, tolerate_conflicts path, and whether the pool
+  // properly handles a validator voting twice for the same slot (equivocation).
+  // slot%2 selects the conflict order: 0=Notarize first, 1=Skip first.
+  if (vote_type == 13) {
+    auto make_vote_msg = [&](tl_object_ptr<ton_api::consensus_simplex_UnsignedVote> v_tl) {
+      auto svtl = create_tl_object<ton_api::consensus_simplex_vote>(
+          std::move(v_tl), td::BufferSlice(64));
+      auto bytes = serialize_tl_object(svtl, true);
+      auto msg = std::make_shared<IncomingProtocolMessage>(
+          PeerValidatorId{src_idx}, ProtocolMessage{std::move(bytes)});
+      S.scheduler->run_in_context([&] { S.bus.publish(msg); });
+      for (int i = 0; i < DRAIN_ROUNDS; i++) S.scheduler->run(0);
+    };
+    auto notar_tl = create_tl_object<ton_api::consensus_simplex_notarizeVote>(
+        create_tl_object<ton_api::consensus_candidateId>(
+            static_cast<int32_t>(slot), S.cand_hashes[cand_seed]));
+    auto skip_tl = create_tl_object<ton_api::consensus_simplex_skipVote>(
+        static_cast<int32_t>(slot));
+    if (slot % 2 == 0) {
+      make_vote_msg(std::move(notar_tl));
+      make_vote_msg(std::move(skip_tl));
+    } else {
+      make_vote_msg(std::move(skip_tl));
+      make_vote_msg(std::move(notar_tl));
+    }
+    g_state_counters[142]++;  // GC_BYZANTINE_DOUBLE
+    return;
+  }
+
+  // vtype=14: LeaderWindowObserved direct injection — advances the consensus window.
+  // Publishes LeaderWindowObserved{start_slot=slot, base} directly to the bus,
+  // triggering ConsensusImpl::handle(LeaderWindowObserved) → start_generation() →
+  // new leader window starts, alarm is reset. Tests window boundary handling,
+  // spurious window advance, and interactions with in-progress slot state.
+  // base = nullopt for slot=0, CandidateId{slot-1, cand_seed} for slot>0.
+  if (vote_type == 14) {
+    ParentId base = slot > 0
+        ? std::make_optional(CandidateId{.slot = static_cast<td::uint32>(slot - 1),
+                                         .hash = S.cand_hashes[cand_seed]})
+        : std::nullopt;
+    auto ev = std::make_shared<LeaderWindowObserved>(LeaderWindowObserved{
+        .start_slot = slot, .base = base});
+    S.scheduler->run_in_context([&] { S.bus.publish(ev); });
+    for (int i = 0; i < DRAIN_ROUNDS; i++) S.scheduler->run(0);
+    g_state_counters[143]++;  // GC_LEADER_WINDOW_INJECT
     return;
   }
 
@@ -1109,27 +1333,38 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   g_safety_active = true;
   FuzzedDataProvider fdp(data, size);
 
-  // Fuzz input layout (Phase 6 — multi-crash, multi-tick, post-tick, new vtypes):
-  //   n_pre       : uint8 (0..15)  — messages before crashes
-  //   do_perm     : bool           — if true, shuffle n_pre messages before injection
-  //   perm_seed   : uint8          — LCG seed for Fisher-Yates (only if do_perm)
-  //   n_crashes   : uint8 (0..2)   — number of sequential crash+restart cycles
-  //   n_post      : uint8 (0..7)   — messages after last crash
-  //   n_ticks     : uint8 (0..3)   — alarm ticks (each fires run(15.0))
-  //   n_post_tick : uint8 (0..4)   — messages after all ticks (post-alarm injection)
-  //   per message: src_idx, vote_type (0..9), slot, cand_seed
-  //   per crash (consumed inside loop): n_lose_i : uint8 (0..MAX_LOSE_WRITES)
+  // Fuzz input layout (Phase 9 — n_windows, n_post_crashes, vtype=15):
+  //   n_pre           : uint8 (0..15)  — messages before crashes
+  //   do_perm         : bool           — if true, shuffle n_pre messages before injection
+  //   perm_seed       : uint8          — LCG seed for Fisher-Yates (only if do_perm)
+  //   n_windows       : uint8 (0..2)   — complete windows to skip before crash loop
+  //   n_crashes       : uint8 (0..2)   — sequential crash+restart cycles
+  //   n_mid_ticks     : uint8 (0..2)   — alarm ticks between pre-msgs and crash loop
+  //   n_post          : uint8 (0..7)   — messages after last crash
+  //   do_perm_post    : bool           — if true, shuffle n_post messages before injection
+  //   perm_post_seed  : uint8          — LCG seed for post-shuffle (only if do_perm_post)
+  //   n_post_crashes  : uint8 (0..1)   — extra crash cycle after post-msgs
+  //   n_ticks         : uint8 (0..3)   — alarm ticks (each fires run(15.0))
+  //   n_post_tick     : uint8 (0..4)   — messages after all ticks
+  //   per message: src_idx, vote_type (0..15), slot, cand_seed
+  //   per crash (inside loop): n_lose, lose_mode(0..4), n_inter(0..4)+msgs, n_inter_ticks(0..2)
+  //   per post-crash (inside n_post_crashes loop): n_lose_pc, lose_mode_pc(0..4)
   //
   // Permutation rationale: delivery order of consensus messages should not affect
-  // safety. Shuffling pre-crash messages tests order-dependent state bugs, including
+  // safety. Shuffling pre/post-crash messages tests order-dependent state bugs, including
   // ConflictTolerated during bootstrap replay (#conflict-tolerated).
-  uint8_t  n_pre      = fdp.ConsumeIntegralInRange<uint8_t>(0, 15);
-  bool     do_perm    = fdp.ConsumeBool();
-  uint32_t perm_lcg   = do_perm ? fdp.ConsumeIntegral<uint8_t>() : 0u;
-  uint8_t  n_crashes  = fdp.ConsumeIntegralInRange<uint8_t>(0, 2);
-  uint8_t  n_post     = fdp.ConsumeIntegralInRange<uint8_t>(0, 7);
-  uint8_t  n_ticks    = fdp.ConsumeIntegralInRange<uint8_t>(0, 3);
-  uint8_t  n_post_tick = fdp.ConsumeIntegralInRange<uint8_t>(0, 4);
+  uint8_t  n_pre          = fdp.ConsumeIntegralInRange<uint8_t>(0, 15);
+  bool     do_perm        = fdp.ConsumeBool();
+  uint32_t perm_lcg       = do_perm ? fdp.ConsumeIntegral<uint8_t>() : 0u;
+  uint8_t  n_windows      = fdp.ConsumeIntegralInRange<uint8_t>(0, 2);
+  uint8_t  n_crashes      = fdp.ConsumeIntegralInRange<uint8_t>(0, 2);
+  uint8_t  n_mid_ticks    = fdp.ConsumeIntegralInRange<uint8_t>(0, 2);
+  uint8_t  n_post         = fdp.ConsumeIntegralInRange<uint8_t>(0, 7);
+  bool     do_perm_post   = fdp.ConsumeBool();
+  uint32_t perm_post_lcg  = do_perm_post ? fdp.ConsumeIntegral<uint8_t>() : 0u;
+  uint8_t  n_post_crashes = fdp.ConsumeIntegralInRange<uint8_t>(0, 1);
+  uint8_t  n_ticks        = fdp.ConsumeIntegralInRange<uint8_t>(0, 3);
+  uint8_t  n_post_tick    = fdp.ConsumeIntegralInRange<uint8_t>(0, 4);
 
   // Read all pre-crash messages upfront so we can permute them.
   std::vector<MsgSpec> pre_msgs;
@@ -1150,12 +1385,45 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 
   for (auto& spec : pre_msgs) inject_from_spec(spec);
 
-  // Sequential crash+restart cycles — each with its own n_lose consumed from fdp.
-  // Tests WAL corruption accumulation across multiple restarts (crash loop depth,
-  // Путь C bootstrap corruption building on itself).
+  // Window-skip phase: skip `n_windows` complete leader windows before the crash loop.
+  // Window i covers slots [i*SLOTS_PER_WINDOW, (i+1)*SLOTS_PER_WINDOW). Skipping all
+  // slots in a window forces pool::advance_present() through the full window, triggering
+  // LeaderWindowObserved → ConsensusImpl::start_generation() for window i+1.
+  // This opens window-transition code paths (new leader, new alarm_timestamp, new base slot)
+  // that are otherwise only reached after many messages in natural fuzzing.
+  for (uint8_t w = 0; w < n_windows; w++) {
+    for (uint8_t s = static_cast<uint8_t>(w * SLOTS_PER_WINDOW);
+         s < static_cast<uint8_t>((w + 1) * SLOTS_PER_WINDOW) && s <= MAX_SLOT; s++) {
+      skip_flood_slot(s);
+    }
+    g_state_counters[147]++;  // GC_N_WINDOWS
+  }
+
+  // Mid-ticks: fire standstill alarm between pre-msgs and crash loop.
+  // Tests alarm→SkipVote→SkipCert state reached BEFORE any crash, then crash
+  // replays over already-skipped slots. Distinct from n_ticks (which fires after
+  // all crashes and post-msgs). n_mid_ticks=0 preserves Phase 6 behavior.
+  {
+    auto& S_mid = *g_state;
+    for (uint8_t t = 0; t < n_mid_ticks; t++) {
+      S_mid.scheduler->run(15.0);
+      for (int i = 0; i < DRAIN_ROUNDS; i++) S_mid.scheduler->run(0);
+      g_state_counters[137]++;  // GC_MID_TICK
+    }
+  }
+
+  // Sequential crash+restart cycles — each with its own n_lose, lose_first, and
+  // n_inter inter-crash messages consumed from fdp.
+  // lose_first: true=lose first N WAL writes (early-session corruption), false=last N.
+  // n_inter: messages injected after crash i completes (before crash i+1 or post phase).
+  // Tests WAL corruption accumulation across multiple restarts and inter-restart vote injection.
   for (uint8_t c = 0; c < n_crashes; c++) {
-    uint8_t n_lose_c = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_LOSE_WRITES);
-    crash_and_restart(*g_state, n_lose_c);
+    uint8_t n_lose_c   = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_LOSE_WRITES);
+    uint8_t lose_mode  = fdp.ConsumeIntegralInRange<uint8_t>(0, 4);
+    // lose_mode: 0=last N, 1=first N, 2=stride-2, 3=stride-3, 4=stride-4
+    crash_and_restart(*g_state, n_lose_c, lose_mode);
+    if (lose_mode == 1) g_state_counters[139]++;  // GC_FIRST_N_CORRUPTION
+    if (lose_mode >= 2) g_state_counters[145]++;  // GC_STRIDE_CORRUPTION
     if (c > 0) g_state_counters[132]++;  // GC_MULTI_CRASHED
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     // #conflict-tolerated: bootstrap replay found conflicting local votes in DB.
@@ -1165,9 +1433,61 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
       __builtin_trap();  // #conflict-tolerated: local validator has conflicting DB votes after restart
     }
 #endif
+    // Inter-crash messages: votes arriving after crash i but before crash i+1 (or post phase).
+    uint8_t n_inter_c = fdp.ConsumeIntegralInRange<uint8_t>(0, 4);
+    for (uint8_t m = 0; m < n_inter_c; m++) {
+      inject_vote(fdp);
+      g_state_counters[138]++;  // GC_INTER_CRASH_MSG
+    }
+    // Inter-crash ticks: alarm fires between restarts — SkipVote broadcast post-restart
+    // then another crash occurs. Tests SkipCert-in-progress state at crash time.
+    uint8_t n_inter_ticks_c = fdp.ConsumeIntegralInRange<uint8_t>(0, 2);
+    {
+      auto& S_inter = *g_state;
+      for (uint8_t t = 0; t < n_inter_ticks_c; t++) {
+        S_inter.scheduler->run(15.0);
+        for (int i = 0; i < DRAIN_ROUNDS; i++) S_inter.scheduler->run(0);
+        g_state_counters[144]++;  // GC_INTER_CRASH_TICK
+      }
+    }
   }
 
-  for (uint8_t m = 0; m < n_post; m++) inject_vote(fdp);
+  // Read all post-crash messages upfront so we can optionally permute them.
+  std::vector<MsgSpec> post_msgs;
+  post_msgs.reserve(n_post);
+  for (uint8_t m = 0; m < n_post; m++) {
+    if (auto spec = read_msg_spec(fdp)) post_msgs.push_back(std::move(*spec));
+    else break;
+  }
+  // Optionally shuffle post-crash messages (Fisher-Yates, LCG seeded by perm_post_lcg).
+  // Tests whether message ordering after restart affects safety — symmetry to do_perm.
+  if (do_perm_post && post_msgs.size() > 1) {
+    for (size_t i = post_msgs.size() - 1; i > 0; i--) {
+      perm_post_lcg = perm_post_lcg * 1664525u + 1013904223u;
+      size_t j = perm_post_lcg % (i + 1);
+      std::swap(post_msgs[i], post_msgs[j]);
+    }
+  }
+  for (auto& spec : post_msgs) {
+    inject_from_spec(spec);
+    if (do_perm_post) g_state_counters[140]++;  // GC_PERM_POST_MSG
+  }
+
+  // Post-crash phase: additional crash cycle AFTER post-msgs, before n_ticks.
+  // Tests state that has gone through a full round of pre-msgs → crashes → post-msgs
+  // and then crashes again. Key scenario: validator accumulated votes in post phase
+  // (possibly formed a cert), then crashes — bootstrap sees a richer WAL than pre-crash.
+  for (uint8_t c = 0; c < n_post_crashes; c++) {
+    uint8_t n_lose_pc  = fdp.ConsumeIntegralInRange<uint8_t>(0, MAX_LOSE_WRITES);
+    uint8_t lose_mode_pc = fdp.ConsumeIntegralInRange<uint8_t>(0, 4);
+    crash_and_restart(*g_state, n_lose_pc, lose_mode_pc);
+    g_state_counters[148]++;  // GC_POST_CRASHED
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    if (ton::validator::consensus::simplex::g_conflict_tolerated_count.load() > 0) {
+      __builtin_trap();  // #conflict-tolerated after post-crash restart
+    }
+#endif
+  }
 
   // Multi-tick: fire standstill alarm n_ticks times. Each run(15.0) triggers
   // Time::jump_in_future() so the next run(0) fires all pending alarm_timestamp()

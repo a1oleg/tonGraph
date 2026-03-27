@@ -692,6 +692,23 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
 
   void handle_typed_vote(const PeerValidator &validator, Signed<NotarizeVote> vote, State::SlotRef &slot) {
     auto new_weight = (slot.state->notarize_weight[vote.vote.id] += validator.weight);
+#ifdef TON_PROBING_BYZANTINE_MULTI_NOTARIZE
+    // Simulate TON_PROBING_BYZANTINE_MULTI_NOTARIZE Byzantine validators, each sending a
+    // NotarizeVote for a distinct fake CandidateId on this slot.  Demonstrates that
+    // notarize_weight grows without bound — a Byzantine collator can inflate this map to
+    // O(K) making cert formation cost O(|Validators| × K) (superlinear).
+    // Weight 1 per fake entry stays below weight_threshold_ — no NotarCert forms for fakes.
+    {
+      for (int k = 1; k <= TON_PROBING_BYZANTINE_MULTI_NOTARIZE; ++k) {
+        CandidateId fake_id = vote.vote.id;
+        fake_id.hash.as_array()[0] = static_cast<uint8_t>(k);
+        slot.state->notarize_weight[fake_id] += 1;
+      }
+      LOG(WARNING) << "TON_PROBING byzantine_multi_notarize: slot=" << vote.vote.id.slot
+                   << " notarize_weight.size()=" << slot.state->notarize_weight.size()
+                   << " injected=" << TON_PROBING_BYZANTINE_MULTI_NOTARIZE << " fake candidates";
+    }
+#endif
     if (!slot.state->will_be_notarized() && new_weight >= weight_threshold_) {
       handle_certificate(slot.state->create_cert(vote.vote)).start().detach();
     }
@@ -950,6 +967,37 @@ class PoolImpl : public td::actor::SpawnsWith<Bus>, public td::actor::ConnectsTo
     if (auto base = slot.state->available_base) {
       next_slot.state->add_available_base(*base);
     }
+
+#ifdef TON_PROBING_INJECT_NOTARIZE_AFTER_SKIP
+    // Probing: directly call handle_typed_vote<NotarizeVote> for each validator with a
+    // synthetic candidate ID.  This tests pool.cpp handle_typed_vote<NotarizeVote> (L693)
+    // which does NOT guard against is_skipped() — the missing check this report covers.
+    // We call handle_typed_vote directly (bypassing handle_vote / add_vote / signature
+    // verification) because the bug is in the weight-accumulation step, not in signature
+    // or equivocation checking.  Injecting exactly weight_threshold_ votes is sufficient
+    // to trigger handle_certificate and form NotarCert while is_skipped()==true.
+    {
+      LOG(WARNING) << "TON_PROBING inject_notarize: slot=" << i
+                   << " is_skipped=" << slot.state->is_skipped();
+      CandidateId synthetic_id;
+      synthetic_id.slot = i;
+      // synthetic_id.hash stays zero-initialized (Bits256{})
+      NotarizeVote synthetic_vote{synthetic_id};
+      auto &vset = owning_bus()->validator_set;
+      size_t injected = 0;
+      for (size_t v = 0; v < vset.size() && injected < weight_threshold_; ++v) {
+        Signed<NotarizeVote> sv{vset[v].idx, synthetic_vote, td::BufferSlice(64)};
+        LOG(WARNING) << "TON_PROBING inject_notarize: validator=" << v
+                     << " weight=" << vset[v].weight << " slot=" << i;
+        handle_typed_vote(vset[v], std::move(sv), slot);
+        ++injected;
+      }
+      LOG(WARNING) << "TON_PROBING inject_notarize: done slot=" << i
+                   << " injected=" << injected
+                   << " is_notarized=" << slot.state->is_notarized()
+                   << " is_skipped=" << slot.state->is_skipped();
+    }
+#endif
 
     advance_present();
   }
