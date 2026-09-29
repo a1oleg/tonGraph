@@ -1,0 +1,1174 @@
+{
+  "schema_version": "1.0",
+  "title": "TON Simplex: карта развития гипотез",
+  "created_at": "2026-09-29",
+  "code_revision": "34ad5e041ff7396cdacad131996f49126729660d",
+  "research_code_revision": "4ee8eb0e",
+  "scope": {
+    "journal_rows": 131,
+    "sheets": [
+      "Sheet1",
+      "Sheet2",
+      "Sheet3"
+    ],
+    "campaign_duration": "две недели — со слов автора",
+    "machines": "три — со слов автора; machine3 присутствует в строке 95",
+    "rerun_performed": false,
+    "individual_jury_verdicts_available": false,
+    "full_campaign_archive_available": false
+  },
+  "sources": {
+    "S-origins": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet2",
+      "range": "B2:R6",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=1323377909#gid=1323377909&range=B2:R6"
+    },
+    "S-graph": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet3",
+      "range": "A3:G4",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=1116359349#gid=1116359349&range=A3:G4"
+    },
+    "S-E01": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet1",
+      "range": "A3:M4",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A3:M4"
+    },
+    "S-E02": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet1",
+      "range": "A6:M7",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A6:M7"
+    },
+    "S-E03": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet1",
+      "range": "A9:L13",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A9:L13"
+    },
+    "S-E04": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet1",
+      "range": "A15:M25",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A15:M25"
+    },
+    "S-E05": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet1",
+      "range": "A27:M36",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A27:M36"
+    },
+    "S-E06": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet1",
+      "range": "A38:M48",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A38:M48"
+    },
+    "S-E07": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet1",
+      "range": "A50:M57",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A50:M57"
+    },
+    "S-E08": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet1",
+      "range": "A59:B66",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A59:B66"
+    },
+    "S-E09": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet1",
+      "range": "A68:G78",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A68:G78"
+    },
+    "S-E10": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet1",
+      "range": "A80:B87",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A80:B87"
+    },
+    "S-E11": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet1",
+      "range": "A71:B90",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A71:B90"
+    },
+    "S-E12": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet1",
+      "range": "A92:B95",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A92:B95"
+    },
+    "S-E13": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet1",
+      "range": "A97:M105",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A97:M105"
+    },
+    "S-E14": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet1",
+      "range": "A106:M115",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A106:M115"
+    },
+    "S-E15": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet1",
+      "range": "A116:J123",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A116:J123"
+    },
+    "S-E16": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet1",
+      "range": "I124:J127",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=I124:J127"
+    },
+    "S-E17": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet1",
+      "range": "I128:J131",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=I128:J131"
+    },
+    "C-model": {
+      "kind": "code",
+      "commit": "4ee8eb0e",
+      "path": "simulation/fuzz_harness.cpp",
+      "line": 1,
+      "symbol": "LLVMFuzzerTestOneInput",
+      "url": "https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/simulation/fuzz_harness.cpp#L1"
+    },
+    "C-pool": {
+      "kind": "code",
+      "commit": "4ee8eb0e",
+      "path": "test/consensus/fuzz_pool.cpp",
+      "line": 1,
+      "symbol": "FuzzObserver / LLVMFuzzerTestOneInput",
+      "url": "https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/test/consensus/fuzz_pool.cpp#L1"
+    },
+    "C-mutator": {
+      "kind": "code",
+      "commit": "4ee8eb0e",
+      "path": "test/consensus/fuzz_pool_mutator.cpp",
+      "line": 44,
+      "symbol": "SIM_THRESHOLD / HDR_SIZE / MAX_VTYPE",
+      "url": "https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/test/consensus/fuzz_pool_mutator.cpp#L44"
+    },
+    "C-format": {
+      "kind": "code",
+      "commit": "4ee8eb0e",
+      "path": "test/consensus/fuzz_pool.cpp",
+      "line": 1350,
+      "symbol": "FuzzedDataProvider control fields",
+      "url": "https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/test/consensus/fuzz_pool.cpp#L1350"
+    },
+    "C-cmake": {
+      "kind": "code",
+      "commit": "4ee8eb0e",
+      "path": "test/consensus/CMakeLists.txt",
+      "line": 40,
+      "symbol": "fuzz_pool links fuzz_pool_mutator.cpp",
+      "url": "https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/test/consensus/CMakeLists.txt#L40"
+    },
+    "C-amnesia": {
+      "kind": "code",
+      "commit": "4ee8eb0e",
+      "path": "test/consensus/test_amnesia_poc.cpp",
+      "line": 1,
+      "symbol": "standalone amnesia PoC",
+      "url": "https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/test/consensus/test_amnesia_poc.cpp#L1"
+    },
+    "C-db": {
+      "kind": "code",
+      "commit": "4ee8eb0e",
+      "path": "validator/consensus/simplex/db.cpp",
+      "line": 74,
+      "symbol": "TON_PROBING_CRASH_BEFORE_VOTE_PERSIST",
+      "url": "https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/validator/consensus/simplex/db.cpp#L74"
+    },
+    "C-cert": {
+      "kind": "code",
+      "commit": "4ee8eb0e",
+      "path": "test/consensus/fuzz_pool.cpp",
+      "line": 557,
+      "symbol": "FinalizationObserved checks",
+      "url": "https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/test/consensus/fuzz_pool.cpp#L557"
+    },
+    "C-resource": {
+      "kind": "code",
+      "commit": "4ee8eb0e",
+      "path": "validator/consensus/simplex/pool.cpp",
+      "line": 434,
+      "symbol": "resource counters and disabled traps",
+      "url": "https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/validator/consensus/simplex/pool.cpp#L434"
+    },
+    "C-resolver": {
+      "kind": "code",
+      "commit": "4ee8eb0e",
+      "path": "validator/consensus/simplex/candidate-resolver.cpp",
+      "line": 147,
+      "symbol": "state_ lifecycle",
+      "url": "https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/validator/consensus/simplex/candidate-resolver.cpp#L147"
+    },
+    "C-twostep": {
+      "kind": "code",
+      "commit": "4ee8eb0e",
+      "path": "overlay/broadcast-twostep.cpp",
+      "line": 314,
+      "symbol": "rebroadcast before is_delivered",
+      "url": "https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/overlay/broadcast-twostep.cpp#L314"
+    },
+    "C-fec": {
+      "kind": "code",
+      "commit": "4ee8eb0e",
+      "path": "overlay/broadcast-fec.cpp",
+      "line": 88,
+      "symbol": "parts_ and probing injection",
+      "url": "https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/overlay/broadcast-fec.cpp#L88"
+    },
+    "C-seqno": {
+      "kind": "code",
+      "commit": "4ee8eb0e",
+      "path": "overlay/broadcast-fec.cpp",
+      "line": 183,
+      "symbol": "next_seqno_ = seqno + 1",
+      "url": "https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/overlay/broadcast-fec.cpp#L183"
+    },
+    "S-verdicts": {
+      "kind": "official_interpretation",
+      "url": "https://github.com/ton-blockchain/simplex-docs/blob/main/grading-verdicts.md",
+      "retrieved_at": "2026-09-29",
+      "scope": "Общие пояснения; не индивидуальные вердикты этим отчётам"
+    },
+    "S-user": {
+      "kind": "user_statement",
+      "text": "Три машины, две недели; жюри оценило находки как не баг или невоспроизводимые. Индивидуальная привязка вердиктов не предоставлена."
+    },
+    "S-reorder": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet1",
+      "range": "L103",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=L103"
+    },
+    "S-parent": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet1",
+      "range": "B118:B119",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=B118:B119"
+    },
+    "S-at": {
+      "kind": "spreadsheet",
+      "sheet": "Sheet1",
+      "range": "B106:K109",
+      "url": "https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=B106:K109"
+    }
+  },
+  "origins": [
+    {
+      "id": "O01",
+      "title": "BFT-аналогии и инварианты",
+      "sources": [
+        "S-origins"
+      ]
+    },
+    {
+      "id": "O02",
+      "title": "Пробелы покрытия и платформы",
+      "sources": [
+        "S-E03",
+        "S-E04",
+        "S-E14"
+      ]
+    },
+    {
+      "id": "O03",
+      "title": "Статический анализ кода",
+      "sources": [
+        "S-E14"
+      ]
+    },
+    {
+      "id": "O04",
+      "title": "Разбор срабатываний и артефактов",
+      "sources": [
+        "S-E10",
+        "S-E13"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "id": "E01",
+      "phase": "1",
+      "title": "Модель протокола",
+      "trigger": "Аналогии с BFT и предполагаемые инварианты",
+      "action": "6 действий валидатора; 272 целевых seed",
+      "observation": "~239 млн итераций; trap safety не найден",
+      "limitation": "Плато не доказывает корректность модели",
+      "evidence_kind": "journal_claim",
+      "sources": [
+        "S-E01"
+      ]
+    },
+    {
+      "id": "E02",
+      "phase": "2.1",
+      "title": "TL-десериализация",
+      "trigger": "Отделить ошибки парсера от state machine",
+      "action": "9 TL-типов; libFuzzer",
+      "observation": "1,37 млрд итераций; 0 крашей по журналу",
+      "limitation": "Ограничено данным генератором и сборкой",
+      "evidence_kind": "journal_claim",
+      "sources": [
+        "S-E02"
+      ]
+    },
+    {
+      "id": "E03",
+      "phase": "2.2–2.3",
+      "title": "Реальный Pool и рестарт",
+      "trigger": "Модель не охватывает persistence",
+      "action": "PoolImpl + MockDb; потеря записей; restart",
+      "observation": "cov 104 → 791 по журналу",
+      "limitation": "Подписи отключены; модель потери записей требует обоснования",
+      "evidence_kind": "journal_claim",
+      "sources": [
+        "S-E03"
+      ]
+    },
+    {
+      "id": "E04",
+      "phase": "3.1–3.4",
+      "title": "Семантическое направление поиска",
+      "trigger": "Плато покрытия",
+      "action": "Счётчики состояний; ConsensusImpl; cosine feedback; 3 стратегии",
+      "observation": "ft до 3162; крашей 0 по журналу",
+      "limitation": "Добавление feedback меняет метрику ft; стратегии не сравнивались контролируемо",
+      "evidence_kind": "journal_claim",
+      "sources": [
+        "S-E04"
+      ]
+    },
+    {
+      "id": "E05",
+      "phase": "4.1–4.2",
+      "title": "Целевые seeds и распределение",
+      "trigger": "Случайный поиск не достигает окна",
+      "action": "n_pre 7 → 15; детерминизация scheduler; seeds; rsync",
+      "observation": "Срабатывания alarm-skip, state-div и resource traps",
+      "limitation": "Срабатывание искусственного trap не равно дефекту протокола",
+      "evidence_kind": "journal_claim",
+      "sources": [
+        "S-E05"
+      ]
+    },
+    {
+      "id": "E06",
+      "phase": "4.3–4.6",
+      "title": "Расширение входных событий",
+      "trigger": "Не охвачены propose и local-vote пути",
+      "action": "CandidateReceived, raw TL, BroadcastVote; valid BoC; исправления teardown",
+      "observation": "Новые пути; часть SEGV признана артефактами",
+      "limitation": "Достижимость внутренних событий не доказывает сетевую достижимость",
+      "evidence_kind": "journal_claim",
+      "sources": [
+        "S-E06"
+      ]
+    },
+    {
+      "id": "E07",
+      "phase": "5.1–5.3",
+      "title": "Синхронизация корпусов",
+      "trigger": "Плато на отдельных машинах",
+      "action": "Воркеры gigabyte/yoga; обмен корпусами; seeds окон",
+      "observation": "Машины выходят на плато; новые целевые входы",
+      "limitation": "Третья машина упомянута позднее; полного архива трёх машин нет",
+      "evidence_kind": "journal_claim",
+      "sources": [
+        "S-E07"
+      ]
+    },
+    {
+      "id": "E08",
+      "phase": "5.4–5.6",
+      "title": "Прямая инжекция и снятие traps",
+      "trigger": "Почти каждый вход завершает прогон",
+      "action": "NotarizationObserved; llvm-cov; снять alarm-skip traps",
+      "observation": "После снятия trap появились следующие пути",
+      "limitation": "Удаление детектора не исправляет исследуемую систему",
+      "evidence_kind": "journal_claim",
+      "sources": [
+        "S-E08"
+      ]
+    },
+    {
+      "id": "E09",
+      "phase": "5.7–5.10",
+      "title": "Amnesia и структурный мутатор",
+      "trigger": "Нужно повторное голосование после restart",
+      "action": "Standalone PoC; 10 структурных мутаций; снять amnesia trap",
+      "observation": "Повторное голосование заявлено в журнале; мутатор вновь даёт ~99% крашей",
+      "limitation": "Нужна допустимая модель отказов и replay реальной ноды",
+      "evidence_kind": "journal_claim",
+      "sources": [
+        "S-E09"
+      ]
+    },
+    {
+      "id": "E10",
+      "phase": "5.11–5.13",
+      "title": "Пересмотр ложных срабатываний",
+      "trigger": "Прямая инжекция и teardown доминируют",
+      "action": "Снять certificate/resource traps; исправить жизнь scheduler",
+      "observation": "Crash rate до 0% по журналу",
+      "limitation": "Часть классификации certificate traps позднее пересмотрена",
+      "evidence_kind": "journal_claim",
+      "sources": [
+        "S-E10"
+      ]
+    },
+    {
+      "id": "E11",
+      "phase": "5.8; 5.14",
+      "title": "Проверки санитайзерами",
+      "trigger": "Отделить memory/UB ошибки от trap",
+      "action": "UBSan replay 2700 входов; MSan replay 1351 входа",
+      "observation": "UBSan: 0 UB; MSan: неполная инструментализация TDLib",
+      "limitation": "Это не доказательство отсутствия UB; MSan-вывод ограничен сборкой",
+      "evidence_kind": "journal_claim",
+      "sources": [
+        "S-E11"
+      ]
+    },
+    {
+      "id": "E12",
+      "phase": "5.15–5.17",
+      "title": "Feedback-мутатор и merge",
+      "trigger": "Использовать семантическое состояние для мутации",
+      "action": "g_last_sim; threshold 0.35; merge корпусов; N=7",
+      "observation": "В журнале merge 15955 входов; machine3 выключена",
+      "limitation": "Число merged-входов не равно независимым экспериментам",
+      "evidence_kind": "journal_claim",
+      "sources": [
+        "S-E12"
+      ]
+    },
+    {
+      "id": "E13",
+      "phase": "5.18–5.20",
+      "title": "Возврат FinalCert-гипотез",
+      "trigger": "Новые production CHECK после раннего отклонения",
+      "action": "Обычные vtypes + WAL; rebuild FUZZING; перенос формата seeds",
+      "observation": "Заявлены skip-finalize и mismatch; минимальные входы 30 байт",
+      "limitation": "Отказ ноды заявлен; допустимость сформированного сертификата ещё надо доказать",
+      "evidence_kind": "journal_claim",
+      "sources": [
+        "S-E13"
+      ]
+    },
+    {
+      "id": "E14",
+      "phase": "5.21–5.25",
+      "title": "Статический анализ и отсев",
+      "trigger": "Искать пробелы вне динамического покрытия",
+      "action": "CodeQL; Joern; call paths; state lifecycle",
+      "observation": "CandidateResolver state_ выделен; несколько гипотез сняты",
+      "limitation": "В CodeQL обнаружен пробел target coverage; статический путь не равен exploit",
+      "evidence_kind": "journal_claim",
+      "sources": [
+        "S-E14"
+      ]
+    },
+    {
+      "id": "E15",
+      "phase": "5.26–5.29",
+      "title": "Расширение на overlay/FEC",
+      "trigger": "Обобщение resource-growth гипотез",
+      "action": "Порядок dedup/rebroadcast; parts_; seqno overflow",
+      "observation": "Подготовлены отчёты о росте памяти и amplification",
+      "limitation": "Runtime DoS и прохождение входных проверок не подтверждены здесь",
+      "evidence_kind": "journal_claim",
+      "sources": [
+        "S-E15"
+      ]
+    },
+    {
+      "id": "E16",
+      "phase": "после 5.29; 5.31",
+      "title": "Отрицательные результаты overlay",
+      "trigger": "Проверить соседние компоненты",
+      "action": "BroadcastSimple cap/GC; ограничение размера ADNL",
+      "observation": "Гипотезы закрыты автором журнала",
+      "limitation": "В строке 124 стоит 5.3; номер 5.30 не достраивается как факт",
+      "evidence_kind": "journal_claim",
+      "sources": [
+        "S-E16"
+      ]
+    },
+    {
+      "id": "E17",
+      "phase": "5.32–5.33",
+      "title": "Переформулировка в availability",
+      "trigger": "Попытка показать наблюдаемый crash вместо спорного safety",
+      "action": "Alarm/restart → конфликт local vote → abort",
+      "observation": "В журнале заявлен детерминированный crash loop",
+      "limitation": "Индивидуальный вердикт и независимый replay отсутствуют",
+      "evidence_kind": "journal_claim",
+      "sources": [
+        "S-E17"
+      ]
+    }
+  ],
+  "hypotheses": [
+    {
+      "id": "H01",
+      "family": "consensus",
+      "title": "Два NotarCert / equivocation",
+      "origin": "Аналогии BFT; конфликтующие голоса",
+      "claim": "Двойное голосование приводит к конфликтующим сертификатам",
+      "history": [
+        "E01",
+        "E03",
+        "E05"
+      ],
+      "status": "negative_within_scope",
+      "interpretation": "В журнале закрыто через will_be_notarized guard. Поведение Byzantine-узла само по себе не нарушение safety.",
+      "next_action": "Проверить формальный инвариант и предел Byzantine-веса; не переносить вывод на все расписания.",
+      "sources": [
+        "S-origins",
+        "S-E01",
+        "S-E03",
+        "S-E05",
+        "C-model",
+        "C-pool"
+      ],
+      "jury_verdict": "not_individually_mapped",
+      "production_replay": "not_verified_in_this_review",
+      "transitions": []
+    },
+    {
+      "id": "H02",
+      "family": "consensus",
+      "title": "Withholding и split propose",
+      "origin": "Модель злонамеренного лидера",
+      "claim": "Отсутствие/разделение proposal блокирует прогресс",
+      "history": [
+        "E01",
+        "E03",
+        "E06"
+      ],
+      "status": "negative_within_scope",
+      "interpretation": "В модели не найдено заявленного нарушения; пропущенное окно злонамеренного лидера допустимо.",
+      "next_action": "Проверять восстановление прогресса после стабилизации сети, а не факт skip.",
+      "sources": [
+        "S-origins",
+        "S-E01",
+        "S-E03",
+        "S-E06",
+        "S-verdicts"
+      ],
+      "jury_verdict": "not_individually_mapped",
+      "production_replay": "not_verified_in_this_review",
+      "transitions": []
+    },
+    {
+      "id": "H03",
+      "family": "consensus",
+      "title": "NotarCert + SkipCert",
+      "origin": "Ошибочно выбранный safety-инвариант",
+      "claim": "Два типа сертификата на одном слоте означают нарушение safety",
+      "history": [
+        "E03",
+        "E04",
+        "E05",
+        "E07",
+        "E08"
+      ],
+      "status": "oracle_rejected",
+      "interpretation": "Пояснения TON прямо допускают это сочетание. Достижение trap не подтверждает safety bug.",
+      "next_action": "Заменить критерий на конфликт финализированных решений при допустимой модели.",
+      "sources": [
+        "S-origins",
+        "S-E03",
+        "S-E04",
+        "S-E05",
+        "S-E07",
+        "S-E08",
+        "C-pool",
+        "S-verdicts"
+      ],
+      "jury_verdict": "not_individually_mapped",
+      "production_replay": "not_verified_in_this_review",
+      "transitions": [
+        {
+          "event": "E05",
+          "state": "trap_reported",
+          "reason": "Сочетание NotarCert и SkipCert достигается в стенде.",
+          "evidence_kind": "journal_claim",
+          "sources": [
+            "S-E05"
+          ]
+        },
+        {
+          "event": "E08",
+          "state": "detector_disabled",
+          "reason": "Trap снят, чтобы продолжить исследование следующих состояний.",
+          "evidence_kind": "journal_claim",
+          "sources": [
+            "S-E08"
+          ]
+        },
+        {
+          "event": null,
+          "state": "oracle_rejected",
+          "reason": "Общее пояснение TON допускает сочетание NotarCert и SkipCert.",
+          "evidence_kind": "official_interpretation",
+          "sources": [
+            "S-verdicts"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H04",
+      "family": "consensus",
+      "title": "Amnesia после потери WAL",
+      "origin": "Расширение модели на persistence",
+      "claim": "Утрата сохранённого голоса позволяет повторно голосовать за другой блок",
+      "history": [
+        "E03",
+        "E05",
+        "E06",
+        "E09",
+        "E13"
+      ],
+      "status": "needs_production_replay",
+      "interpretation": "Журнал содержит PoC, затем ограничение ResolveState, затем повторное подтверждение. Тест использует MockDb.",
+      "next_action": "Зафиксировать семантику durability и воспроизвести допустимый crash до persist на реальной ноде.",
+      "sources": [
+        "S-origins",
+        "S-E03",
+        "S-E05",
+        "S-E06",
+        "S-E09",
+        "S-E13",
+        "C-amnesia",
+        "C-db",
+        "S-verdicts"
+      ],
+      "jury_verdict": "not_individually_mapped",
+      "production_replay": "not_verified_in_this_review",
+      "transitions": [
+        {
+          "event": "E05",
+          "state": "poc_reported",
+          "reason": "Standalone PoC заявлен как подтверждение повторного голосования.",
+          "evidence_kind": "journal_claim",
+          "sources": [
+            "S-E05"
+          ]
+        },
+        {
+          "event": "E06",
+          "state": "harness_path_blocked",
+          "reason": "Поздняя запись 4.4 сообщает exit 0: ResolveState блокирует повторный vote.",
+          "evidence_kind": "journal_claim",
+          "sources": [
+            "S-E06"
+          ]
+        },
+        {
+          "event": "E09",
+          "state": "poc_reported_again",
+          "reason": "В 5.7 trap вновь заявлен как воспроизводимый.",
+          "evidence_kind": "journal_claim",
+          "sources": [
+            "S-E09"
+          ]
+        },
+        {
+          "event": "E13",
+          "state": "reproduction_reported",
+          "reason": "В 5.19 подтверждение PoC повторено; независимый replay здесь не выполнялся.",
+          "evidence_kind": "journal_claim",
+          "sources": [
+            "S-E13"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H05",
+      "family": "consensus",
+      "title": "SkipCert → FinalCert / mismatch",
+      "origin": "Развитие гипотезы state divergence",
+      "claim": "Обработка конфликтующего FinalCert вызывает CHECK или нарушение согласованности",
+      "history": [
+        "E05",
+        "E08",
+        "E10",
+        "E13"
+      ],
+      "status": "reopened",
+      "interpretation": "В 5.11 снято как артефакт прямой инжекции; в 5.18 возвращено на основании иных путей. Это не подтверждение финализированного fork.",
+      "next_action": "Проверить допустимость сертификатов, Byzantine-вес, n_lose и точную версию формата seed.",
+      "sources": [
+        "S-origins",
+        "S-E05",
+        "S-E08",
+        "S-E10",
+        "S-E13",
+        "C-cert"
+      ],
+      "jury_verdict": "not_individually_mapped",
+      "production_replay": "not_verified_in_this_review",
+      "transitions": [
+        {
+          "event": "E05",
+          "state": "observed_in_harness",
+          "reason": "В журнале trap после WAL loss назван state divergence.",
+          "evidence_kind": "journal_claim",
+          "sources": [
+            "S-E05"
+          ]
+        },
+        {
+          "event": "E10",
+          "state": "dismissed_as_injection_artifact",
+          "reason": "В 5.11 certificate traps сняты как достижимые только прямой инжекцией.",
+          "evidence_kind": "journal_claim",
+          "sources": [
+            "S-E10"
+          ]
+        },
+        {
+          "event": "E13",
+          "state": "reopened",
+          "reason": "В 5.18 прежняя классификация названа ошибочной; заявлены другие пути к production CHECK.",
+          "evidence_kind": "journal_claim",
+          "sources": [
+            "S-E13"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H06",
+      "family": "consensus",
+      "title": "Порядок сообщений и bootstrap",
+      "origin": "Out-of-order и tolerate_conflicts",
+      "claim": "Переупорядочение нарушает восстановление или скрывает конфликт",
+      "history": [
+        "E03",
+        "E06",
+        "E13"
+      ],
+      "status": "negative_within_scope",
+      "interpretation": "В строке 103 исследование объявлено завершённым без подтверждения; текущий код содержит перестановки.",
+      "next_action": "Отдельно учитывать порядок доставки и допустимость самих голосов.",
+      "sources": [
+        "S-origins",
+        "S-E03",
+        "S-E06",
+        "S-E13",
+        "C-format",
+        "S-reorder"
+      ],
+      "jury_verdict": "not_individually_mapped",
+      "production_replay": "not_verified_in_this_review",
+      "transitions": []
+    },
+    {
+      "id": "H07",
+      "family": "consensus",
+      "title": "Alarm/restart → abort",
+      "origin": "Переформулировка H03 в availability",
+      "claim": "Локальный SkipVote после NotarizeVote вызывает crash loop",
+      "history": [
+        "E17"
+      ],
+      "status": "needs_production_replay",
+      "interpretation": "Журнал заявляет crash, но допустимость Notar+Skip опровергает исходное объяснение конфликта; нужен разбор точного CHECK.",
+      "next_action": "Воспроизвести немодифицированную сборку, исключить поддельный local vote и конфликт иной пары голосов.",
+      "sources": [
+        "S-origins",
+        "S-E17",
+        "C-pool",
+        "S-verdicts"
+      ],
+      "jury_verdict": "not_individually_mapped",
+      "production_replay": "not_verified_in_this_review",
+      "transitions": []
+    },
+    {
+      "id": "H08",
+      "family": "resources",
+      "title": "Рост candidate map",
+      "origin": "Сложность обработки разных candidateId",
+      "claim": "Рост notarize_weight вызывает superlinear DoS",
+      "history": [
+        "E05",
+        "E06",
+        "E10",
+        "E14"
+      ],
+      "status": "impact_unproven",
+      "interpretation": "Три записи и искусственный порог доказывают только достижение размера map.",
+      "next_action": "Измерить память/CPU по времени при ограниченном атакующем; проверить upstream bounds.",
+      "sources": [
+        "S-origins",
+        "S-E05",
+        "S-E06",
+        "S-E10",
+        "S-E14",
+        "C-resource"
+      ],
+      "jury_verdict": "not_individually_mapped",
+      "production_replay": "not_verified_in_this_review",
+      "transitions": []
+    },
+    {
+      "id": "H09",
+      "family": "resources",
+      "title": "Повторные сообщения",
+      "origin": "Обобщение flood-сценариев",
+      "claim": "Дубли голосов перегружают узел",
+      "history": [
+        "E05",
+        "E07",
+        "E10"
+      ],
+      "status": "impact_unproven",
+      "interpretation": "Порог >4 сообщений не является доказательством реалистичного DoS.",
+      "next_action": "Измерить стоимость дубля, throughput и деградацию прогресса.",
+      "sources": [
+        "S-origins",
+        "S-E05",
+        "S-E07",
+        "S-E10",
+        "C-resource"
+      ],
+      "jury_verdict": "not_individually_mapped",
+      "production_replay": "not_verified_in_this_review",
+      "transitions": []
+    },
+    {
+      "id": "H10",
+      "family": "resources",
+      "title": "WaitForParent queue",
+      "origin": "Неразрешённые зависимости кандидатов",
+      "claim": "Очередь ожиданий растёт и дорого пересматривается",
+      "history": [
+        "E05",
+        "E06",
+        "E10",
+        "E14"
+      ],
+      "status": "impact_unproven",
+      "interpretation": "Очередь и teardown раскрыли также ошибки стенда; фиксированный порог не доказывает unbounded growth.",
+      "next_action": "Проверить lifetime, дедупликацию и рост при достижимой последовательности кандидатов.",
+      "sources": [
+        "S-origins",
+        "S-E05",
+        "S-E06",
+        "S-E10",
+        "S-E14",
+        "C-resource",
+        "S-parent"
+      ],
+      "jury_verdict": "not_individually_mapped",
+      "production_replay": "not_verified_in_this_review",
+      "transitions": []
+    },
+    {
+      "id": "H11",
+      "family": "resources",
+      "title": "CandidateResolver state_",
+      "origin": "Joern: вставки и отсутствие очистки",
+      "claim": "Состояние кандидатов накапливается в сессии",
+      "history": [
+        "E14"
+      ],
+      "status": "static_candidate",
+      "interpretation": "Журнал выделяет гипотезу после отсева соседних false positives; достижимый DoS здесь не проверен.",
+      "next_action": "Измерить lifetime сессии, число допустимых ключей и memory/time curve.",
+      "sources": [
+        "S-origins",
+        "S-E14",
+        "C-resolver"
+      ],
+      "jury_verdict": "not_individually_mapped",
+      "production_replay": "not_verified_in_this_review",
+      "transitions": []
+    },
+    {
+      "id": "H12",
+      "family": "resources",
+      "title": "TwoStep amplification",
+      "origin": "Перенос resource-гипотезы на overlay",
+      "claim": "Rebroadcast до dedup размножает повторный трафик",
+      "history": [
+        "E15"
+      ],
+      "status": "static_candidate",
+      "interpretation": "Порядок вызовов виден в коде; сетевой эффект и ограничения требуют эксперимента.",
+      "next_action": "Replay допустимых дублей на реальном overlay; измерить входящий/исходящий трафик.",
+      "sources": [
+        "S-origins",
+        "S-E15",
+        "C-twostep"
+      ],
+      "jury_verdict": "not_individually_mapped",
+      "production_replay": "not_verified_in_this_review",
+      "transitions": []
+    },
+    {
+      "id": "H13",
+      "family": "resources",
+      "title": "FEC parts_ growth",
+      "origin": "Анализ lifecycle буфера",
+      "claim": "Части broadcast копятся до завершения декодирования",
+      "history": [
+        "E15"
+      ],
+      "status": "static_candidate",
+      "interpretation": "Есть статическая гипотеза и compile-time probe; probe сам меняет состояние, это не сетевой PoC.",
+      "next_action": "Проверить GC, сроки жизни, ограничения seqno и memory/time curve.",
+      "sources": [
+        "S-origins",
+        "S-E15",
+        "C-fec"
+      ],
+      "jury_verdict": "not_individually_mapped",
+      "production_replay": "not_verified_in_this_review",
+      "transitions": []
+    },
+    {
+      "id": "H14",
+      "family": "resources",
+      "title": "FEC seqno overflow",
+      "origin": "Развитие H13: арифметика dedup",
+      "claim": "UINT32_MAX обнуляет next_seqno_ и обходится dedup",
+      "history": [
+        "E15"
+      ],
+      "status": "static_candidate",
+      "interpretation": "Арифметический путь отмечен; прохождение всех проверок входного пакета не доказано.",
+      "next_action": "Проверить входную валидацию и влияние повторов на реальный broadcast.",
+      "sources": [
+        "S-origins",
+        "S-E15",
+        "C-seqno"
+      ],
+      "jury_verdict": "not_individually_mapped",
+      "production_replay": "not_verified_in_this_review",
+      "transitions": []
+    },
+    {
+      "id": "H15",
+      "family": "static",
+      "title": "Unknown broadcast source",
+      "origin": "Поиск .at() и исключений",
+      "claim": "Неизвестный источник вызывает out_of_range в private overlay",
+      "history": [
+        "E14"
+      ],
+      "status": "revised_by_guard",
+      "interpretation": "В 5.21 создан отчёт; в 5.22 тот же класс .at() назван защищённым overlay-слоем.",
+      "next_action": "Снять противоречие call-path проверкой; до этого не считать багом.",
+      "sources": [
+        "S-origins",
+        "S-E14",
+        "S-at"
+      ],
+      "jury_verdict": "not_individually_mapped",
+      "production_replay": "not_verified_in_this_review",
+      "transitions": [
+        {
+          "event": "E14",
+          "state": "report_drafted",
+          "reason": "В 5.21 отмечен .at() при неизвестном источнике.",
+          "evidence_kind": "journal_claim",
+          "sources": [
+            "S-E14"
+          ]
+        },
+        {
+          "event": "E14",
+          "state": "guard_identified",
+          "reason": "В 5.22 .at() классифицирован как защищённый overlay-слоем; отчёт и пересмотр сохранены раздельно.",
+          "evidence_kind": "journal_claim",
+          "sources": [
+            "S-E14"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H16",
+      "family": "static",
+      "title": "Соседние гипотезы, закрытые проверками",
+      "origin": "CodeQL/Joern и ручной разбор",
+      "claim": "optional, ссылки, вес сертификата, shutdown, block accepter, peer flood",
+      "history": [
+        "E14",
+        "E16"
+      ],
+      "status": "negative_within_scope",
+      "interpretation": "Журнал фиксирует защиту порядком записи, lifetime, quorum check, caps/GC и ADNL limit; shutdown понижен до operational.",
+      "next_action": "Сохранить причины закрытия и область применимости; переоткрывать только при изменении условий.",
+      "sources": [
+        "S-origins",
+        "S-E14",
+        "S-E16"
+      ],
+      "jury_verdict": "not_individually_mapped",
+      "production_replay": "not_verified_in_this_review",
+      "transitions": []
+    },
+    {
+      "id": "H17",
+      "family": "method",
+      "title": "Дефекты и границы стенда",
+      "origin": "Невоспроизводимость и доминирующие crashes",
+      "claim": "Часть срабатываний создаётся генератором, scheduler или конфигурацией сборки",
+      "history": [
+        "E05",
+        "E06",
+        "E08",
+        "E10",
+        "E11",
+        "E13"
+      ],
+      "status": "harness_artifacts_documented",
+      "interpretation": "Документированы недетерминизм, teardown, invalid BoC, отключённые macro, неполный MSan и дрейф seed format.",
+      "next_action": "Отдельный набор тестов стенда: isolation, replay determinism, допустимость событий, build provenance.",
+      "sources": [
+        "S-origins",
+        "S-E05",
+        "S-E06",
+        "S-E08",
+        "S-E10",
+        "S-E11",
+        "S-E13",
+        "C-pool",
+        "C-cmake"
+      ],
+      "jury_verdict": "not_individually_mapped",
+      "production_replay": "not_verified_in_this_review",
+      "transitions": []
+    },
+    {
+      "id": "H18",
+      "family": "method",
+      "title": "Согласованность грамматики мутатор ↔ harness",
+      "origin": "Повторное чтение текущего кода",
+      "claim": "Мутатор описывает 4-byte header / vtype<=7, harness читает расширенный control layout / vtype<=15",
+      "history": [],
+      "status": "new_review_question",
+      "interpretation": "Это новое наблюдение при построении карты, а не находка двухнедельной кампании. CMake связывает оба файла. Семантическая совместимость требует проверки.",
+      "next_action": "Сравнить decode/encode с FuzzedDataProvider; выполнить round-trip и replay известных seeds.",
+      "sources": [
+        "S-origins",
+        "C-mutator",
+        "C-format",
+        "C-cmake"
+      ],
+      "jury_verdict": "not_individually_mapped",
+      "production_replay": "not_verified_in_this_review",
+      "transitions": []
+    }
+  ],
+  "relations": [
+    {
+      "from": "H03",
+      "to": "H04",
+      "type": "branches_into",
+      "label": "От спорного сертификата к persistence",
+      "provenance": "analyst_reconstruction"
+    },
+    {
+      "from": "H03",
+      "to": "H07",
+      "type": "reframed_as",
+      "label": "От safety к availability",
+      "provenance": "analyst_reconstruction"
+    },
+    {
+      "from": "H03",
+      "to": "H05",
+      "type": "branches_into",
+      "label": "Разделить Notar/Skip и конфликты FinalCert",
+      "provenance": "analyst_reconstruction"
+    },
+    {
+      "from": "H08",
+      "to": "H11",
+      "type": "generalizes_to",
+      "label": "Lifecycle другого map",
+      "provenance": "analyst_reconstruction"
+    },
+    {
+      "from": "H09",
+      "to": "H12",
+      "type": "generalizes_to",
+      "label": "От обработки к сетевому amplification",
+      "provenance": "analyst_reconstruction"
+    },
+    {
+      "from": "H11",
+      "to": "H13",
+      "type": "generalizes_to",
+      "label": "Буфер частей FEC",
+      "provenance": "analyst_reconstruction"
+    },
+    {
+      "from": "H13",
+      "to": "H14",
+      "type": "branches_into",
+      "label": "От памяти к арифметике dedup",
+      "provenance": "analyst_reconstruction"
+    },
+    {
+      "from": "H17",
+      "to": "H18",
+      "type": "motivates",
+      "label": "Новая проверка согласованности форматов",
+      "provenance": "analyst_reconstruction"
+    }
+  ],
+  "agent_contract": {
+    "canonical_file": "hypotheses.json",
+    "history_policy": "Append observations and transitions; do not erase earlier judgments.",
+    "evidence_levels": [
+      "journal_claim",
+      "code_observation",
+      "official_interpretation",
+      "reproduced_by_agent"
+    ],
+    "transition_policy": "A journal FOUND or exit 77 is never automatically promoted to confirmed vulnerability.",
+    "confirmation_requires": [
+      "pinned code and build",
+      "admissible attacker/failure model",
+      "minimal replay input and expected outcome",
+      "independent production replay",
+      "valid protocol property or measured resource impact"
+    ],
+    "next_iteration": [
+      "Select unresolved hypothesis and its next_action",
+      "Verify input grammar and build provenance",
+      "Execute one bounded experiment",
+      "Store heavy evidence in OneDrive and hashes/relative references in this graph",
+      "Append observation with source and evidence level",
+      "Update status and regenerate all human views"
+    ]
+  },
+  "$schema": "./schema.json",
+  "source_snapshot": {
+    "retrieved_at": "2026-09-29",
+    "sha256": "d66deba0555512725eae04bb0f20c62996984609fb0cf7ce88d9e204b8f88a62",
+    "note": "Hash identifies the read-only API response used in this reconstruction; the full response is not published."
+  }
+}

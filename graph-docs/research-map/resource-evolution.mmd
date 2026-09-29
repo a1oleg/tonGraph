@@ -1,0 +1,25 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Arial","fontSize":"16px","primaryColor":"#eef3f8","primaryTextColor":"#182638","primaryBorderColor":"#8195a9","lineColor":"#718096"},"flowchart":{"curve":"basis","htmlLabels":false,"nodeSpacing":25,"rankSpacing":40}}}%%
+flowchart TB
+  R["Гипотезы стоимости обработки и хранения"]
+  H08["H08 · Рост candidate map<br/>Воздействие не доказано"]
+  H09["H09 · Повторные сообщения<br/>Воздействие не доказано"]
+  H10["H10 · WaitForParent queue<br/>Воздействие не доказано"]
+  H11["H11 · CandidateResolver state_<br/>Статическая гипотеза"]
+  H12["H12 · TwoStep amplification<br/>Статическая гипотеза"]
+  H13["H13 · FEC parts_ growth<br/>Статическая гипотеза"]
+  H14["H14 · FEC seqno overflow<br/>Статическая гипотеза"]
+  R --> H08
+  R --> H09
+  R --> H10
+  H08 -->|"Lifecycle другого map"| H11
+  H09 -->|"От обработки к сетевому amplification"| H12
+  H11 -->|"Буфер частей FEC"| H13
+  H13 -->|"От памяти к арифметике dedup"| H14
+  RG["Следующий критерий проверки<br/>Достижимый трафик + границы lifecycle<br/>CPU/RAM/байты во времени + влияние на прогресс"]
+  H10 --> RG
+  H12 --> RG
+  H14 --> RG
+  class H08,H09,H10,H11,H12,H13,H14,RG caution
+  classDef caution fill:#fff1d8,stroke:#b08029,color:#35270b;
+  classDef rejected fill:#f9e6e5,stroke:#b36b67,color:#502a27;
+  classDef method fill:#e7f3ee,stroke:#668e7b,color:#183e2e;

@@ -1,0 +1,34 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Arial","fontSize":"16px","primaryColor":"#eef3f8","primaryTextColor":"#182638","primaryBorderColor":"#8195a9","lineColor":"#718096"},"flowchart":{"curve":"basis","htmlLabels":false,"nodeSpacing":25,"rankSpacing":40}}}%%
+flowchart TB
+  subgraph NS["H03 · NotarCert + SkipCert"]
+  NS1["Предположение: сочетание нарушает safety"]
+  NS2["E03–E05 · MockDb + окно + seed<br/>Trap воспроизводится"]
+  NS3["E08 · Trap снимают ради продолжения поиска"]
+  NS4["Официальное пояснение TON<br/>Сочетание допустимо → критерий отвергнут"]
+  NS1 --> NS2 --> NS3 --> NS4
+  end
+  subgraph AM["H04 · Amnesia"]
+  AM1["E03 · Потеря записи о голосе"]
+  AM2["E05 · Standalone PoC заявлен"]
+  AM3["E06 · ResolveState блокирует fuzz-путь"]
+  AM4["E09/E13 · Новые seeds и повторное подтверждение в журнале"]
+  AM5["Текущий статус: нужен replay<br/>с реальной durability и допустимым отказом"]
+  AM1 --> AM2 --> AM3 --> AM4 --> AM5
+  end
+  subgraph FC["H05 · Конфликты FinalCert"]
+  FC1["E05/E08 · Certificate traps"]
+  FC2["E10 / 5.11 · Сняты как артефакт прямой инжекции"]
+  FC3["E13 / 5.18 · Переоткрыты<br/>заявлены production CHECK через другие vtypes"]
+  FC4["5.19–5.20 · Rebuild и перенос формата seeds"]
+  FC5["Текущий статус: переоткрыта<br/>проверить допустимость сертификатов и replay"]
+  FC1 --> FC2 --> FC3 --> FC4 --> FC5
+  end
+  NS2 -. "ветвление исследования" .-> AM1
+  NS2 -. "разделение классов сертификатов" .-> FC1
+  AV["H07 / E17 · Переформулировка в availability<br/>Alarm/restart → abort заявлен; причина требует replay"]
+  NS3 -. "смена заявленного воздействия" .-> AV
+  class NS4 rejected
+  class AM5,FC5,AV caution
+  classDef caution fill:#fff1d8,stroke:#b08029,color:#35270b;
+  classDef rejected fill:#f9e6e5,stroke:#b36b67,color:#502a27;
+  classDef method fill:#e7f3ee,stroke:#668e7b,color:#183e2e;

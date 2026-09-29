@@ -1,0 +1,41 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Arial","fontSize":"16px","primaryColor":"#eef3f8","primaryTextColor":"#182638","primaryBorderColor":"#8195a9","lineColor":"#718096"},"flowchart":{"curve":"basis","htmlLabels":false,"nodeSpacing":25,"rankSpacing":40}}}%%
+flowchart TB
+  ROOT["TON Simplex · эволюция исследования<br/>18 семейств гипотез · 17 эпизодов журнала"]
+  O01["BFT-аналогии и инварианты"]
+  O02["Пробелы покрытия и платформы"]
+  O03["Статический анализ кода"]
+  O04["Разбор срабатываний и артефактов"]
+  ROOT --> O01
+  ROOT --> O02
+  ROOT --> O03
+  ROOT --> O04
+  CONS["Консенсус · H01–H07<br/>Голоса, сертификаты, restart, порядок сообщений"]
+  RES["Ресурсы · H08–H14<br/>Map, очереди, flood, overlay/FEC"]
+  STATIC["Проверка защит · H15–H16<br/>Call paths, lifetime, caps, quorum"]
+  O01 --> CONS
+  O02 --> CONS
+  O03 --> RES
+  O03 --> STATIC
+  O04 --> CONS
+  WORK["Цикл экспериментов<br/>Модель → реальный Pool → crash/restart<br/>Semantic feedback → целевые seeds → replay"]
+  CONS --> WORK
+  RES --> WORK
+  STATIC --> WORK
+  REJECT["Пересмотрены / не подтверждены<br/>Notar+Skip допустим; часть гипотез закрыта защитами"]
+  OPEN["Требуют проверки<br/>Amnesia, FinalCert, availability, resource impact"]
+  METHOD["Развитие стенда · H17–H18<br/>Детерминизм, teardown, форматы, санитайзеры"]
+  WORK --> REJECT
+  WORK --> OPEN
+  WORK --> METHOD
+  FEEDBACK["Обратная связь в следующий цикл<br/>Исправить критерии и расширить проверяемую область"]
+  METHOD --> FEEDBACK
+  NOTE["Статусы — реконструкция по журналу и коду<br/>Подтверждённые жюри уязвимости из этих данных не установлены"]
+  OPEN --> NOTE
+  REJECT --> NOTE
+  FEEDBACK --> NOTE
+  class OPEN caution
+  class REJECT rejected
+  class METHOD method
+  classDef caution fill:#fff1d8,stroke:#b08029,color:#35270b;
+  classDef rejected fill:#f9e6e5,stroke:#b36b67,color:#502a27;
+  classDef method fill:#e7f3ee,stroke:#668e7b,color:#183e2e;

@@ -1,6 +1,8 @@
 Research fork: [code and OneDrive results layout](graph-docs/STORAGE.md).
 Historical experiment notes in `graph-docs` are not confirmed vulnerability reports.
 
+[Hypothesis evolution map: diagrams, evidence, and agent-readable register](graph-docs/research-map/README.md).
+
 <div align="center">
   <a href="https://ton.org">
     <picture>

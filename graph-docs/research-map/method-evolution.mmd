@@ -1,0 +1,22 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Arial","fontSize":"16px","primaryColor":"#eef3f8","primaryTextColor":"#182638","primaryBorderColor":"#8195a9","lineColor":"#718096"},"flowchart":{"curve":"basis","htmlLabels":false,"nodeSpacing":25,"rankSpacing":40}}}%%
+flowchart TB
+  M1["E01/E02 · Модель и TL parser<br/>Большое число запусков; ограниченная область"]
+  M2["E03 · Реальный Pool + MockDb<br/>Появляются restart-состояния"]
+  M3["E04 · Semantic/cosine feedback<br/>Новые сигналы интересных состояний"]
+  M4["E05–E07 · Seeds, scheduler, распределение<br/>Детерминизм и обмен корпусами"]
+  M5["E08–E10 · Внутренние события и traps<br/>Почти каждый вход останавливает поиск"]
+  M6["H17 · Разбор стенда<br/>Invalid BoC, teardown, остаточные события"]
+  M7["E11 · UBSan / MSan<br/>Вывод зависит от инструментирования сборки"]
+  M8["E12 · Custom mutator + corpus merge"]
+  M9["E13 · Дрейф формата входов<br/>Seeds требуют портирования"]
+  M10["H18 · Новый вопрос при составлении карты<br/>Грамматики мутатор/harness расходятся в коде"]
+  M11["E14–E16 · Статический анализ<br/>Проверки guards и пробелов покрытия"]
+  M1 --> M2 --> M3 --> M4 --> M5 --> M6 --> M8 --> M9 --> M10
+  M5 --> M7
+  M9 --> M11
+  M6 -. "продолжить exploration" .-> M3
+  class M6,M7 method
+  class M10 caution
+  classDef caution fill:#fff1d8,stroke:#b08029,color:#35270b;
+  classDef rejected fill:#f9e6e5,stroke:#b36b67,color:#502a27;
+  classDef method fill:#e7f3ee,stroke:#668e7b,color:#183e2e;

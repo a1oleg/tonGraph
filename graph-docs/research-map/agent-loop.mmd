@@ -1,0 +1,18 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Arial","fontSize":"16px","primaryColor":"#eef3f8","primaryTextColor":"#182638","primaryBorderColor":"#8195a9","lineColor":"#718096"},"flowchart":{"curve":"basis","htmlLabels":false,"nodeSpacing":25,"rankSpacing":40}}}%%
+flowchart TB
+  A1["Выбрать H-ID<br/>claim + status + next_action"]
+  A2["Проверить модель и стенд<br/>Byzantine-вес, durability, grammar, build"]
+  A3["Один ограниченный эксперимент<br/>commit + binary hash + seed + schedule"]
+  A4["Записать наблюдение<br/>Лог в OneDrive; ссылка и SHA-256 в JSON"]
+  A5["Разобрать результат<br/>Дефект? Допустимое поведение? Артефакт?"]
+  A6["Добавить событие и переход статуса<br/>Старые решения не стирать"]
+  A7["Перегенерировать Mermaid / README<br/>Следующая гипотеза или закрытие"]
+  A1 --> A2 --> A3 --> A4 --> A5 --> A6 --> A7
+  A7 --> A1
+  AG["FOUND / exit 77 / рост ft<br/>не переводят гипотезу автоматически в подтверждённый баг"]
+  AG -. "правило классификации" .-> A5
+  class AG rejected
+  class A4,A6 method
+  classDef caution fill:#fff1d8,stroke:#b08029,color:#35270b;
+  classDef rejected fill:#f9e6e5,stroke:#b36b67,color:#502a27;
+  classDef method fill:#e7f3ee,stroke:#668e7b,color:#183e2e;
