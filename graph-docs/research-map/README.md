@@ -8,6 +8,12 @@
 
 [Исходник Mermaid](overview.mmd) · [Реестр для агента](hypotheses.json)
 
+## Матрица: гипотезы × этапы
+
+[Открыть табличную диаграмму](MATRIX.md) · [Все колонки, SVG](matrix.svg) · [Автономная интерактивная версия](matrix.html)
+
+Колонки — гипотезы; ряды — этапы. Общий этап записан один раз со стрелками из связанных колонок.
+
 ## Что показывает карта
 
 Гипотезы рождались из аналогий BFT, предполагаемых инвариантов, пробелов покрытия и статического анализа. Плато вело к усложнению стенда; новые срабатывания — к исправлению стенда и пересмотру критериев. Связи «развилось из» являются аналитической реконструкцией, а не доказанным порядком мыслей автора.
@@ -39,8 +45,8 @@ H18 добавлена при этой реконструкции: связан�
 | [H01](#h01) | Два NotarCert / equivocation | Не подтверждено в проверенной области | E01 → E03 → E05 |
 | [H02](#h02) | Withholding и split propose | Не подтверждено в проверенной области | E01 → E03 → E06 |
 | [H03](#h03) | NotarCert + SkipCert | Ошибочный критерий safety | E03 → E04 → E05 → E07 → E08 |
-| [H04](#h04) | Amnesia после потери WAL | Нужен production replay | E03 → E05 → E06 → E09 → E13 |
-| [H05](#h05) | SkipCert → FinalCert / mismatch | Переоткрыта после пересмотра | E05 → E08 → E10 → E13 |
+| [H04](#h04) | Amnesia после потери WAL | Нужен production replay | E03 → E04 → E05 → E06 → E09 → E13 |
+| [H05](#h05) | SkipCert → FinalCert / mismatch | Переоткрыта после пересмотра | E04 → E05 → E08 → E10 → E13 |
 | [H06](#h06) | Порядок сообщений и bootstrap | Не подтверждено в проверенной области | E03 → E06 → E13 |
 | [H07](#h07) | Alarm/restart → abort | Нужен production replay | E17 |
 | [H08](#h08) | Рост candidate map | Воздействие не доказано | E05 → E06 → E10 → E14 |
@@ -52,7 +58,7 @@ H18 добавлена при этой реконструкции: связан�
 | [H14](#h14) | FEC seqno overflow | Статическая гипотеза | E15 |
 | [H15](#h15) | Unknown broadcast source | Пересмотрена из-за защит | E14 |
 | [H16](#h16) | Соседние гипотезы, закрытые проверками | Не подтверждено в проверенной области | E14 → E16 |
-| [H17](#h17) | Дефекты и границы стенда | Артефакты стенда разобраны | E05 → E06 → E08 → E10 → E11 → E13 |
+| [H17](#h17) | Дефекты и границы стенда | Артефакты стенда разобраны | E04 → E05 → E06 → E08 → E10 → E11 → E13 |
 | [H18](#h18) | Согласованность грамматики мутатор ↔ harness | Новый вопрос к коду | Новый обзор кода |
 
 ## Журнал развития метода
@@ -239,11 +245,11 @@ H18 добавлена при этой реконструкции: связан�
 
 - **Откуда:** Расширение модели на persistence.
 - **Проверяемое утверждение:** Утрата сохранённого голоса позволяет повторно голосовать за другой блок.
-- **Развитие:** E03 / 2.2–2.3 → E05 / 4.1–4.2 → E06 / 4.3–4.6 → E09 / 5.7–5.10 → E13 / 5.18–5.20.
+- **Развитие:** E03 / 2.2–2.3 → E04 / 3.1–3.4 → E05 / 4.1–4.2 → E06 / 4.3–4.6 → E09 / 5.7–5.10 → E13 / 5.18–5.20.
 - **Оценка сейчас:** Нужен production replay. Журнал содержит PoC, затем ограничение ResolveState, затем повторное подтверждение. Тест использует MockDb.
 - **Следующее действие:** Зафиксировать семантику durability и воспроизвести допустимый crash до persist на реальной ноде.
 
-[S-origins · Sheet2!B2:R6](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=1323377909#gid=1323377909&range=B2:R6) · [S-E03 · Sheet1!A9:L13](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A9:L13) · [S-E05 · Sheet1!A27:M36](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A27:M36) · [S-E06 · Sheet1!A38:M48](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A38:M48) · [S-E09 · Sheet1!A68:G78](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A68:G78) · [S-E13 · Sheet1!A97:M105](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A97:M105) · [C-amnesia · test/consensus/test_amnesia_poc.cpp:1](https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/test/consensus/test_amnesia_poc.cpp#L1) · [C-db · validator/consensus/simplex/db.cpp:74](https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/validator/consensus/simplex/db.cpp#L74) · [S-verdicts](https://github.com/ton-blockchain/simplex-docs/blob/main/grading-verdicts.md)
+[S-origins · Sheet2!B2:R6](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=1323377909#gid=1323377909&range=B2:R6) · [S-E03 · Sheet1!A9:L13](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A9:L13) · [S-E05 · Sheet1!A27:M36](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A27:M36) · [S-E06 · Sheet1!A38:M48](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A38:M48) · [S-E09 · Sheet1!A68:G78](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A68:G78) · [S-E13 · Sheet1!A97:M105](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A97:M105) · [C-amnesia · test/consensus/test_amnesia_poc.cpp:1](https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/test/consensus/test_amnesia_poc.cpp#L1) · [C-db · validator/consensus/simplex/db.cpp:74](https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/validator/consensus/simplex/db.cpp#L74) · [S-verdicts](https://github.com/ton-blockchain/simplex-docs/blob/main/grading-verdicts.md) · [S-E04 · Sheet1!A15:M25](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A15:M25)
 
 <a id="h05"></a>
 
@@ -251,11 +257,11 @@ H18 добавлена при этой реконструкции: связан�
 
 - **Откуда:** Развитие гипотезы state divergence.
 - **Проверяемое утверждение:** Обработка конфликтующего FinalCert вызывает CHECK или нарушение согласованности.
-- **Развитие:** E05 / 4.1–4.2 → E08 / 5.4–5.6 → E10 / 5.11–5.13 → E13 / 5.18–5.20.
+- **Развитие:** E04 / 3.1–3.4 → E05 / 4.1–4.2 → E08 / 5.4–5.6 → E10 / 5.11–5.13 → E13 / 5.18–5.20.
 - **Оценка сейчас:** Переоткрыта после пересмотра. В 5.11 снято как артефакт прямой инжекции; в 5.18 возвращено на основании иных путей. Это не подтверждение финализированного fork.
 - **Следующее действие:** Проверить допустимость сертификатов, Byzantine-вес, n_lose и точную версию формата seed.
 
-[S-origins · Sheet2!B2:R6](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=1323377909#gid=1323377909&range=B2:R6) · [S-E05 · Sheet1!A27:M36](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A27:M36) · [S-E08 · Sheet1!A59:B66](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A59:B66) · [S-E10 · Sheet1!A80:B87](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A80:B87) · [S-E13 · Sheet1!A97:M105](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A97:M105) · [C-cert · test/consensus/fuzz_pool.cpp:557](https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/test/consensus/fuzz_pool.cpp#L557)
+[S-origins · Sheet2!B2:R6](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=1323377909#gid=1323377909&range=B2:R6) · [S-E05 · Sheet1!A27:M36](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A27:M36) · [S-E08 · Sheet1!A59:B66](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A59:B66) · [S-E10 · Sheet1!A80:B87](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A80:B87) · [S-E13 · Sheet1!A97:M105](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A97:M105) · [C-cert · test/consensus/fuzz_pool.cpp:557](https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/test/consensus/fuzz_pool.cpp#L557) · [S-E04 · Sheet1!A15:M25](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A15:M25)
 
 <a id="h06"></a>
 
@@ -395,11 +401,11 @@ H18 добавлена при этой реконструкции: связан�
 
 - **Откуда:** Невоспроизводимость и доминирующие crashes.
 - **Проверяемое утверждение:** Часть срабатываний создаётся генератором, scheduler или конфигурацией сборки.
-- **Развитие:** E05 / 4.1–4.2 → E06 / 4.3–4.6 → E08 / 5.4–5.6 → E10 / 5.11–5.13 → E11 / 5.8; 5.14 → E13 / 5.18–5.20.
+- **Развитие:** E04 / 3.1–3.4 → E05 / 4.1–4.2 → E06 / 4.3–4.6 → E08 / 5.4–5.6 → E10 / 5.11–5.13 → E11 / 5.8; 5.14 → E13 / 5.18–5.20.
 - **Оценка сейчас:** Артефакты стенда разобраны. Документированы недетерминизм, teardown, invalid BoC, отключённые macro, неполный MSan и дрейф seed format.
 - **Следующее действие:** Отдельный набор тестов стенда: isolation, replay determinism, допустимость событий, build provenance.
 
-[S-origins · Sheet2!B2:R6](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=1323377909#gid=1323377909&range=B2:R6) · [S-E05 · Sheet1!A27:M36](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A27:M36) · [S-E06 · Sheet1!A38:M48](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A38:M48) · [S-E08 · Sheet1!A59:B66](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A59:B66) · [S-E10 · Sheet1!A80:B87](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A80:B87) · [S-E11 · Sheet1!A71:B90](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A71:B90) · [S-E13 · Sheet1!A97:M105](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A97:M105) · [C-pool · test/consensus/fuzz_pool.cpp:1](https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/test/consensus/fuzz_pool.cpp#L1) · [C-cmake · test/consensus/CMakeLists.txt:40](https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/test/consensus/CMakeLists.txt#L40)
+[S-origins · Sheet2!B2:R6](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=1323377909#gid=1323377909&range=B2:R6) · [S-E05 · Sheet1!A27:M36](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A27:M36) · [S-E06 · Sheet1!A38:M48](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A38:M48) · [S-E08 · Sheet1!A59:B66](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A59:B66) · [S-E10 · Sheet1!A80:B87](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A80:B87) · [S-E11 · Sheet1!A71:B90](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A71:B90) · [S-E13 · Sheet1!A97:M105](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A97:M105) · [C-pool · test/consensus/fuzz_pool.cpp:1](https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/test/consensus/fuzz_pool.cpp#L1) · [C-cmake · test/consensus/CMakeLists.txt:40](https://github.com/a1oleg/tonGraph/blob/4ee8eb0e/test/consensus/CMakeLists.txt#L40) · [S-E04 · Sheet1!A15:M25](https://docs.google.com/spreadsheets/d/14VwA6OGZ9A1IStozZS6Y-PO_40Cuq0yAFDgXka5_CHU/edit?gid=0#gid=0&range=A15:M25)
 
 <a id="h18"></a>
 

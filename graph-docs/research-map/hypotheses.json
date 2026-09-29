@@ -639,6 +639,7 @@
       "claim": "Утрата сохранённого голоса позволяет повторно голосовать за другой блок",
       "history": [
         "E03",
+        "E04",
         "E05",
         "E06",
         "E09",
@@ -656,7 +657,8 @@
         "S-E13",
         "C-amnesia",
         "C-db",
-        "S-verdicts"
+        "S-verdicts",
+        "S-E04"
       ],
       "jury_verdict": "not_individually_mapped",
       "production_replay": "not_verified_in_this_review",
@@ -706,6 +708,7 @@
       "origin": "Развитие гипотезы state divergence",
       "claim": "Обработка конфликтующего FinalCert вызывает CHECK или нарушение согласованности",
       "history": [
+        "E04",
         "E05",
         "E08",
         "E10",
@@ -720,7 +723,8 @@
         "S-E08",
         "S-E10",
         "S-E13",
-        "C-cert"
+        "C-cert",
+        "S-E04"
       ],
       "jury_verdict": "not_individually_mapped",
       "production_replay": "not_verified_in_this_review",
@@ -1035,6 +1039,7 @@
       "origin": "Невоспроизводимость и доминирующие crashes",
       "claim": "Часть срабатываний создаётся генератором, scheduler или конфигурацией сборки",
       "history": [
+        "E04",
         "E05",
         "E06",
         "E08",
@@ -1054,7 +1059,8 @@
         "S-E11",
         "S-E13",
         "C-pool",
-        "C-cmake"
+        "C-cmake",
+        "S-E04"
       ],
       "jury_verdict": "not_individually_mapped",
       "production_replay": "not_verified_in_this_review",
