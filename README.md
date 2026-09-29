@@ -1,3 +1,6 @@
+Research fork: [code and OneDrive results layout](graph-docs/STORAGE.md).
+Historical experiment notes in `graph-docs` are not confirmed vulnerability reports.
+
 <div align="center">
   <a href="https://ton.org">
     <picture>

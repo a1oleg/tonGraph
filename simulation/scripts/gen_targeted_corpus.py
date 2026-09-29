@@ -15,6 +15,7 @@ Vulnerabilities covered:
 """
 
 import itertools
+import argparse
 import os
 import sys
 
@@ -225,9 +226,20 @@ def main():
         counts[label] = n
         print(f"  {label}: {n} files")
 
-    print(f"Total: {count} targeted corpus files → {OUTPUT_DIR}")
+    print(f"Total: {count} targeted corpus files -> {OUTPUT_DIR}")
     return 0
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output', required=True, help='Output directory outside the source checkout')
+    args = parser.parse_args()
+    OUTPUT_DIR = os.path.abspath(args.output)
+    repo_dir = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..'))
+    try:
+        inside_repo = os.path.commonpath([os.path.realpath(OUTPUT_DIR), os.path.realpath(repo_dir)]) == os.path.realpath(repo_dir)
+    except ValueError:  # Different Windows drives.
+        inside_repo = False
+    if inside_repo:
+        parser.error('Write generated seeds outside the source checkout')
     sys.exit(main())

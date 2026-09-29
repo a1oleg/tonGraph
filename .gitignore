@@ -77,9 +77,6 @@ sheets_credentials.json
 # Local Windows configure scripts
 configure.bat
 configure.ps1
-CMakeLists.txt
-*.txt
-CMakeLists.txt
 .claude/settings.local.json
 .claude/
 simulation/crashes_p5/
@@ -118,3 +115,20 @@ simulation/fuzz_local_worker*.log
 simulation/findings_state_div/
 contest/
 simulation/corpus_p5/
+
+# Generated research data lives in OneDrive, never in source control.
+/simulation/corpus*/
+/simulation/crashes*/
+/simulation/findings*/
+/simulation/*seed*
+/simulation/*.bin
+/simulation/.crashes*
+/*seed*
+/minimized-from-*
+*.profraw
+*.profdata
+/simulation/*.ndjson
+/out/
+/build
+.env.*
+!.env.example
